@@ -27,13 +27,17 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Download, Upload } from "lucide-react";
+import { API_BASE_URL, getAuthToken } from "@/lib/utils";
 
 interface ImportQuestionsDialogProps {
   trigger: React.ReactNode;
   onImport: (data: any) => void;
 }
 
-export default function ImportQuestionsDialog({ trigger, onImport }: ImportQuestionsDialogProps) {
+export default function ImportQuestionsDialog({
+  trigger,
+  onImport,
+}: ImportQuestionsDialogProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedSkill, setSelectedSkill] = useState("");
 
@@ -62,20 +66,31 @@ export default function ImportQuestionsDialog({ trigger, onImport }: ImportQuest
     }
   };
 
-  const handleUpload = () => {
-    if (selectedFile && selectedSkill) {
-      onImport({
-        file: selectedFile,
-        skill: selectedSkill,
-      });
+  const handleUpload = async () => {
+    if (!selectedFile || !selectedSkill) return;
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+    formData.append("skill_id", selectedSkill);
+    const token = getAuthToken();
+    const resp = await fetch(`${API_BASE_URL}/questions/import`, {
+      method: "POST",
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      } as any,
+      body: formData,
+    });
+    if (!resp.ok) {
+      // eslint-disable-next-line no-console
+      console.error("Import failed");
+      return;
     }
+    const data = await resp.json();
+    onImport(data);
   };
 
   return (
     <Dialog>
-      <DialogTrigger asChild>
-        {trigger}
-      </DialogTrigger>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Import Questions</DialogTitle>
@@ -95,17 +110,17 @@ export default function ImportQuestionsDialog({ trigger, onImport }: ImportQuest
 
           {/* Choose Skill */}
           <div className="space-y-2">
-            <Label htmlFor="skill">Choose Skill <span className="text-destructive">*</span></Label>
+            <Label htmlFor="skill">
+              Choose Skill <span className="text-destructive">*</span>
+            </Label>
             <Select value={selectedSkill} onValueChange={setSelectedSkill}>
               <SelectTrigger>
                 <SelectValue placeholder="Search Skill" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="javascript">JavaScript</SelectItem>
-                <SelectItem value="react">React</SelectItem>
-                <SelectItem value="css">CSS</SelectItem>
-                <SelectItem value="database">Database</SelectItem>
-                <SelectItem value="python">Python</SelectItem>
+                <SelectItem value="1">Mathematics</SelectItem>
+                <SelectItem value="2">English</SelectItem>
+                <SelectItem value="3">Science</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -120,8 +135,8 @@ export default function ImportQuestionsDialog({ trigger, onImport }: ImportQuest
                 onChange={handleFileChange}
                 className="flex-1"
               />
-              <Button 
-                onClick={handleUpload} 
+              <Button
+                onClick={handleUpload}
                 disabled={!selectedFile || !selectedSkill}
                 className="bg-gradient-primary hover:bg-primary-hover"
               >

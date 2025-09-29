@@ -1,7 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,6 +19,7 @@ import QuizSchedulesTab from "@/components/quiz/QuizSchedulesTab";
 import { toast } from "sonner";
 import { ArrowLeft, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getQuizApi, updateQuizApi, getSubCategoriesApi } from "@/lib/utils";
 
 export default function EditQuiz() {
   const navigate = useNavigate();
@@ -20,68 +28,52 @@ export default function EditQuiz() {
   const [quizData, setQuizData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  // Mock data
-  const categories = [
-    { id: "1", name: "Mathematics / Numerical Reasoning" },
-    { id: "2", name: "English / Verbal Reasoning" },
-    { id: "3", name: "Science / General Knowledge" },
-  ];
-
-  const quizTypes = [
-    { id: "1", name: "Practice Quiz" },
-    { id: "2", name: "Mock Quiz" },
-    { id: "3", name: "Live Quiz" },
-    { id: "4", name: "Assessment" },
-  ];
-
-  // Mock quiz data
-  const mockQuizData = {
-    id: id,
-    title: "Basic Math Quiz",
-    details: {
-      title: "Basic Math Quiz",
-      sub_category_id: "1",
-      quiz_type: "1",
-      is_paid: false,
-      price: 0,
-      can_redeem: false,
-      points_required: 0,
-      description: "A basic mathematics quiz covering fundamental arithmetic operations.",
-      is_private: false,
-      is_active: true,
-    },
-    settings: {
-      auto_duration: true,
-      auto_grading: true,
-      negative_marking: false,
-      overall_pass_percentage: 60,
-      enable_section_cutoff: false,
-      shuffle_questions: true,
-      restrict_attempts: true,
-      disable_finish_button: false,
-      enable_question_list_view: true,
-      hide_solutions: false,
-      show_leaderboard: true,
-    },
-    questions: [],
-    schedules: [
-      {
-        id: "1",
-        code: "qsb_6ENKIQLHKZ1",
-        type: "Flexible",
-        starts_at: "Sat, Sep 27, 2025 12:00 AM",
-        ends_at: "Wed, Nov 26, 2025 12:10 AM",
-        status: "Active"
-      }
-    ]
-  };
+  const [categories, setCategories] = useState<
+    Array<{ id: string; name: string }>
+  >([]);
+  const [quizTypes, setQuizTypes] = useState<
+    Array<{ id: string; name: string }>
+  >([]);
+  useEffect(() => {
+    (async () => {
+      try {
+        const cats = await getSubCategoriesApi();
+        setCategories(
+          cats.data.map((c) => ({ id: String(c.id), name: c.name }))
+        );
+        const types = await (await import("@/lib/utils")).getExamTypesApi();
+        setQuizTypes(
+          types.data.map((t) => ({ id: String(t.id), name: t.name }))
+        );
+      } catch {}
+    })();
+  }, []);
 
   useEffect(() => {
     const fetchQuiz = async () => {
       try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setQuizData(mockQuizData);
+        if (!id) return;
+        const res = await getQuizApi(Number(id));
+        const q = res.data;
+        setQuizData({
+          id: q.id,
+          title: q.title,
+          details: {
+            title: q.title,
+            sub_category_id: String(q.sub_category_id),
+            quiz_type: String(q.quiz_type_id),
+            is_paid: !!q.is_paid,
+            price: q.price || 0,
+            can_redeem: !!q.can_redeem,
+            points_required: q.points_required || 0,
+            description: q.description || "",
+            is_private: !!q.is_private,
+            is_active: !!q.is_active,
+          },
+          settings: q.settings || null,
+          questions: [],
+          schedules: [],
+        });
       } catch (error) {
         toast.error("Failed to load quiz");
         navigate("/admin/quizzes");
@@ -96,8 +88,22 @@ export default function EditQuiz() {
   }, [id, navigate]);
 
   const handleDetailsSubmit = async (data: any) => {
+    if (!id) return;
+    const payload: any = {
+      title: data.title,
+      description: data.description || undefined,
+      sub_category_id: Number(data.sub_category_id),
+      quiz_type_id: Number(data.quiz_type),
+      is_paid: !!data.is_paid,
+      price: data.is_paid ? Number(data.price || 0) : 0,
+      can_redeem: !!data.can_redeem,
+      points_required: data.can_redeem ? Number(data.points_required || 0) : 0,
+      is_private: !!data.is_private,
+      is_active: !!data.is_active,
+    };
+    const res = await updateQuizApi(Number(id), payload);
     setQuizData((prev: any) => ({ ...prev, details: data, title: data.title }));
-    toast.success("Quiz details updated successfully!");
+    toast.success(res.message || "Quiz updated successfully!");
   };
 
   const handleSettingsSubmit = async (data: any) => {
@@ -162,41 +168,35 @@ export default function EditQuiz() {
           categories={categories}
           quizTypes={quizTypes}
         />
-      )
+      ),
     },
     {
       id: "settings",
       label: "Settings",
-      number: "2", 
+      number: "2",
       component: (
         <QuizSettingsTab
           quizData={quizData.settings}
           onSave={handleSettingsSubmit}
         />
-      )
+      ),
     },
     {
-      id: "questions", 
+      id: "questions",
       label: "Questions",
       number: "3",
       component: (
-        <QuizQuestionsTab
-          quizData={quizData}
-          onSave={handleQuestionsSubmit}
-        />
-      )
+        <QuizQuestionsTab quizData={quizData} onSave={handleQuestionsSubmit} />
+      ),
     },
     {
       id: "schedules",
-      label: "Schedules", 
+      label: "Schedules",
       number: "4",
       component: (
-        <QuizSchedulesTab
-          quizData={quizData}
-          onSave={handleSchedulesSubmit}
-        />
-      )
-    }
+        <QuizSchedulesTab quizData={quizData} onSave={handleSchedulesSubmit} />
+      ),
+    },
   ];
 
   return (
@@ -237,9 +237,7 @@ export default function EditQuiz() {
           </div>
           <div>
             <h1 className="text-3xl font-bold">Quiz Details</h1>
-            <div className="text-muted-foreground">
-              {quizData.title}
-            </div>
+            <div className="text-muted-foreground">{quizData.title}</div>
           </div>
         </div>
       </div>
@@ -248,16 +246,16 @@ export default function EditQuiz() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-4 mb-8 h-auto bg-muted/30 p-2 rounded-xl">
           {tabConfig.map((tab) => (
-            <TabsTrigger 
-              key={tab.id} 
+            <TabsTrigger
+              key={tab.id}
               value={tab.id}
               className="flex items-center space-x-3 px-6 py-4 rounded-lg transition-all duration-200 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg hover:bg-muted/50"
             >
               <div className="flex items-center space-x-3">
-                <div 
+                <div
                   className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${
-                    activeTab === tab.id 
-                      ? "bg-primary-foreground/20 text-primary-foreground" 
+                    activeTab === tab.id
+                      ? "bg-primary-foreground/20 text-primary-foreground"
                       : "bg-primary/10 text-primary"
                   }`}
                 >

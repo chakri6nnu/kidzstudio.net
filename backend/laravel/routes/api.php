@@ -33,6 +33,44 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
+    
+    // Exam API endpoints
+    Route::get('/exams', [\App\Http\Controllers\Api\ExamController::class, 'index']);
+    Route::post('/exams', [\App\Http\Controllers\Api\ExamController::class, 'store']);
+    Route::get('/exams/{exam}', [\App\Http\Controllers\Api\ExamController::class, 'show']);
+    Route::put('/exams/{exam}', [\App\Http\Controllers\Api\ExamController::class, 'update']);
+    Route::delete('/exams/{exam}', [\App\Http\Controllers\Api\ExamController::class, 'destroy']);
+
+    // Reference data
+    Route::get('/exam-types', [\App\Http\Controllers\Api\LookupController::class, 'examTypes']);
+    Route::get('/sub-categories', [\App\Http\Controllers\Api\LookupController::class, 'subCategories']);
+    Route::get('/question-types', [\App\Http\Controllers\Api\LookupController::class, 'questionTypes']);
+    Route::get('/questions', [\App\Http\Controllers\Api\LookupController::class, 'questions']);
+
+    // Admin dashboard
+    Route::get('/admin/dashboard', [\App\Http\Controllers\Api\AdminController::class, 'dashboard']);
+
+    // Exam sections and questions attach/remove
+    Route::get('/exams/{exam}/sections/{section}/questions', [\App\Http\Controllers\Api\ExamSectionQuestionController::class, 'index']);
+    Route::post('/exams/{exam}/sections/{section}/questions', [\App\Http\Controllers\Api\ExamSectionQuestionController::class, 'store']);
+    Route::delete('/exams/{exam}/sections/{section}/questions/{question}', [\App\Http\Controllers\Api\ExamSectionQuestionController::class, 'destroy']);
+
+    // Quiz API endpoints
+    Route::get('/quizzes', [\App\Http\Controllers\Api\QuizController::class, 'index']);
+    Route::post('/quizzes', [\App\Http\Controllers\Api\QuizController::class, 'store']);
+    Route::get('/quizzes/{quiz}', [\App\Http\Controllers\Api\QuizController::class, 'show']);
+    Route::put('/quizzes/{quiz}', [\App\Http\Controllers\Api\QuizController::class, 'update']);
+    Route::delete('/quizzes/{quiz}', [\App\Http\Controllers\Api\QuizController::class, 'destroy']);
+
+    // Quiz Types API endpoints
+    Route::get('/quiz-types', [\App\Http\Controllers\Api\QuizTypeController::class, 'index']);
+    Route::post('/quiz-types', [\App\Http\Controllers\Api\QuizTypeController::class, 'store']);
+    Route::get('/quiz-types/{quizType}', [\App\Http\Controllers\Api\QuizTypeController::class, 'show']);
+    Route::put('/quiz-types/{quizType}', [\App\Http\Controllers\Api\QuizTypeController::class, 'update']);
+    Route::delete('/quiz-types/{quizType}', [\App\Http\Controllers\Api\QuizTypeController::class, 'destroy']);
+
+    // Import questions
+    Route::post('/questions/import', [\App\Http\Controllers\Api\QuestionImportController::class, 'store']);
 });
 
 // CORS preflight handler (OPTIONS)

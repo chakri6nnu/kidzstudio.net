@@ -1,6 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getQuizzesApi, deleteQuizApi, type Quiz } from "@/lib/utils";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -41,73 +48,37 @@ export default function Quizzes() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [meta, setMeta] = useState<any>({});
 
-  const quizzes = [
-    {
-      id: 1,
-      title: "JavaScript Basics Quiz",
-      category: "Programming",
-      type: "Multiple Choice",
-      questions: 25,
-      duration: "30 mins",
-      participants: 124,
-      status: "Active",
-      created: "2024-01-15",
-      lastModified: "2024-01-20",
-      difficulty: "Intermediate",
-      passingScore: 70,
-    },
-    {
-      id: 2,
-      title: "React Components Test",
-      category: "Frontend",
-      type: "Mixed",
-      questions: 15,
-      duration: "20 mins",
-      participants: 89,
-      status: "Draft",
-      created: "2024-01-14",
-      lastModified: "2024-01-19",
-      difficulty: "Advanced",
-      passingScore: 75,
-    },
-    {
-      id: 3,
-      title: "Database Fundamentals",
-      category: "Backend",
-      type: "Multiple Choice",
-      questions: 30,
-      duration: "45 mins",
-      participants: 156,
-      status: "Completed",
-      created: "2024-01-10",
-      lastModified: "2024-01-18",
-      difficulty: "Beginner",
-      passingScore: 65,
-    },
-    {
-      id: 4,
-      title: "CSS Layout Quiz",
-      category: "Frontend",
-      type: "Practical",
-      questions: 12,
-      duration: "25 mins",
-      participants: 67,
-      status: "Active",
-      created: "2024-01-12",
-      lastModified: "2024-01-17",
-      difficulty: "Intermediate",
-      passingScore: 70,
-    },
-  ];
+  useEffect(() => {
+    loadQuizzes();
+  }, [searchTerm]);
 
-  const filteredQuizzes = quizzes.filter(quiz => {
-    const matchesSearch = quiz.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         quiz.category.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === "all" || quiz.category === selectedCategory;
-    const matchesStatus = selectedStatus === "all" || quiz.status === selectedStatus;
-    
-    return matchesSearch && matchesCategory && matchesStatus;
+  const loadQuizzes = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const resp = await getQuizzesApi({ search: searchTerm || undefined });
+      setQuizzes(resp.data);
+      setMeta(resp.meta);
+    } catch (e: any) {
+      setError(e?.message || "Failed to load quizzes");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredQuizzes = quizzes.filter((quiz) => {
+    const matchesCategory =
+      selectedCategory === "all" ||
+      quiz.sub_category?.name === selectedCategory;
+    const matchesStatus =
+      selectedStatus === "all" ||
+      (quiz.is_active ? "Active" : "Draft") === selectedStatus;
+    return matchesCategory && matchesStatus;
   });
 
   const handleFilterChange = (filterId: string, value: string) => {
@@ -130,14 +101,17 @@ export default function Quizzes() {
   const filters = [
     {
       id: "category",
-      label: "Category", 
+      label: "Category",
       value: selectedCategory,
       options: [
         { value: "all", label: "All Categories" },
-        { value: "Programming", label: "Programming" },
-        { value: "Frontend", label: "Frontend" },
-        { value: "Backend", label: "Backend" }
-      ]
+        ...Array.from(
+          new Set(quizzes.map((q) => q.sub_category?.name).filter(Boolean))
+        ).map((name) => ({
+          value: String(name),
+          label: String(name),
+        })),
+      ],
     },
     {
       id: "status",
@@ -147,9 +121,8 @@ export default function Quizzes() {
         { value: "all", label: "All Status" },
         { value: "Active", label: "Active" },
         { value: "Draft", label: "Draft" },
-        { value: "Completed", label: "Completed" }
-      ]
-    }
+      ],
+    },
   ];
 
   const getStatusColor = (status: string) => {
@@ -190,7 +163,7 @@ export default function Quizzes() {
             Create, manage and monitor your quizzes
           </p>
         </div>
-        <Button 
+        <Button
           onClick={() => navigate("/admin/quizzes/create")}
           className="bg-gradient-primary hover:bg-primary-hover shadow-primary"
         >
@@ -214,7 +187,9 @@ export default function Quizzes() {
 
         <Card className="bg-gradient-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Quizzes</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Active Quizzes
+            </CardTitle>
             <Play className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
@@ -225,7 +200,9 @@ export default function Quizzes() {
 
         <Card className="bg-gradient-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Participants</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Participants
+            </CardTitle>
             <Users className="h-4 w-4 text-accent" />
           </CardHeader>
           <CardContent>
@@ -236,7 +213,9 @@ export default function Quizzes() {
 
         <Card className="bg-gradient-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg. Completion</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Avg. Completion
+            </CardTitle>
             <Clock className="h-4 w-4 text-warning" />
           </CardHeader>
           <CardContent>
@@ -276,94 +255,139 @@ export default function Quizzes() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredQuizzes.map((quiz) => (
-                  <TableRow key={quiz.id} className="hover:bg-muted/50">
-                    <TableCell className="font-medium">
-                      <div>
-                        <div className="font-semibold">{quiz.title}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {quiz.type} • {quiz.passingScore}% pass rate
-                        </div>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center py-8">
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                        <span className="ml-2">Loading quizzes...</span>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{quiz.category}</Badge>
-                    </TableCell>
-                    <TableCell>{quiz.questions}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center">
-                        <Clock className="mr-1 h-3 w-3" />
-                        {quiz.duration}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center">
-                        <Users className="mr-1 h-3 w-3" />
-                        {quiz.participants}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant="outline" 
-                        className={getDifficultyColor(quiz.difficulty)}
-                      >
-                        {quiz.difficulty}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant="secondary" 
-                        className={getStatusColor(quiz.status)}
-                      >
-                        {quiz.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <Calendar className="mr-1 h-3 w-3" />
-                        {quiz.created}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => navigate(`/admin/quizzes/${quiz.id}/edit`)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit Quiz
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Copy className="mr-2 h-4 w-4" />
-                            Duplicate
-                          </DropdownMenuItem>
-                          {quiz.status === "Active" ? (
-                            <DropdownMenuItem>
-                              <Pause className="mr-2 h-4 w-4" />
-                              Pause Quiz
-                            </DropdownMenuItem>
-                          ) : (
-                            <DropdownMenuItem>
-                              <Play className="mr-2 h-4 w-4" />
-                              Activate Quiz
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem className="text-destructive">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : error ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={9}
+                      className="text-center py-8 text-destructive"
+                    >
+                      {error}
+                    </TableCell>
+                  </TableRow>
+                ) : filteredQuizzes.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={9}
+                      className="text-center py-8 text-muted-foreground"
+                    >
+                      No quizzes found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredQuizzes.map((quiz) => (
+                    <TableRow key={quiz.id} className="hover:bg-muted/50">
+                      <TableCell className="font-medium">
+                        <div>
+                          <div className="font-semibold">{quiz.title}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {quiz.quiz_type?.name || "-"}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {quiz.sub_category?.name || "N/A"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {/* questions count if available */}-
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center">
+                          <Clock className="mr-1 h-3 w-3" />
+                          {quiz.total_duration || 0} mins
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center">
+                          <Users className="mr-1 h-3 w-3" />-
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className="bg-muted text-muted-foreground"
+                        >
+                          -
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="secondary"
+                          className={getStatusColor(
+                            quiz.is_active ? "Active" : "Draft"
+                          )}
+                        >
+                          {quiz.is_active ? "Active" : "Draft"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <Calendar className="mr-1 h-3 w-3" />
+                          {new Date(quiz.created_at).toLocaleDateString()}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                navigate(`/admin/quizzes/${quiz.id}/edit`)
+                              }
+                            >
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit Quiz
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Copy className="mr-2 h-4 w-4" />
+                              Duplicate
+                            </DropdownMenuItem>
+                            {(quiz.is_active ? "Active" : "Draft") ===
+                            "Active" ? (
+                              <DropdownMenuItem>
+                                <Pause className="mr-2 h-4 w-4" />
+                                Pause Quiz
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem>
+                                <Play className="mr-2 h-4 w-4" />
+                                Activate Quiz
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={async () => {
+                                await deleteQuizApi(quiz.id);
+                                await loadQuizzes();
+                              }}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>

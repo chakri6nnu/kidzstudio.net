@@ -1,7 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,6 +20,12 @@ import ExamSchedulesTab from "@/components/exam/ExamSchedulesTab";
 import { toast } from "sonner";
 import { ArrowLeft, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  getExamApi,
+  updateExamApi,
+  getExamTypesApi,
+  getSubCategoriesApi,
+} from "@/lib/utils";
 
 export default function EditExam() {
   const navigate = useNavigate();
@@ -21,80 +34,57 @@ export default function EditExam() {
   const [examData, setExamData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  // Mock data
-  const categories = [
-    { id: "1", name: "Mathematics / Numerical Reasoning (UK Grammar School 11+ Exam Preparation)" },
-    { id: "2", name: "English / Verbal Reasoning" },
-    { id: "3", name: "Science / General Knowledge" },
-  ];
-
-  const examTypes = [
-    { id: "1", name: "Daily Challenge Question" },
-    { id: "2", name: "Practice Test" },
-    { id: "3", name: "Mock Exam" },
-    { id: "4", name: "Assessment" },
-  ];
-
-  // Mock exam data
-  const mockExamData = {
-    id: id,
-    title: "#1 Addition, subtraction, multiplication, division / Number & Arithmetic",
-    details: {
-      title: "#1 Addition, subtraction, multiplication, division / Number & Arithmetic",
-      sub_category_id: "1",
-      exam_type: "1",
-      is_paid: true,
-      price: 10,
-      can_redeem: false,
-      points_required: 0,
-      description: "This exam covers basic arithmetic operations including addition, subtraction, multiplication, and division.",
-      is_private: true,
-      is_active: true,
-    },
-    settings: {
-      auto_duration: true,
-      auto_grading: true,
-      negative_marking: false,
-      overall_pass_percentage: 60,
-      enable_section_cutoff: false,
-      shuffle_questions: true,
-      restrict_attempts: true,
-      disable_section_navigation: true,
-      disable_finish_button: true,
-      enable_question_list_view: true,
-      hide_solutions: true,
-      show_leaderboard: true,
-    },
-    sections: [
-      {
-        id: "1",
-        display_name: "Main",
-        section: "Number & Arithmetic ← Mathematics / Numerical Reasoning",
-        section_order: 1,
-        total_questions: 20,
-        total_duration: 20,
-        total_marks: 20
-      }
-    ],
-    questions: [],
-    schedules: [
-      {
-        id: "1",
-        code: "esd_6ENKIQLHKZ1",
-        type: "Flexible",
-        starts_at: "Sat, Sep 27, 2025 12:00 AM",
-        ends_at: "Wed, Nov 26, 2025 12:10 AM",
-        status: "Active"
-      }
-    ]
-  };
+  // Lookups loaded from API
+  const [categories, setCategories] = useState<
+    Array<{ id: string; name: string }>
+  >([]);
+  const [examTypes, setExamTypes] = useState<
+    Array<{ id: string; name: string }>
+  >([]);
+  useEffect(() => {
+    const loadLookups = async () => {
+      try {
+        const [types, cats] = await Promise.all([
+          getExamTypesApi(),
+          getSubCategoriesApi(),
+        ]);
+        setExamTypes(
+          types.data.map((t) => ({ id: String(t.id), name: t.name }))
+        );
+        setCategories(
+          cats.data.map((c) => ({ id: String(c.id), name: c.name }))
+        );
+      } catch {}
+    };
+    loadLookups();
+  }, []);
 
   useEffect(() => {
     const fetchExam = async () => {
       try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setExamData(mockExamData);
+        if (!id) return;
+        const res = await getExamApi(Number(id));
+        const e = res.data;
+        setExamData({
+          id: e.id,
+          title: e.title,
+          details: {
+            title: e.title,
+            sub_category_id: String(e.sub_category_id),
+            exam_type: String(e.exam_type_id),
+            is_paid: !!e.is_paid,
+            price: e.price || 0,
+            can_redeem: !!e.can_redeem,
+            points_required: e.points_required || 0,
+            description: e.description || "",
+            is_private: !!e.is_private,
+            is_active: !!e.is_active,
+          },
+          settings: e.settings || null,
+          sections: e.exam_sections || [],
+          questions: [],
+          schedules: [],
+        });
       } catch (error) {
         toast.error("Failed to load exam");
         navigate("/admin/exams");
@@ -109,8 +99,22 @@ export default function EditExam() {
   }, [id, navigate]);
 
   const handleDetailsSubmit = async (data: any) => {
+    if (!id) return;
+    const payload: any = {
+      title: data.title,
+      description: data.description || undefined,
+      sub_category_id: Number(data.sub_category_id),
+      exam_type_id: Number(data.exam_type),
+      is_paid: !!data.is_paid,
+      price: data.is_paid ? Number(data.price || 0) : 0,
+      can_redeem: !!data.can_redeem,
+      points_required: data.can_redeem ? Number(data.points_required || 0) : 0,
+      is_private: !!data.is_private,
+      is_active: !!data.is_active,
+    };
+    const res = await updateExamApi(Number(id), payload);
     setExamData((prev: any) => ({ ...prev, details: data, title: data.title }));
-    toast.success("Exam details updated successfully!");
+    toast.success(res.message || "Exam updated successfully!");
   };
 
   const handleSettingsSubmit = async (data: any) => {
@@ -161,9 +165,7 @@ export default function EditExam() {
         <p className="text-muted-foreground mb-4">
           The exam you're looking for doesn't exist or has been deleted.
         </p>
-        <Button onClick={() => navigate("/admin/exams")}>
-          Back to Exams
-        </Button>
+        <Button onClick={() => navigate("/admin/exams")}>Back to Exams</Button>
       </div>
     );
   }
@@ -180,52 +182,43 @@ export default function EditExam() {
           categories={categories}
           examTypes={examTypes}
         />
-      )
+      ),
     },
     {
       id: "settings",
       label: "Settings",
-      number: "2", 
+      number: "2",
       component: (
         <ExamSettingsTab
           examData={examData.settings}
           onSave={handleSettingsSubmit}
         />
-      )
+      ),
     },
     {
       id: "sections",
       label: "Sections",
       number: "3",
       component: (
-        <ExamSectionsTab
-          examData={examData}
-          onSave={handleSectionsSubmit}
-        />
-      )
+        <ExamSectionsTab examData={examData} onSave={handleSectionsSubmit} />
+      ),
     },
     {
-      id: "questions", 
+      id: "questions",
       label: "Questions",
       number: "4",
       component: (
-        <ExamQuestionsTab
-          examData={examData}
-          onSave={handleQuestionsSubmit}
-        />
-      )
+        <ExamQuestionsTab examData={examData} onSave={handleQuestionsSubmit} />
+      ),
     },
     {
       id: "schedules",
-      label: "Schedules", 
+      label: "Schedules",
       number: "5",
       component: (
-        <ExamSchedulesTab
-          examData={examData}
-          onSave={handleSchedulesSubmit}
-        />
-      )
-    }
+        <ExamSchedulesTab examData={examData} onSave={handleSchedulesSubmit} />
+      ),
+    },
   ];
 
   return (
@@ -265,9 +258,7 @@ export default function EditExam() {
           </div>
           <div>
             <h1 className="text-3xl font-bold">Exam Details</h1>
-            <div className="text-muted-foreground">
-              {examData.title}
-            </div>
+            <div className="text-muted-foreground">{examData.title}</div>
           </div>
         </div>
       </div>
@@ -276,16 +267,16 @@ export default function EditExam() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-5 mb-8 h-auto bg-muted/30 p-2 rounded-xl">
           {tabConfig.map((tab) => (
-            <TabsTrigger 
-              key={tab.id} 
+            <TabsTrigger
+              key={tab.id}
               value={tab.id}
               className="flex items-center space-x-3 px-6 py-4 rounded-lg transition-all duration-200 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg hover:bg-muted/50"
             >
               <div className="flex items-center space-x-3">
-                <div 
+                <div
                   className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${
-                    activeTab === tab.id 
-                      ? "bg-primary-foreground/20 text-primary-foreground" 
+                    activeTab === tab.id
+                      ? "bg-primary-foreground/20 text-primary-foreground"
                       : "bg-primary/10 text-primary"
                   }`}
                 >

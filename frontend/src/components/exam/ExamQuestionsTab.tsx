@@ -1,29 +1,31 @@
-import React, { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FiltersPanel } from "@/components/ui/filters-panel";
-import { Filter, Search, RotateCcw, Eye, Trash2, Plus, X } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Filter, Plus } from "lucide-react";
+import { useEffect } from "react";
+import {
+  getQuestionsApi,
+  attachSectionQuestions,
+  removeSectionQuestion,
+} from "@/lib/utils";
 import { toast } from "sonner";
-import { SideDrawer } from "@/components/ui/side-drawer";
-
-interface Question {
-  id: string;
-  text: string;
-  type: string;
-  difficulty: string;
-  marks: number;
-  attachment: string | null;
-}
-
-interface Section {
-  id: string;
-  name: string;
-  questionCount: number;
-}
 
 interface ExamQuestionsTabProps {
   examId?: string;
@@ -31,380 +33,367 @@ interface ExamQuestionsTabProps {
   onSave?: (data: any) => Promise<void>;
 }
 
-const mockSections: Section[] = [
-  { id: "1", name: "Mathematics", questionCount: 15 },
-  { id: "2", name: "English", questionCount: 12 },
-  { id: "3", name: "Science", questionCount: 18 }
-];
+export default function ExamQuestionsTab({
+  examId,
+  examData,
+  onSave,
+}: ExamQuestionsTabProps) {
+  const [filters, setFilters] = useState({
+    code: "",
+    type: "",
+    section: "",
+    skill: "",
+    topic: "",
+    byTag: "",
+    difficulty: [] as string[],
+  });
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-const mockQuestions: Question[] = [
-  {
-    id: "q1",
-    text: "What is 2 + 2?",
-    type: "Multiple Choice",
-    difficulty: "Easy",
-    marks: 5,
-    attachment: null
-  },
-  {
-    id: "q2", 
-    text: "Explain photosynthesis",
-    type: "Essay",
-    difficulty: "Medium",
-    marks: 10,
-    attachment: null
-  },
-  {
-    id: "q3",
-    text: "Calculate the derivative of x²",
-    type: "Short Answer",
-    difficulty: "Hard", 
-    marks: 15,
-    attachment: null
-  }
-];
-
-export default function ExamQuestionsTab({ examId, examData, onSave }: ExamQuestionsTabProps) {
-  const [sections] = useState<Section[]>(mockSections);
-  const [currentSection, setCurrentSection] = useState<Section | null>(sections[0]);
-  const [questions, setQuestions] = useState<Question[]>(mockQuestions);
-  const [availableQuestions] = useState<Question[]>(mockQuestions);
-  const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState("all");
-  const [filterDifficulty, setFilterDifficulty] = useState("all");
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [drawerMode, setDrawerMode] = useState<"add" | "addAll">("add");
-
-  const filters = [
-    {
-      id: "type",
-      label: "Type",
-      value: filterType,
-      options: [
-        { value: "all", label: "All Types" },
-        { value: "Multiple Choice", label: "Multiple Choice" },
-        { value: "Essay", label: "Essay" },
-        { value: "Short Answer", label: "Short Answer" }
-      ]
-    },
-    {
-      id: "difficulty", 
-      label: "Difficulty",
-      value: filterDifficulty,
-      options: [
-        { value: "all", label: "All Difficulties" },
-        { value: "Easy", label: "Easy" },
-        { value: "Medium", label: "Medium" },
-        { value: "Hard", label: "Hard" }
-      ]
+  const load = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const { data } = await getQuestionsApi(filters);
+      setQuestions(data);
+    } catch (e: any) {
+      setError(e?.message || "Failed to load questions");
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    filters.code,
+    filters.type,
+    filters.section,
+    filters.skill,
+    filters.topic,
+    filters.byTag,
+    JSON.stringify(filters.difficulty),
+  ]);
+
+  const questionTypes = [
+    { id: "mcsa", label: "Multiple Choice Single Answer" },
+    { id: "mcma", label: "Multiple Choice Multiple Answers" },
+    { id: "tf", label: "True or False" },
+    { id: "sa", label: "Short Answer" },
+    { id: "mtf", label: "Match the Following" },
+    { id: "os", label: "Ordering/Sequence" },
+    { id: "fitb", label: "Fill in the Blanks" },
   ];
 
-  const filteredQuestions = questions.filter((question) => {
-    const matchesSearch = question.text.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = filterType === "all" || question.type === filterType;
-    const matchesDifficulty = filterDifficulty === "all" || question.difficulty === filterDifficulty;
-    
-    return matchesSearch && matchesType && matchesDifficulty;
-  });
+  const difficultyLevels = [
+    { id: "very-easy", label: "Very Easy" },
+    { id: "easy", label: "Easy" },
+    { id: "medium", label: "Medium" },
+    { id: "hard", label: "Hard" },
+    { id: "very-hard", label: "Very Hard" },
+  ];
 
-  const handleFilterChange = (filterId: string, value: string) => {
-    switch (filterId) {
-      case "type":
-        setFilterType(value);
-        break;
-      case "difficulty":
-        setFilterDifficulty(value);
-        break;
+  const handleDifficultyChange = (difficultyId: string, checked: boolean) => {
+    setFilters((prev) => ({
+      ...prev,
+      difficulty: checked
+        ? [...prev.difficulty, difficultyId]
+        : prev.difficulty.filter((id) => id !== difficultyId),
+    }));
+  };
+
+  const handleSave = () => {
+    if (onSave) {
+      onSave({ filters, selectedQuestions: [] });
     }
   };
 
-  const handleClearFilters = () => {
-    setSearchTerm("");
-    setFilterType("all");
-    setFilterDifficulty("all");
+  const getActiveSectionId = (): number | null => {
+    const first = examData?.sections?.[0];
+    if (!first) return null;
+    // sections may have id as string
+    return Number(first.id || first.section_id || 0) || null;
   };
 
-  const handleAddQuestions = () => {
-    setDrawerMode("add");
-    setIsDrawerOpen(true);
-  };
-
-  const handleAddAllQuestions = () => {
-    setDrawerMode("addAll");
-    setIsDrawerOpen(true);
-  };
-
-  const handleQuestionSelect = (questionId: string, checked: boolean) => {
-    setSelectedQuestions(prev => 
-      checked 
-        ? [...prev, questionId]
-        : prev.filter(id => id !== questionId)
-    );
-  };
-
-  const handleAddSelectedQuestions = () => {
-    if (drawerMode === "add" && selectedQuestions.length > 0) {
-      toast.success(`Added ${selectedQuestions.length} questions to the exam`);
-      setSelectedQuestions([]);
-    } else if (drawerMode === "addAll") {
-      toast.success(`Added all ${availableQuestions.length} questions to the exam`);
+  const handleAddQuestion = async (questionId: number) => {
+    if (!examId) {
+      toast.error("Create and save exam first");
+      return;
     }
-    setIsDrawerOpen(false);
+    const sectionId = getActiveSectionId();
+    if (!sectionId) {
+      toast.error("Add at least one section first");
+      return;
+    }
+    try {
+      await attachSectionQuestions(Number(examId), sectionId, [questionId]);
+      toast.success("Question added to section");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to add question");
+    }
   };
 
-  const handleRemoveQuestion = (questionId: string) => {
-    setQuestions(prev => prev.filter(q => q.id !== questionId));
-    toast.success("Question removed from exam");
+  const handleRemoveQuestion = async (questionId: number) => {
+    if (!examId) return;
+    const sectionId = getActiveSectionId();
+    if (!sectionId) return;
+    try {
+      await removeSectionQuestion(Number(examId), sectionId, questionId);
+      toast.success("Question removed from section");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to remove question");
+    }
   };
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Questions</CardTitle>
-            <Trash2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{questions.length}</div>
-            <p className="text-xs text-muted-foreground">Across all sections</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Marks</CardTitle>
-            <Plus className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {questions.reduce((sum, q) => sum + q.marks, 0)}
-            </div>
-            <p className="text-xs text-muted-foreground">Total exam marks</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sections</CardTitle>
-            <Filter className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{sections.length}</div>
-            <p className="text-xs text-muted-foreground">Exam sections</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Available</CardTitle>
-            <Eye className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{availableQuestions.length}</div>
-            <p className="text-xs text-muted-foreground">Questions to add</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Sections Overview */}
       <Card>
         <CardHeader>
-          <CardTitle>Exam Sections</CardTitle>
+          <CardTitle>Exam Questions</CardTitle>
           <CardDescription>
-            Manage questions by section. Click on a section to view and edit its questions.
+            Select and filter questions for this exam
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            {sections.map((section) => (
-              <div 
-                key={section.id} 
-                className={`flex items-center justify-between p-3 bg-background rounded border cursor-pointer hover:bg-muted/50 ${
-                  currentSection?.id === section.id ? 'border-primary bg-primary/5' : ''
-                }`}
-                onClick={() => setCurrentSection(section)}
-              >
-                <div>
-                  <div className="font-medium">{section.name}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {section.questionCount} questions
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Filters Panel */}
+            <div className="lg:col-span-1 space-y-6">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Filter className="h-4 w-4" />
+                Filters
+              </div>
+
+              {/* Code Filter */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Code</Label>
+                <Input
+                  placeholder="Enter Code"
+                  value={filters.code}
+                  onChange={(e) =>
+                    setFilters((prev) => ({ ...prev, code: e.target.value }))
+                  }
+                />
+              </div>
+
+              {/* Question Type Filter */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Type</Label>
+                <RadioGroup
+                  value={filters.type}
+                  onValueChange={(value) =>
+                    setFilters((prev) => ({ ...prev, type: value }))
+                  }
+                >
+                  {questionTypes.map((type) => (
+                    <div key={type.id} className="flex items-center space-x-2">
+                      <RadioGroupItem value={type.id} id={type.id} />
+                      <Label
+                        htmlFor={type.id}
+                        className="text-sm text-yellow-500 cursor-pointer font-normal"
+                      >
+                        {type.label}
+                      </Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              </div>
+
+              {/* Section Filter */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Section</Label>
+                <Input
+                  placeholder="Enter Section"
+                  value={filters.section}
+                  onChange={(e) =>
+                    setFilters((prev) => ({ ...prev, section: e.target.value }))
+                  }
+                />
+              </div>
+
+              {/* Skill Filter */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Skill</Label>
+                <Input
+                  placeholder="Enter Skill"
+                  value={filters.skill}
+                  onChange={(e) =>
+                    setFilters((prev) => ({ ...prev, skill: e.target.value }))
+                  }
+                />
+              </div>
+
+              {/* Topic Filter */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Topic</Label>
+                <Input
+                  placeholder="Enter Topic"
+                  value={filters.topic}
+                  onChange={(e) =>
+                    setFilters((prev) => ({ ...prev, topic: e.target.value }))
+                  }
+                />
+              </div>
+
+              {/* By Tag Filter */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">By Tag</Label>
+                <Select
+                  value={filters.byTag}
+                  onValueChange={(value) =>
+                    setFilters((prev) => ({ ...prev, byTag: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select tag" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="math">Mathematics</SelectItem>
+                    <SelectItem value="science">Science</SelectItem>
+                    <SelectItem value="english">English</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Difficulty Level Filter */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Difficulty Level</Label>
+                <div className="space-y-2">
+                  {difficultyLevels.map((level) => (
+                    <div key={level.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={level.id}
+                        checked={filters.difficulty.includes(level.id)}
+                        onCheckedChange={(checked) =>
+                          handleDifficultyChange(level.id, checked as boolean)
+                        }
+                      />
+                      <Label
+                        htmlFor={level.id}
+                        className="text-sm cursor-pointer font-normal"
+                      >
+                        {level.label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Questions Display Panel */}
+            <div className="lg:col-span-3 space-y-4">
+              {/* Current Selection Info */}
+              <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium text-green-800 dark:text-green-400">
+                    Currently Viewing Questions
+                  </h4>
+                  <div className="flex gap-2 items-center">
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="text-green-600 dark:text-green-400 p-0 h-auto hover:no-underline"
+                      onClick={load}
+                    >
+                      Refresh
+                    </Button>
+                    <span className="text-green-600 dark:text-green-400">
+                      |
+                    </span>
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="text-green-600 dark:text-green-400 p-0 h-auto hover:no-underline"
+                    >
+                      Add Questions
+                    </Button>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setCurrentSection(section);
-                      handleAddQuestions();
-                    }}
-                  >
+                <p className="text-sm text-green-700 dark:text-green-400">
+                  {loading
+                    ? "Loading..."
+                    : `${questions.length} items found for the selected criteria.`}
+                </p>
+              </div>
+
+              {/* No Questions Message */}
+              {error ? (
+                <div className="text-center py-12 text-destructive">
+                  {error}
+                </div>
+              ) : questions.length === 0 && !loading ? (
+                <div className="text-center py-12">
+                  <div className="text-muted-foreground text-lg font-medium">
+                    No Questions
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    No questions match your current filter criteria. Try
+                    adjusting your filters or add new questions.
+                  </p>
+                  <Button className="mt-4" variant="outline">
+                    <Plus className="h-4 w-4 mr-2" />
                     Add Questions
                   </Button>
-                  <Button variant="ghost" size="sm">
-                    View
-                  </Button>
                 </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Current Section Questions */}
-      {currentSection && (
-        <Card className="bg-success/5 border-success/20">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-success">
-                Currently Viewing {currentSection.name} Questions
-              </h3>
-              <div className="flex space-x-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleAddQuestions}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Questions
-                </Button>
-                
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="bg-success/10 text-success border-success hover:bg-success hover:text-white"
-                  onClick={handleAddAllQuestions}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add All Questions
-                </Button>
-              </div>
-            </div>
-            
-            {/* Filters */}
-            <div className="mb-4">
-              <FiltersPanel
-                searchTerm={searchTerm}
-                onSearchChange={setSearchTerm}
-                filters={filters}
-                onFilterChange={handleFilterChange}
-                onClearFilters={handleClearFilters}
-                searchPlaceholder="Search questions..."
-              />
-            </div>
-            
-            <div className="text-sm text-muted-foreground mb-4">
-              {filteredQuestions.length} questions found for the selected criteria.
-            </div>
-
-            <div className="space-y-4">
-              {filteredQuestions.map((question) => (
-                <Card key={question.id} className="border">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 space-y-2">
-                        <Badge variant="secondary" className="text-xs">
-                          {question.type}
-                        </Badge>
-                        <div className="font-medium">{question.text}</div>
-                        <div className="flex items-center space-x-4 text-xs text-muted-foreground">
-                          <span>Difficulty: <span className="text-foreground">{question.difficulty}</span></span>
-                          <span>Marks: <span className="text-foreground">{question.marks} XP</span></span>
-                          <span>Attachment: <span className="text-foreground">{question.attachment || "No Attachment"}</span></span>
+              ) : (
+                <div className="space-y-3">
+                  {questions.map((q) => (
+                    <Card key={q.id} className="border">
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 space-y-2">
+                            <div className="text-xs text-muted-foreground">
+                              {q.code}
+                            </div>
+                            <div className="font-medium">
+                              {q.text || "Question"}
+                            </div>
+                            <div className="text-xs text-muted-foreground flex gap-4 flex-wrap">
+                              <span>
+                                Type:{" "}
+                                <span className="text-foreground">
+                                  {q.question_type?.name}
+                                </span>
+                              </span>
+                              <span>
+                                Difficulty:{" "}
+                                <span className="text-foreground">
+                                  {q.difficulty_level?.name}
+                                </span>
+                              </span>
+                              <span>
+                                Topic:{" "}
+                                <span className="text-foreground">
+                                  {q.topic?.name || "-"}
+                                </span>
+                              </span>
+                              <span>
+                                Skill:{" "}
+                                <span className="text-foreground">
+                                  {q.skill?.name || "-"}
+                                </span>
+                              </span>
+                            </div>
+                          </div>
+                          <Button
+                            className="shrink-0"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleAddQuestion(Number(q.id))}
+                          >
+                            Add
+                          </Button>
                         </div>
-                      </div>
-                      <Button 
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleRemoveQuestion(question.id)}
-                      >
-                        REMOVE
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-              
-              {filteredQuestions.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  No questions found matching the current criteria.
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               )}
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Add Questions Drawer */}
-      <SideDrawer 
-        open={isDrawerOpen} 
-        onOpenChange={setIsDrawerOpen}
-        title={drawerMode === "add" ? "Add Questions" : "Add All Questions"}
-        description={drawerMode === "add" 
-          ? "Select questions to add to this exam section" 
-          : "Add all available questions to this exam section"
-        }
-      >
-        <div className="space-y-4">
-          {drawerMode === "addAll" && (
-            <div className="p-4 bg-muted/50 rounded-lg">
-              <p className="text-sm text-muted-foreground">
-                This will add all {availableQuestions.length} available questions to the exam section.
-              </p>
-            </div>
-          )}
-          
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {availableQuestions.map((question) => (
-              <Card key={question.id} className="border">
-                <CardContent className="p-4">
-                  <div className="flex items-start space-x-3">
-                    {drawerMode === "add" && (
-                      <Checkbox
-                        checked={selectedQuestions.includes(question.id)}
-                        onCheckedChange={(checked) => 
-                          handleQuestionSelect(question.id, checked as boolean)
-                        }
-                      />
-                    )}
-                    <div className="flex-1 space-y-2">
-                      <Badge variant="secondary" className="text-xs">
-                        {question.type}
-                      </Badge>
-                      <div className="font-medium text-sm">{question.text}</div>
-                      <div className="flex items-center space-x-4 text-xs text-muted-foreground">
-                        <span>Difficulty: <span className="text-foreground">{question.difficulty}</span></span>
-                        <span>Marks: <span className="text-foreground">{question.marks} XP</span></span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
           </div>
-          
-          <div className="flex flex-col space-y-2 pt-4 border-t">
-            <Button onClick={handleAddSelectedQuestions} className="w-full">
-              {drawerMode === "add" 
-                ? `Add Selected Questions (${selectedQuestions.length})` 
-                : `Add All Questions (${availableQuestions.length})`
-              }
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => setIsDrawerOpen(false)}
-            >
-              Cancel
-            </Button>
-          </div>
-        </div>
-      </SideDrawer>
+        </CardContent>
+      </Card>
     </div>
   );
 }
