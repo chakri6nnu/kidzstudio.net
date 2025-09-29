@@ -67,7 +67,8 @@ export default function Subscriptions() {
     per_page: 10,
     total: 0,
   });
-  const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
+  const [selectedSubscription, setSelectedSubscription] =
+    useState<Subscription | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -90,7 +91,9 @@ export default function Subscriptions() {
         setSubscriptions((response as ApiResponse).data);
         setMeta((response as ApiResponse).meta);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load subscriptions");
+        setError(
+          err instanceof Error ? err.message : "Failed to load subscriptions"
+        );
         toast.error("Failed to load subscriptions");
       } finally {
         setLoading(false);
@@ -141,7 +144,10 @@ export default function Subscriptions() {
     }
   };
 
-  const handleUpdateSubscription = async (id: number, formData: Partial<Subscription>) => {
+  const handleUpdateSubscription = async (
+    id: number,
+    formData: Partial<Subscription>
+  ) => {
     try {
       await updateSubscriptionApi(id, formData);
       toast.success("Subscription updated successfully");
@@ -257,25 +263,39 @@ export default function Subscriptions() {
                 </TableHeader>
                 <TableBody>
                   {subscriptions.map((subscription) => (
-                    <TableRow key={subscription.id} className="hover:bg-muted/50">
+                    <TableRow
+                      key={subscription.id}
+                      className="hover:bg-muted/50"
+                    >
                       <TableCell>
-                        <Badge variant="secondary" className="bg-primary text-primary-foreground">
+                        <Badge
+                          variant="secondary"
+                          className="bg-primary text-primary-foreground"
+                        >
                           #{subscription.id}
                         </Badge>
                       </TableCell>
                       <TableCell className="max-w-xs">
-                        <div className="truncate text-sm">{subscription.plan?.name || 'N/A'}</div>
+                        <div className="truncate text-sm">
+                          {subscription.plan?.name || "N/A"}
+                        </div>
                       </TableCell>
-                      <TableCell>{subscription.user?.name || 'N/A'}</TableCell>
-                      <TableCell>{new Date(subscription.start_date).toLocaleDateString()}</TableCell>
-                      <TableCell>{subscription.end_date ? new Date(subscription.end_date).toLocaleDateString() : 'N/A'}</TableCell>
+                      <TableCell>{subscription.user?.name || "N/A"}</TableCell>
                       <TableCell>
-                        <Badge 
-                          variant="secondary" 
+                        {new Date(subscription.start_date).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        {subscription.end_date
+                          ? new Date(subscription.end_date).toLocaleDateString()
+                          : "N/A"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="secondary"
                           className={
-                            subscription.status === 'active' 
+                            subscription.status === "active"
                               ? "bg-success text-success-foreground"
-                              : subscription.status === 'cancelled'
+                              : subscription.status === "cancelled"
                               ? "bg-destructive text-destructive-foreground"
                               : "bg-muted text-muted-foreground"
                           }
@@ -292,7 +312,9 @@ export default function Subscriptions() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleViewDetails(subscription)}>
+                            <DropdownMenuItem
+                              onClick={() => handleViewDetails(subscription)}
+                            >
                               <Eye className="mr-2 h-4 w-4" />
                               View Details
                             </DropdownMenuItem>
@@ -325,7 +347,9 @@ export default function Subscriptions() {
         </div>
         <div className="flex items-center space-x-2">
           <span className="text-sm text-muted-foreground">PAGE</span>
-          <Button variant="outline" size="sm">1</Button>
+          <Button variant="outline" size="sm">
+            1
+          </Button>
           <span className="text-sm text-muted-foreground">OF 1</span>
         </div>
       </div>
@@ -339,50 +363,78 @@ export default function Subscriptions() {
               View subscription information and details
             </SheetDescription>
           </SheetHeader>
-          
+
           {selectedSubscription && (
             <div className="mt-6 space-y-4">
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Subscription ID</label>
+                <label className="text-sm font-medium text-muted-foreground">
+                  Subscription ID
+                </label>
                 <p className="text-sm">{selectedSubscription.code}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Plan</label>
+                <label className="text-sm font-medium text-muted-foreground">
+                  Plan
+                </label>
                 <p className="text-sm">{selectedSubscription.plan}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Payment User</label>
+                <label className="text-sm font-medium text-muted-foreground">
+                  Payment User
+                </label>
                 <p className="text-sm">{selectedSubscription.user}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Subscription Starts</label>
+                <label className="text-sm font-medium text-muted-foreground">
+                  Subscription Starts
+                </label>
                 <p className="text-sm">{selectedSubscription.starts}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Subscription Ends</label>
+                <label className="text-sm font-medium text-muted-foreground">
+                  Subscription Ends
+                </label>
                 <p className="text-sm">{selectedSubscription.ends}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Status</label>
+                <label className="text-sm font-medium text-muted-foreground">
+                  Status
+                </label>
                 <p className="text-sm">
-                  <Badge variant="secondary" className="bg-success text-success-foreground">
+                  <Badge
+                    variant="secondary"
+                    className="bg-success text-success-foreground"
+                  >
                     {selectedSubscription.status}
-                  </Badge>
-                  {" "}
-                  <Button variant="link" size="sm" className="p-0 h-auto text-primary">
+                  </Badge>{" "}
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="p-0 h-auto text-primary"
+                  >
                     EDIT
                   </Button>
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Payment Method</label>
+                <label className="text-sm font-medium text-muted-foreground">
+                  Payment Method
+                </label>
                 <p className="text-sm">Online</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Online Payment Details</label>
+                <label className="text-sm font-medium text-muted-foreground">
+                  Online Payment Details
+                </label>
                 <div className="flex items-center justify-between mt-1">
-                  <span className="text-sm">{selectedSubscription.payment}</span>
-                  <Button variant="link" size="sm" className="p-0 h-auto text-primary">
+                  <span className="text-sm">
+                    {selectedSubscription.payment}
+                  </span>
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="p-0 h-auto text-primary"
+                  >
                     View Invoice
                   </Button>
                 </div>
