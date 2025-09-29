@@ -1,5 +1,11 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -50,12 +56,12 @@ import {
 import UserForm from "@/components/forms/UserForm";
 import DeleteConfirmDialog from "@/components/dialogs/DeleteConfirmDialog";
 import ImportDialog from "@/components/dialogs/ImportDialog";
-import { 
-  getUsersApi, 
-  createUserApi, 
-  updateUserApi, 
-  deleteUserApi, 
-  type User as ApiUser 
+import {
+  getUsersApi,
+  createUserApi,
+  updateUserApi,
+  deleteUserApi,
+  type User as ApiUser,
 } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -73,13 +79,18 @@ export default function Users() {
     try {
       setLoading(true);
       setError("");
-      const filters: { search?: string; role?: string; status?: string; per_page?: number } = {
+      const filters: {
+        search?: string;
+        role?: string;
+        status?: string;
+        per_page?: number;
+      } = {
         search: searchTerm || undefined,
         role: selectedRole !== "all" ? selectedRole : undefined,
         status: selectedStatus !== "all" ? selectedStatus : undefined,
       };
       const response = await getUsersApi(filters);
-      
+
       // Map API response to UI format
       const mappedUsers = response.data.map((u: ApiUser) => ({
         id: u.id,
@@ -88,15 +99,15 @@ export default function Users() {
         avatar: "/placeholder.svg", // Default avatar
         role: u.role,
         status: u.is_active ? "Active" : "Inactive",
-        joinDate: new Date(u.created_at).toISOString().split('T')[0],
-        lastActive: new Date(u.updated_at).toISOString().split('T')[0],
+        joinDate: new Date(u.created_at).toISOString().split("T")[0],
+        lastActive: new Date(u.updated_at).toISOString().split("T")[0],
         examsCompleted: 0, // Placeholder - needs to come from API
         totalScore: 0, // Placeholder - needs to come from API
         subscriptionPlan: "Basic", // Placeholder - needs to come from API
         phone: u.phone || "",
         group: "Default Group", // Placeholder - needs to come from API
       }));
-      
+
       setUsers(mappedUsers);
       setMeta(response.meta);
     } catch (err: any) {
@@ -139,20 +150,20 @@ export default function Users() {
         { value: "all", label: "All Roles" },
         { value: "Student", label: "Student" },
         { value: "Instructor", label: "Instructor" },
-        { value: "Admin", label: "Admin" }
-      ]
+        { value: "Admin", label: "Admin" },
+      ],
     },
     {
-      id: "status", 
+      id: "status",
       label: "Status",
       value: selectedStatus,
       options: [
         { value: "all", label: "All Status" },
         { value: "Active", label: "Active" },
         { value: "Inactive", label: "Inactive" },
-        { value: "Suspended", label: "Suspended" }
-      ]
-    }
+        { value: "Suspended", label: "Suspended" },
+      ],
+    },
   ];
 
   const getStatusColor = (status: string) => {
@@ -260,7 +271,9 @@ export default function Users() {
 
         <Card className="bg-gradient-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">New This Month</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              New This Month
+            </CardTitle>
             <Calendar className="h-4 w-4 text-accent" />
           </CardHeader>
           <CardContent>
@@ -305,160 +318,172 @@ export default function Users() {
               <div className="text-destructive">{error}</div>
             </div>
           ) : (
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Plan</TableHead>
-                  <TableHead>Group</TableHead>
-                  <TableHead>Performance</TableHead>
-                  <TableHead>Last Active</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredUsers.map((user) => (
-                  <TableRow key={user.id} className="hover:bg-muted/50">
-                    <TableCell className="font-medium">
-                      <div className="flex items-center space-x-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={user.avatar} alt={user.name} />
-                          <AvatarFallback>
-                            {user.name.split(' ').map(n => n[0]).join('')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-semibold">{user.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {user.email}
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Plan</TableHead>
+                    <TableHead>Group</TableHead>
+                    <TableHead>Performance</TableHead>
+                    <TableHead>Last Active</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredUsers.map((user) => (
+                    <TableRow key={user.id} className="hover:bg-muted/50">
+                      <TableCell className="font-medium">
+                        <div className="flex items-center space-x-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={user.avatar} alt={user.name} />
+                            <AvatarFallback>
+                              {user.name
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-semibold">{user.name}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {user.email}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant="outline" 
-                        className={getRoleColor(user.role)}
-                      >
-                        {user.role}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant="secondary" 
-                        className={getStatusColor(user.status)}
-                      >
-                        {user.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant="outline" 
-                        className={getPlanColor(user.subscriptionPlan)}
-                      >
-                        {user.subscriptionPlan}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        {user.group}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {user.role === "Student" ? (
-                        <div className="text-sm">
-                          <div className="flex items-center space-x-2">
-                            <BookOpen className="h-3 w-3" />
-                            <span>{user.examsCompleted} exams</span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={getRoleColor(user.role)}
+                        >
+                          {user.role}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="secondary"
+                          className={getStatusColor(user.status)}
+                        >
+                          {user.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={getPlanColor(user.subscriptionPlan)}
+                        >
+                          {user.subscriptionPlan}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">{user.group}</div>
+                      </TableCell>
+                      <TableCell>
+                        {user.role === "Student" ? (
+                          <div className="text-sm">
+                            <div className="flex items-center space-x-2">
+                              <BookOpen className="h-3 w-3" />
+                              <span>{user.examsCompleted} exams</span>
+                            </div>
+                            <div className="flex items-center space-x-2 text-muted-foreground">
+                              <Award className="h-3 w-3" />
+                              <span>{user.totalScore} pts</span>
+                            </div>
                           </div>
-                          <div className="flex items-center space-x-2 text-muted-foreground">
-                            <Award className="h-3 w-3" />
-                            <span>{user.totalScore} pts</span>
+                        ) : user.role === "Instructor" ? (
+                          <div className="text-sm">
+                            <div className="flex items-center space-x-2">
+                              <BookOpen className="h-3 w-3" />
+                              <span>{user.examsCreated} created</span>
+                            </div>
+                            <div className="flex items-center space-x-2 text-muted-foreground">
+                              <UserPlus className="h-3 w-3" />
+                              <span>{user.studentsManaged} students</span>
+                            </div>
                           </div>
-                        </div>
-                      ) : user.role === "Instructor" ? (
-                        <div className="text-sm">
-                          <div className="flex items-center space-x-2">
-                            <BookOpen className="h-3 w-3" />
-                            <span>{user.examsCreated} created</span>
+                        ) : (
+                          <div className="text-sm">
+                            <div className="flex items-center space-x-2">
+                              <Shield className="h-3 w-3" />
+                              <span>{user.systemAccess} access</span>
+                            </div>
                           </div>
-                          <div className="flex items-center space-x-2 text-muted-foreground">
-                            <UserPlus className="h-3 w-3" />
-                            <span>{user.studentsManaged} students</span>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-sm">
-                          <div className="flex items-center space-x-2">
-                            <Shield className="h-3 w-3" />
-                            <span>{user.systemAccess} access</span>
-                          </div>
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <Clock className="mr-1 h-3 w-3" />
-                        {user.lastActive}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Profile
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit User
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Mail className="mr-2 h-4 w-4" />
-                            Send Message
-                          </DropdownMenuItem>
-                          {user.status === "Active" ? (
-                          <DropdownMenuItem onClick={() => handleToggleStatus(user)}>
-                              <XCircle className="mr-2 h-4 w-4" />
-                              Deactivate
-                            </DropdownMenuItem>
-                          ) : (
-                        <DropdownMenuItem onClick={() => handleToggleStatus(user)}>
-                            <CheckCircle className="mr-2 h-4 w-4" />
-                            Activate
-                          </DropdownMenuItem>
                         )}
-                      <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteUser(user)}>
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete User
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <Clock className="mr-1 h-3 w-3" />
+                          {user.lastActive}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Profile
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit User
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Mail className="mr-2 h-4 w-4" />
+                              Send Message
+                            </DropdownMenuItem>
+                            {user.status === "Active" ? (
+                              <DropdownMenuItem
+                                onClick={() => handleToggleStatus(user)}
+                              >
+                                <XCircle className="mr-2 h-4 w-4" />
+                                Deactivate
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem
+                                onClick={() => handleToggleStatus(user)}
+                              >
+                                <CheckCircle className="mr-2 h-4 w-4" />
+                                Activate
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={() => handleDeleteUser(user)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete User
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
-      </CardContent>
-    </Card>
-  </div>
-);
+        </CardContent>
+      </Card>
+    </div>
+  );
 
   // Handler functions
   const handleToggleStatus = async (user: any) => {
     try {
       await updateUserApi(user.id, { is_active: user.status !== "Active" });
-      toast.success(`User ${user.status === "Active" ? "deactivated" : "activated"} successfully!`);
+      toast.success(
+        `User ${
+          user.status === "Active" ? "deactivated" : "activated"
+        } successfully!`
+      );
       await loadUsers();
     } catch (err: any) {
       toast.error(err?.message || "Failed to update user status");

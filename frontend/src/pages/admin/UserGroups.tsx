@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +33,14 @@ import {
   Type,
   Hash
 } from "lucide-react";
+import { 
+  getUserGroupsApi, 
+  createUserGroupApi, 
+  updateUserGroupApi, 
+  deleteUserGroupApi, 
+  type UserGroup as ApiUserGroup 
+} from "@/lib/utils";
+import { toast } from "sonner";
 
 interface UserGroup {
   id: string;
@@ -47,41 +55,10 @@ interface UserGroup {
 }
 
 export default function UserGroups() {
-  const [userGroups, setUserGroups] = useState<UserGroup[]>([
-    {
-      id: "ugu_WdeSQKVGwhs",
-      code: "ugu_WdeSQKVGwhs", 
-      name: "KIDS",
-      description: "Children's learning group for ages 6-12",
-      visibility: "Private",
-      status: "Active",
-      members: 24,
-      created: "Sep 15, 2025",
-      lastActivity: "2 hours ago"
-    },
-    {
-      id: "ugu_TeenGroup123",
-      code: "ugu_TeenGroup123",
-      name: "TEENAGERS", 
-      description: "Advanced learning group for teens",
-      visibility: "Public",
-      status: "Active",
-      members: 18,
-      created: "Aug 22, 2025",
-      lastActivity: "1 day ago"
-    },
-    {
-      id: "ugu_AdultLearners",
-      code: "ugu_AdultLearners",
-      name: "ADULTS",
-      description: "Professional development group",
-      visibility: "Private", 
-      status: "Inactive",
-      members: 45,
-      created: "Jul 10, 2025",
-      lastActivity: "1 week ago"
-    }
-  ]);
+  const [userGroups, setUserGroups] = useState<UserGroup[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [meta, setMeta] = useState<any>({});
 
   const [selectedGroup, setSelectedGroup] = useState<UserGroup | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -89,6 +66,44 @@ export default function UserGroups() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [visibilityFilter, setVisibilityFilter] = useState("all");
+
+  // Load user groups from API
+  const loadUserGroups = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const filters: { search?: string; status?: string; type?: string; per_page?: number } = {
+        search: searchTerm || undefined,
+        status: statusFilter !== "all" ? statusFilter : undefined,
+        type: visibilityFilter !== "all" ? visibilityFilter : undefined,
+      };
+      const response = await getUserGroupsApi(filters);
+      
+      // Map API response to UI format
+      const mappedGroups: UserGroup[] = response.data.map((g: ApiUserGroup) => ({
+        id: g.id.toString(),
+        code: `UG${g.id.toString().padStart(4, '0')}`,
+        name: g.name,
+        description: g.description || "",
+        visibility: g.type === "academic" ? "Private" : "Public",
+        status: g.is_active ? "Active" : "Inactive",
+        members: g.users_count || 0,
+        created: new Date(g.created_at).toLocaleDateString(),
+        lastActivity: new Date(g.updated_at).toLocaleDateString(),
+      }));
+      
+      setUserGroups(mappedGroups);
+      setMeta(response.meta);
+    } catch (err: any) {
+      setError(err?.message || "Failed to load user groups");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadUserGroups();
+  }, [searchTerm, statusFilter, visibilityFilter]);
 
   const handleAdd = () => {
     setSelectedGroup(null);
@@ -105,37 +120,43 @@ export default function UserGroups() {
     setIsDeleteDrawerOpen(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (selectedGroup) {
-      setUserGroups(userGroups.filter(g => g.id !== selectedGroup.id));
-      setIsDeleteDrawerOpen(false);
-      setSelectedGroup(null);
+      try {
+        await deleteUserGroupApi(Number(selectedGroup.id));
+        toast.success("User group deleted successfully!");
+        setIsDeleteDrawerOpen(false);
+        setSelectedGroup(null);
+        await loadUserGroups();
+      } catch (err: any) {
+        toast.error(err?.message || "Failed to delete user group");
+      }
     }
   };
 
-  const handleSave = (groupData: Partial<UserGroup>) => {
-    if (selectedGroup) {
-      // Edit existing
-      setUserGroups(userGroups.map(g => 
-        g.id === selectedGroup.id ? { ...g, ...groupData } : g
-      ));
-    } else {
-      // Add new
-      const newGroup: UserGroup = {
-        id: `ugu_${Math.random().toString(36).substr(2, 9)}`,
-        code: `ugu_${Math.random().toString(36).substr(2, 9)}`,
+  const handleSave = async (groupData: Partial<UserGroup>) => {
+    try {
+      const payload = {
         name: groupData.name || "",
         description: groupData.description || "",
-        visibility: groupData.visibility || "Private",
-        status: groupData.status || "Active", 
-        members: 0,
-        created: new Date().toLocaleDateString(),
-        lastActivity: "Just now"
+        type: groupData.visibility === "Private" ? "academic" : "student",
+        is_active: groupData.status === "Active",
       };
-      setUserGroups([...userGroups, newGroup]);
+
+      if (selectedGroup) {
+        await updateUserGroupApi(Number(selectedGroup.id), payload);
+        toast.success("User group updated successfully!");
+      } else {
+        await createUserGroupApi(payload);
+        toast.success("User group created successfully!");
+      }
+      
+      setIsDrawerOpen(false);
+      setSelectedGroup(null);
+      await loadUserGroups();
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to save user group");
     }
-    setIsDrawerOpen(false);
-    setSelectedGroup(null);
   };
 
   const getStatusColor = (status: string) => {
@@ -152,15 +173,8 @@ export default function UserGroups() {
       : 'bg-primary text-primary-foreground';
   };
 
-  const filteredUserGroups = userGroups.filter(group => {
-    const matchesSearch = group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         group.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         group.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || group.status.toLowerCase() === statusFilter;
-    const matchesVisibility = visibilityFilter === "all" || group.visibility.toLowerCase() === visibilityFilter;
-    
-    return matchesSearch && matchesStatus && matchesVisibility;
-  });
+  // Filter and search logic (now handled by API)
+  const filteredUserGroups = userGroups;
 
   const columns = [
     {
@@ -392,11 +406,21 @@ export default function UserGroups() {
       }} />
 
       {/* Data Table */}
-      <DataTable
-        data={filteredUserGroups}
-        columns={columns}
-        actions={actions}
-      />
+      {loading ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="text-muted-foreground">Loading user groups...</div>
+        </div>
+      ) : error ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="text-destructive">{error}</div>
+        </div>
+      ) : (
+        <DataTable
+          data={filteredUserGroups}
+          columns={columns}
+          actions={actions}
+        />
+      )}
 
       {/* Side Drawer for Add/Edit */}
       <SideDrawer

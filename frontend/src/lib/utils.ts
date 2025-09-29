@@ -604,6 +604,64 @@ export async function deleteUserApi(id: number): Promise<{ message: string }> {
   return apiFetch(`/users/${id}`, { method: "DELETE" });
 }
 
+// User Groups API
+export type UserGroup = {
+  id: number;
+  name: string;
+  description?: string;
+  type: string;
+  color?: string;
+  is_active: boolean;
+  permissions?: any[];
+  settings?: any;
+  users_count?: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export async function getUserGroupsApi(
+  filters: {
+    search?: string;
+    status?: string;
+    type?: string;
+    per_page?: number;
+  } = {}
+): Promise<{ data: UserGroup[]; meta: any }> {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== "") params.append(k, String(v));
+  });
+  const qs = params.toString();
+  return apiFetch(`/user-groups${qs ? `?${qs}` : ""}`);
+}
+
+export async function getUserGroupApi(id: number): Promise<{ data: UserGroup }> {
+  return apiFetch(`/user-groups/${id}`);
+}
+
+export async function createUserGroupApi(
+  payload: Partial<UserGroup>
+): Promise<{ message: string; data: UserGroup }> {
+  return apiFetch(`/user-groups`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateUserGroupApi(
+  id: number,
+  payload: Partial<UserGroup>
+): Promise<{ message: string; data: UserGroup }> {
+  return apiFetch(`/user-groups/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteUserGroupApi(id: number): Promise<{ message: string }> {
+  return apiFetch(`/user-groups/${id}`, { method: "DELETE" });
+}
+
 export async function removeSectionQuestion(
   examId: number,
   sectionId: number,
