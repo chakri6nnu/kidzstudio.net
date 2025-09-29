@@ -33,6 +33,8 @@ import {
   FileSpreadsheet,
   Database
 } from "lucide-react";
+import { toast } from "sonner";
+import { getAuthToken } from "@/lib/utils";
 
 interface ImportDialogProps {
   title: string;
@@ -41,6 +43,7 @@ interface ImportDialogProps {
   onImport: (data: any) => void;
   trigger?: React.ReactNode;
   sampleData?: any[];
+  importType?: 'users' | 'questions' | 'default';
 }
 
 export default function ImportDialog({ 
@@ -49,7 +52,8 @@ export default function ImportDialog({
   acceptedFormats, 
   onImport, 
   trigger,
-  sampleData 
+  sampleData,
+  importType = 'default'
 }: ImportDialogProps) {
   const [open, setOpen] = useState(false);
   const [importMethod, setImportMethod] = useState("file");
@@ -58,6 +62,9 @@ export default function ImportDialog({
   const [progress, setProgress] = useState(0);
   const [results, setResults] = useState<any>(null);
   const [csvData, setCsvData] = useState("");
+  const [selectedGroup, setSelectedGroup] = useState("");
+  const [selectedRole, setSelectedRole] = useState("student");
+  const [sendWelcomeEmail, setSendWelcomeEmail] = useState(false);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -67,6 +74,68 @@ export default function ImportDialog({
   };
 
   const handleImport = async () => {
+    if (importType === 'users') {
+      await handleUsersImport();
+    } else {
+      await handleDefaultImport();
+    }
+  };
+
+  const handleUsersImport = async () => {
+    if (!selectedFile) {
+      toast.error("Please select a file to import");
+      return;
+    }
+
+    setImporting(true);
+    setProgress(0);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      if (selectedGroup) formData.append('group_id', selectedGroup);
+      formData.append('role', selectedRole);
+      formData.append('send_welcome_email', sendWelcomeEmail.toString());
+
+      const token = getAuthToken();
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/users/import`, {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Import failed');
+      }
+
+      const result = await response.json();
+      
+      setImporting(false);
+      setProgress(100);
+      setResults({
+        total: result.data.imported_count + result.data.skipped_count,
+        successful: result.data.imported_count,
+        failed: result.data.skipped_count,
+        errors: result.data.errors || []
+      });
+
+      toast.success(`Import completed! ${result.data.imported_count} users imported successfully.`);
+      
+      onImport({
+        method: importMethod,
+        file: selectedFile,
+        results: result.data
+      });
+
+    } catch (error: any) {
+      setImporting(false);
+      toast.error(error?.message || "Import failed");
+    }
+  };
+
+  const handleDefaultImport = async () => {
     setImporting(true);
     setProgress(0);
 
@@ -154,6 +223,35 @@ export default function ImportDialog({
                   <CardTitle className="text-lg">Upload File</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {importType === 'users' && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="userGroup">User Group</Label>
+                        <Select value={selectedGroup} onValueChange={setSelectedGroup}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select group (optional)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">No Group</SelectItem>
+                            <SelectItem value="1">Default Group</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="userRole">Default Role</Label>
+                        <Select value={selectedRole} onValueChange={setSelectedRole}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="student">Student</SelectItem>
+                            <SelectItem value="instructor">Instructor</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
                   <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
                     <Upload className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
                     <div className="space-y-2">

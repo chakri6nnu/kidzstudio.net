@@ -15,7 +15,7 @@
 | Video Bank          | Done            | Done        | Done        | Done        | Done        | CRUD wired to /api/videos               |
 | Users               | Done            | Done        | Done        | Done        | Done        | CRUD wired to /api/users                |
 | User Groups         | Done            | Done        | Done        | Done        | Done        | CRUD wired to /api/user-groups          |
-| Import Users        | Not started     | N/A         | Not started | N/A         | N/A         |                                         |
+| Import Users        | Done            | N/A         | Done        | N/A         | N/A         | POST /api/users/import wired            |
 | Categories          | Not started     | Not started | Not started | Not started | Not started |                                         |
 | Sub Categories      | Not started     | Not started | Not started | Not started | Not started |                                         |
 | Tags                | Not started     | Not started | Not started | Not started | Not started |                                         |

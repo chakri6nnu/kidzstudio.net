@@ -113,6 +113,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user-groups/{userGroup}', [\App\Http\Controllers\Api\UserGroupController::class, 'show']);
     Route::put('/user-groups/{userGroup}', [\App\Http\Controllers\Api\UserGroupController::class, 'update']);
     Route::delete('/user-groups/{userGroup}', [\App\Http\Controllers\Api\UserGroupController::class, 'destroy']);
+
+    // Import Users
+    Route::post('/users/import', [\App\Http\Controllers\Api\UserImportController::class, 'store']);
 });
 
 // CORS preflight handler (OPTIONS)

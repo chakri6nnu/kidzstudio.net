@@ -224,7 +224,11 @@ export default function Users() {
             title="Import Users"
             description="Import users from CSV or Excel files"
             acceptedFormats={["csv", "xlsx"]}
-            onImport={(data) => console.log("Import users:", data)}
+            importType="users"
+            onImport={(data) => {
+              console.log("Import users:", data);
+              loadUsers(); // Refresh the users list
+            }}
             trigger={
               <Button variant="outline">
                 <Upload className="mr-2 h-4 w-4" />

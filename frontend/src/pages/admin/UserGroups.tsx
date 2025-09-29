@@ -10,8 +10,8 @@ import { DataTable } from "@/components/ui/data-table";
 import { FiltersPanel } from "@/components/ui/filters-panel";
 import { SideDrawer } from "@/components/ui/side-drawer";
 import { ConfirmDrawer } from "@/components/ui/confirm-drawer";
-import { 
-  Plus, 
+import {
+  Plus,
   Edit,
   Trash2,
   Eye,
@@ -31,14 +31,14 @@ import {
   Image,
   Table as TableIcon,
   Type,
-  Hash
+  Hash,
 } from "lucide-react";
-import { 
-  getUserGroupsApi, 
-  createUserGroupApi, 
-  updateUserGroupApi, 
-  deleteUserGroupApi, 
-  type UserGroup as ApiUserGroup 
+import {
+  getUserGroupsApi,
+  createUserGroupApi,
+  updateUserGroupApi,
+  deleteUserGroupApi,
+  type UserGroup as ApiUserGroup,
 } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -72,26 +72,33 @@ export default function UserGroups() {
     try {
       setLoading(true);
       setError("");
-      const filters: { search?: string; status?: string; type?: string; per_page?: number } = {
+      const filters: {
+        search?: string;
+        status?: string;
+        type?: string;
+        per_page?: number;
+      } = {
         search: searchTerm || undefined,
         status: statusFilter !== "all" ? statusFilter : undefined,
         type: visibilityFilter !== "all" ? visibilityFilter : undefined,
       };
       const response = await getUserGroupsApi(filters);
-      
+
       // Map API response to UI format
-      const mappedGroups: UserGroup[] = response.data.map((g: ApiUserGroup) => ({
-        id: g.id.toString(),
-        code: `UG${g.id.toString().padStart(4, '0')}`,
-        name: g.name,
-        description: g.description || "",
-        visibility: g.type === "academic" ? "Private" : "Public",
-        status: g.is_active ? "Active" : "Inactive",
-        members: g.users_count || 0,
-        created: new Date(g.created_at).toLocaleDateString(),
-        lastActivity: new Date(g.updated_at).toLocaleDateString(),
-      }));
-      
+      const mappedGroups: UserGroup[] = response.data.map(
+        (g: ApiUserGroup) => ({
+          id: g.id.toString(),
+          code: `UG${g.id.toString().padStart(4, "0")}`,
+          name: g.name,
+          description: g.description || "",
+          visibility: g.type === "academic" ? "Private" : "Public",
+          status: g.is_active ? "Active" : "Inactive",
+          members: g.users_count || 0,
+          created: new Date(g.created_at).toLocaleDateString(),
+          lastActivity: new Date(g.updated_at).toLocaleDateString(),
+        })
+      );
+
       setUserGroups(mappedGroups);
       setMeta(response.meta);
     } catch (err: any) {
@@ -150,7 +157,7 @@ export default function UserGroups() {
         await createUserGroupApi(payload);
         toast.success("User group created successfully!");
       }
-      
+
       setIsDrawerOpen(false);
       setSelectedGroup(null);
       await loadUserGroups();
@@ -161,16 +168,19 @@ export default function UserGroups() {
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'active': return 'bg-success text-success-foreground';
-      case 'inactive': return 'bg-warning text-warning-foreground';
-      default: return 'bg-muted text-muted-foreground';
+      case "active":
+        return "bg-success text-success-foreground";
+      case "inactive":
+        return "bg-warning text-warning-foreground";
+      default:
+        return "bg-muted text-muted-foreground";
     }
   };
 
   const getVisibilityColor = (visibility: string) => {
-    return visibility === 'Private' 
-      ? 'bg-destructive text-destructive-foreground'
-      : 'bg-primary text-primary-foreground';
+    return visibility === "Private"
+      ? "bg-destructive text-destructive-foreground"
+      : "bg-primary text-primary-foreground";
   };
 
   // Filter and search logic (now handled by API)
@@ -178,105 +188,110 @@ export default function UserGroups() {
 
   const columns = [
     {
-      key: 'code' as keyof UserGroup,
-      header: 'Code',
+      key: "code" as keyof UserGroup,
+      header: "Code",
       sortable: true,
       render: (group: UserGroup) => (
         <Badge variant="outline" className="bg-primary text-primary-foreground">
           {group.code}
         </Badge>
-      )
+      ),
     },
     {
-      key: 'name' as keyof UserGroup,
-      header: 'Name',
+      key: "name" as keyof UserGroup,
+      header: "Name",
       sortable: true,
       render: (group: UserGroup) => (
         <div>
           <div className="font-medium">{group.name}</div>
-          <div className="text-sm text-muted-foreground">{group.description}</div>
+          <div className="text-sm text-muted-foreground">
+            {group.description}
+          </div>
         </div>
-      )
+      ),
     },
     {
-      key: 'visibility' as keyof UserGroup,
-      header: 'Visibility',
+      key: "visibility" as keyof UserGroup,
+      header: "Visibility",
       sortable: true,
       render: (group: UserGroup) => (
-        <Badge variant="outline" className={getVisibilityColor(group.visibility)}>
+        <Badge
+          variant="outline"
+          className={getVisibilityColor(group.visibility)}
+        >
           {group.visibility}
         </Badge>
-      )
+      ),
     },
     {
-      key: 'members' as keyof UserGroup,
-      header: 'Members',
+      key: "members" as keyof UserGroup,
+      header: "Members",
       sortable: true,
       render: (group: UserGroup) => (
         <div className="flex items-center">
           <Users className="mr-1 h-4 w-4 text-muted-foreground" />
           {group.members}
         </div>
-      )
+      ),
     },
     {
-      key: 'status' as keyof UserGroup,
-      header: 'Status',
+      key: "status" as keyof UserGroup,
+      header: "Status",
       sortable: true,
       render: (group: UserGroup) => (
         <Badge variant="outline" className={getStatusColor(group.status)}>
           {group.status}
         </Badge>
-      )
+      ),
     },
     {
-      key: 'lastActivity' as keyof UserGroup,
-      header: 'Last Activity',
+      key: "lastActivity" as keyof UserGroup,
+      header: "Last Activity",
       sortable: true,
       render: (group: UserGroup) => (
         <div className="flex items-center text-sm text-muted-foreground">
           <Activity className="mr-1 h-4 w-4" />
           {group.lastActivity}
         </div>
-      )
-    }
+      ),
+    },
   ];
 
   const filters = [
-    { 
-      key: 'search', 
-      type: 'search' as const, 
-      label: 'Search',
-      placeholder: 'Search user groups...', 
-      value: searchTerm, 
-      onChange: setSearchTerm 
+    {
+      key: "search",
+      type: "search" as const,
+      label: "Search",
+      placeholder: "Search user groups...",
+      value: searchTerm,
+      onChange: setSearchTerm,
     },
-    { 
-      key: 'status', 
-      type: 'select' as const, 
-      label: 'Status',
-      placeholder: 'All Status', 
-      value: statusFilter, 
+    {
+      key: "status",
+      type: "select" as const,
+      label: "Status",
+      placeholder: "All Status",
+      value: statusFilter,
       onChange: setStatusFilter,
       options: [
-        { label: 'All Status', value: 'all' },
-        { label: 'Active', value: 'active' },
-        { label: 'Inactive', value: 'inactive' }
-      ]
+        { label: "All Status", value: "all" },
+        { label: "Active", value: "active" },
+        { label: "Inactive", value: "inactive" },
+      ],
     },
-    { 
-      key: 'visibility', 
-      type: 'select' as const, 
-      label: 'Visibility',
-      placeholder: 'All Visibility', 
-      value: visibilityFilter, 
+    {
+      key: "visibility",
+      type: "select" as const,
+      label: "Visibility",
+      placeholder: "All Visibility",
+      value: visibilityFilter,
       onChange: setVisibilityFilter,
       options: [
-        { label: 'All Visibility', value: 'all' },
-        { label: 'Private', value: 'private' },
-        { label: 'Public', value: 'public' }
-      ]
-    }
+        { label: "All Visibility", value: "all" },
+        { label: "Private", value: "private" },
+        { label: "Public", value: "public" },
+      ],
+    },
   ];
 
   const actions = [
@@ -284,20 +299,20 @@ export default function UserGroups() {
       label: "View Details",
       icon: <Eye className="h-4 w-4" />,
       onClick: (group: UserGroup) => handleEdit(group),
-      variant: "default" as const
+      variant: "default" as const,
     },
     {
       label: "Edit",
       icon: <Edit className="h-4 w-4" />,
       onClick: (group: UserGroup) => handleEdit(group),
-      variant: "default" as const
+      variant: "default" as const,
     },
     {
       label: "Delete",
       icon: <Trash2 className="h-4 w-4" />,
       onClick: (group: UserGroup) => handleDelete(group),
-      variant: "destructive" as const
-    }
+      variant: "destructive" as const,
+    },
   ];
 
   const ToolbarButton = ({ icon: Icon, ...props }: any) => (
@@ -339,7 +354,10 @@ export default function UserGroups() {
             Manage user groups and permissions
           </p>
         </div>
-        <Button onClick={handleAdd} className="bg-gradient-primary hover:bg-primary-hover">
+        <Button
+          onClick={handleAdd}
+          className="bg-gradient-primary hover:bg-primary-hover"
+        >
           <Plus className="mr-2 h-4 w-4" />
           NEW USER GROUP
         </Button>
@@ -365,7 +383,7 @@ export default function UserGroups() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {userGroups.filter(g => g.status === 'Active').length}
+              {userGroups.filter((g) => g.status === "Active").length}
             </div>
             <p className="text-xs text-muted-foreground">Currently active</p>
           </CardContent>
@@ -373,12 +391,14 @@ export default function UserGroups() {
 
         <Card className="bg-gradient-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Private Groups</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Private Groups
+            </CardTitle>
             <Shield className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {userGroups.filter(g => g.visibility === 'Private').length}
+              {userGroups.filter((g) => g.visibility === "Private").length}
             </div>
             <p className="text-xs text-muted-foreground">Restricted access</p>
           </CardContent>
@@ -399,11 +419,14 @@ export default function UserGroups() {
       </div>
 
       {/* Filters */}
-      <FiltersPanel filters={filters} onClearFilters={() => {
-        setSearchTerm("");
-        setStatusFilter("all");
-        setVisibilityFilter("all");
-      }} />
+      <FiltersPanel
+        filters={filters}
+        onClearFilters={() => {
+          setSearchTerm("");
+          setStatusFilter("all");
+          setVisibilityFilter("all");
+        }}
+      />
 
       {/* Data Table */}
       {loading ? (
@@ -427,11 +450,17 @@ export default function UserGroups() {
         open={isDrawerOpen}
         onOpenChange={setIsDrawerOpen}
         title={selectedGroup ? "Edit User Group" : "Add New User Group"}
-        description={selectedGroup ? "Update user group details" : "Create a new user group"}
+        description={
+          selectedGroup
+            ? "Update user group details"
+            : "Create a new user group"
+        }
       >
         <div className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="groupName">User Group Name <span className="text-destructive">*</span></Label>
+            <Label htmlFor="groupName">
+              User Group Name <span className="text-destructive">*</span>
+            </Label>
             <Input
               id="groupName"
               defaultValue={selectedGroup?.name || ""}
@@ -460,17 +489,24 @@ export default function UserGroups() {
                   Active (Shown Everywhere). In-active (Hidden Everywhere).
                 </p>
               </div>
-              <Switch id="active" defaultChecked={selectedGroup?.status === 'Active'} />
+              <Switch
+                id="active"
+                defaultChecked={selectedGroup?.status === "Active"}
+              />
             </div>
 
             <div className="flex items-center justify-between">
               <div>
                 <Label htmlFor="private">Private Group</Label>
                 <p className="text-sm text-muted-foreground">
-                  Private Group (Only admin can add users). Public Group (Anyone can join).
+                  Private Group (Only admin can add users). Public Group (Anyone
+                  can join).
                 </p>
               </div>
-              <Switch id="private" defaultChecked={selectedGroup?.visibility === 'Private'} />
+              <Switch
+                id="private"
+                defaultChecked={selectedGroup?.visibility === "Private"}
+              />
             </div>
           </div>
 
@@ -484,14 +520,30 @@ export default function UserGroups() {
             </Button>
             <Button
               className="flex-1 bg-gradient-primary hover:bg-primary-hover"
-              onClick={() => handleSave({
-                name: (document.getElementById('groupName') as HTMLInputElement)?.value,
-                description: (document.getElementById('description') as HTMLTextAreaElement)?.value,
-                status: (document.getElementById('active') as HTMLInputElement)?.checked ? 'Active' : 'Inactive',
-                visibility: (document.getElementById('private') as HTMLInputElement)?.checked ? 'Private' : 'Public'
-              })}
+              onClick={() =>
+                handleSave({
+                  name: (
+                    document.getElementById("groupName") as HTMLInputElement
+                  )?.value,
+                  description: (
+                    document.getElementById(
+                      "description"
+                    ) as HTMLTextAreaElement
+                  )?.value,
+                  status: (
+                    document.getElementById("active") as HTMLInputElement
+                  )?.checked
+                    ? "Active"
+                    : "Inactive",
+                  visibility: (
+                    document.getElementById("private") as HTMLInputElement
+                  )?.checked
+                    ? "Private"
+                    : "Public",
+                })
+              }
             >
-              {selectedGroup ? 'Update Group' : 'Create Group'}
+              {selectedGroup ? "Update Group" : "Create Group"}
             </Button>
           </div>
         </div>

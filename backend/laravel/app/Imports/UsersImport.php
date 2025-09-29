@@ -3,74 +3,91 @@
 namespace App\Imports;
 
 use App\Models\User;
-use Carbon\Carbon;
+use App\Models\UserGroup;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
-use Laravel\Fortify\Rules\Password;
-use Maatwebsite\Excel\Concerns\Importable;
+use Illuminate\Support\Facades\Validator;
 use Maatwebsite\Excel\Concerns\ToCollection;
-use Maatwebsite\Excel\Concerns\WithBatchInserts;
-use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
 
-class UsersImport implements ToCollection, WithHeadingRow, WithBatchInserts, WithChunkReading, WithValidation
+class UsersImport implements ToCollection, WithHeadingRow
 {
-    use Importable;
-    private int $rows = 0;
-    private string $now;
+    protected $groupId;
+    protected $role;
+    protected $sendWelcomeEmail;
+    protected $importedCount = 0;
+    protected $skippedCount = 0;
+    protected $errors = [];
 
-    public function __construct()
+    public function __construct($groupId = null, $role = 'student', $sendWelcomeEmail = false)
     {
-        $this->now = Carbon::now()->toDateTimeString();
+        $this->groupId = $groupId;
+        $this->role = $role;
+        $this->sendWelcomeEmail = $sendWelcomeEmail;
     }
 
-    /**
-     * Import users from excel
-     *
-     * @param Collection $rows
-     * @return void
-     */
     public function collection(Collection $rows)
     {
-        foreach ($rows as $row)
-        {
-            ++$this->rows;
-            User::create([
-                'first_name' => $row['first_name'],
-                'last_name' => $row['last_name'],
-                'user_name' => $row['user_name'],
-                'email' => $row['email'],
-                'email_verified_at' => $row['email_verified'] == 'yes' ? $this->now : null,
-                'password' => Hash::make($row['password']),
-            ])->assignRole($row['role']);
+        foreach ($rows as $index => $row) {
+            try {
+                // Validate required fields
+                $validator = Validator::make($row->toArray(), [
+                    'name' => 'required|string|max:255',
+                    'email' => 'required|email|unique:users,email',
+                ]);
+
+                if ($validator->fails()) {
+                    $this->skippedCount++;
+                    $this->errors[] = "Row " . ($index + 2) . ": " . implode(', ', $validator->errors()->all());
+                    continue;
+                }
+
+                // Create user
+                $user = new User();
+                $user->name = $row['name'];
+                $user->email = $row['email'];
+                $user->phone = $row['phone'] ?? null;
+                $user->role = $this->role;
+                $user->group_id = $this->groupId;
+                $user->is_active = true;
+                $user->password = Hash::make($row['password'] ?? 'password123'); // Default password
+                $user->date_of_birth = $row['date_of_birth'] ?? null;
+                $user->address = $row['address'] ?? null;
+                $user->city = $row['city'] ?? null;
+                $user->state = $row['state'] ?? null;
+                $user->country = $row['country'] ?? null;
+                $user->zip_code = $row['zip_code'] ?? null;
+                $user->email_verified_at = now();
+
+                $user->save();
+
+                $this->importedCount++;
+
+                // TODO: Send welcome email if enabled
+                if ($this->sendWelcomeEmail) {
+                    // Implement email sending logic here
+                }
+
+            } catch (\Exception $e) {
+                $this->skippedCount++;
+                $this->errors[] = "Row " . ($index + 2) . ": " . $e->getMessage();
+            }
         }
     }
 
-    public function rules(): array
+    public function getImportedCount(): int
     {
-        return [
-            'first_name' => ['required', 'string', 'max:60'],
-            'last_name' => ['required', 'string', 'max:60'],
-            'user_name' => ['required', 'string', 'max:60', 'unique:users'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'string', new Password()],
-            'role' => ['required'],
-        ];
+        return $this->importedCount;
     }
 
-    public function batchSize(): int
+    public function getSkippedCount(): int
     {
-        return 100;
+        return $this->skippedCount;
     }
 
-    public function chunkSize(): int
+    public function getErrors(): array
     {
-        return 100;
-    }
-
-    public function getRowCount(): int
-    {
-        return $this->rows;
+        return $this->errors;
     }
 }

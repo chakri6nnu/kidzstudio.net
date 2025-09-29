@@ -635,7 +635,9 @@ export async function getUserGroupsApi(
   return apiFetch(`/user-groups${qs ? `?${qs}` : ""}`);
 }
 
-export async function getUserGroupApi(id: number): Promise<{ data: UserGroup }> {
+export async function getUserGroupApi(
+  id: number
+): Promise<{ data: UserGroup }> {
   return apiFetch(`/user-groups/${id}`);
 }
 
@@ -658,7 +660,9 @@ export async function updateUserGroupApi(
   });
 }
 
-export async function deleteUserGroupApi(id: number): Promise<{ message: string }> {
+export async function deleteUserGroupApi(
+  id: number
+): Promise<{ message: string }> {
   return apiFetch(`/user-groups/${id}`, { method: "DELETE" });
 }
 
