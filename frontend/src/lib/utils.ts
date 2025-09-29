@@ -168,11 +168,6 @@ export async function getExamTypesApi(): Promise<{
   return apiFetch("/exam-types");
 }
 
-export async function getSubCategoriesApi(): Promise<{
-  data: { id: number; name: string }[];
-}> {
-  return apiFetch("/sub-categories");
-}
 
 export async function getQuestionTypesApi(): Promise<{
   data: { id: number; name: string }[];

@@ -308,29 +308,27 @@ export default function Subscriptions() {
         </CardContent>
       </Card>
 
-          {/* Pagination */}
-          <div className="flex items-center justify-between p-6 border-t">
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-muted-foreground">ROWS PER PAGE:</span>
-              <Select defaultValue="10">
-                <SelectTrigger className="w-16">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="20">20</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-muted-foreground">PAGE</span>
-              <Button variant="outline" size="sm">1</Button>
-              <span className="text-sm text-muted-foreground">OF 1</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Pagination */}
+      <div className="flex items-center justify-between p-6 border-t">
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-muted-foreground">ROWS PER PAGE:</span>
+          <Select defaultValue="10">
+            <SelectTrigger className="w-16">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="20">20</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-muted-foreground">PAGE</span>
+          <Button variant="outline" size="sm">1</Button>
+          <span className="text-sm text-muted-foreground">OF 1</span>
+        </div>
+      </div>
 
       {/* Subscription Details Sheet */}
       <Sheet open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
