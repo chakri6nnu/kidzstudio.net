@@ -92,6 +92,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/lessons/{lesson}', [\App\Http\Controllers\Api\LessonController::class, 'show']);
     Route::put('/lessons/{lesson}', [\App\Http\Controllers\Api\LessonController::class, 'update']);
     Route::delete('/lessons/{lesson}', [\App\Http\Controllers\Api\LessonController::class, 'destroy']);
+
+    // Videos API endpoints
+    Route::get('/videos', [\App\Http\Controllers\Api\VideoController::class, 'index']);
+    Route::post('/videos', [\App\Http\Controllers\Api\VideoController::class, 'store']);
+    Route::get('/videos/{video}', [\App\Http\Controllers\Api\VideoController::class, 'show']);
+    Route::put('/videos/{video}', [\App\Http\Controllers\Api\VideoController::class, 'update']);
+    Route::delete('/videos/{video}', [\App\Http\Controllers\Api\VideoController::class, 'destroy']);
 });
 
 // CORS preflight handler (OPTIONS)

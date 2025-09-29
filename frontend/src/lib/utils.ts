@@ -450,16 +450,91 @@ export async function getLessonsApi(
   return apiFetch(`/lessons${qs ? `?${qs}` : ""}`);
 }
 
-export async function createLessonApi(payload: Partial<Lesson>): Promise<{ message: string; data: Lesson }> {
-  return apiFetch(`/lessons`, { method: 'POST', body: JSON.stringify(payload) });
+export async function createLessonApi(
+  payload: Partial<Lesson>
+): Promise<{ message: string; data: Lesson }> {
+  return apiFetch(`/lessons`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
-export async function updateLessonApi(id: number, payload: Partial<Lesson>): Promise<{ message: string; data: Lesson }> {
-  return apiFetch(`/lessons/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+export async function updateLessonApi(
+  id: number,
+  payload: Partial<Lesson>
+): Promise<{ message: string; data: Lesson }> {
+  return apiFetch(`/lessons/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
 }
 
-export async function deleteLessonApi(id: number): Promise<{ message: string }> {
-  return apiFetch(`/lessons/${id}`, { method: 'DELETE' });
+export async function deleteLessonApi(
+  id: number
+): Promise<{ message: string }> {
+  return apiFetch(`/lessons/${id}`, { method: "DELETE" });
+}
+
+// Videos API
+export type Video = {
+  id: number;
+  title: string;
+  description?: string;
+  category: string;
+  sub_category?: string;
+  tags?: string;
+  quality: string;
+  status: string;
+  is_active: boolean;
+  duration?: string;
+  size?: string;
+  format?: string;
+  views?: number;
+  thumbnail?: string;
+  video_url?: string;
+  uploaded_by?: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export async function getVideosApi(
+  filters: { search?: string; category?: string; status?: string; quality?: string; per_page?: number } = {}
+): Promise<{ data: Video[]; meta: any }> {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== "") params.append(k, String(v));
+  });
+  const qs = params.toString();
+  return apiFetch(`/videos${qs ? `?${qs}` : ""}`);
+}
+
+export async function getVideoApi(id: number): Promise<{ data: Video }> {
+  return apiFetch(`/videos/${id}`);
+}
+
+export async function createVideoApi(
+  payload: Partial<Video>
+): Promise<{ message: string; data: Video }> {
+  return apiFetch(`/videos`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateVideoApi(
+  id: number,
+  payload: Partial<Video>
+): Promise<{ message: string; data: Video }> {
+  return apiFetch(`/videos/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteVideoApi(
+  id: number
+): Promise<{ message: string }> {
+  return apiFetch(`/videos/${id}`, { method: "DELETE" });
 }
 
 export async function removeSectionQuestion(

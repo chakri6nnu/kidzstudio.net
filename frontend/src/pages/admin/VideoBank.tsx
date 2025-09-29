@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,13 @@ import {
   HardDrive,
 } from "lucide-react";
 import { toast } from "sonner";
+import { 
+  getVideosApi, 
+  createVideoApi, 
+  updateVideoApi, 
+  deleteVideoApi, 
+  type Video as ApiVideo 
+} from "@/lib/utils";
 
 interface Video {
   id: string;
@@ -50,84 +57,10 @@ interface Video {
 }
 
 export default function VideoBank() {
-  const [videos, setVideos] = useState<Video[]>([
-    {
-      id: "1",
-      title: "Introduction to Calculus",
-      description: "A comprehensive introduction to basic calculus concepts including limits, derivatives, and integrals.",
-      category: "Mathematics",
-      subCategory: "Calculus",
-      tags: ["calculus", "mathematics", "derivatives", "integrals"],
-      duration: "12:45",
-      size: "45.2 MB",
-      format: "MP4",
-      quality: "1080p",
-      status: "Published",
-      views: 2548,
-      thumbnail: "/placeholder.svg",
-      videoUrl: "/videos/calculus-intro.mp4",
-      createdAt: "2024-01-15",
-      uploadedBy: "Dr. Smith",
-      isActive: true,
-    },
-    {
-      id: "2",
-      title: "Cell Division Process",
-      description: "Detailed explanation of mitosis and meiosis in cell biology.",
-      category: "Biology",
-      subCategory: "Cell Biology",
-      tags: ["biology", "cells", "mitosis", "meiosis"],
-      duration: "8:32",
-      size: "32.1 MB",
-      format: "MP4",
-      quality: "720p",
-      status: "Processing",
-      views: 1234,
-      thumbnail: "/placeholder.svg",
-      videoUrl: "/videos/cell-division.mp4",
-      createdAt: "2024-01-14",
-      uploadedBy: "Prof. Johnson",
-      isActive: true,
-    },
-    {
-      id: "3",
-      title: "World War II Timeline",
-      description: "Complete timeline of major events during World War II from 1939 to 1945.",
-      category: "History",
-      subCategory: "Modern History",
-      tags: ["history", "world war", "timeline", "events"],
-      duration: "18:22",
-      size: "67.8 MB",
-      format: "MP4",
-      quality: "1080p",
-      status: "Published",
-      views: 987,
-      thumbnail: "/placeholder.svg",
-      videoUrl: "/videos/ww2-timeline.mp4",
-      createdAt: "2024-01-13",
-      uploadedBy: "Ms. Davis",
-      isActive: true,
-    },
-    {
-      id: "4",
-      title: "English Pronunciation Guide",
-      description: "Learn proper English pronunciation with phonetic examples and practice exercises.",
-      category: "English",
-      subCategory: "Speaking",
-      tags: ["english", "pronunciation", "speaking", "phonetics"],
-      duration: "15:15",
-      size: "54.3 MB",
-      format: "MP4",
-      quality: "1080p",
-      status: "Draft",
-      views: 0,
-      thumbnail: "/placeholder.svg",
-      videoUrl: "/videos/english-pronunciation.mp4",
-      createdAt: "2024-01-12",
-      uploadedBy: "Mr. Wilson",
-      isActive: false,
-    },
-  ]);
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [meta, setMeta] = useState<any>({});
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -156,17 +89,55 @@ export default function VideoBank() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Filter and search logic
-  const filteredVideos = videos.filter(video => {
-    const matchesSearch = video.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         video.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         video.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === "all" || video.category === selectedCategory;
-    const matchesStatus = selectedStatus === "all" || video.status === selectedStatus;
-    const matchesQuality = selectedQuality === "all" || video.quality === selectedQuality;
-    
-    return matchesSearch && matchesCategory && matchesStatus && matchesQuality;
-  });
+  // Load videos from API
+  const loadVideos = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const filters: { search?: string; category?: string; status?: string; quality?: string; per_page?: number } = {
+        search: searchTerm || undefined,
+        category: selectedCategory !== "all" ? selectedCategory : undefined,
+        status: selectedStatus !== "all" ? selectedStatus : undefined,
+        quality: selectedQuality !== "all" ? selectedQuality : undefined,
+      };
+      const response = await getVideosApi(filters);
+      
+      // Map API response to UI format
+      const mappedVideos: Video[] = response.data.map((v: ApiVideo) => ({
+        id: v.id.toString(),
+        title: v.title,
+        description: v.description || "",
+        category: v.category,
+        subCategory: v.sub_category || "",
+        tags: v.tags ? v.tags.split(',').map(tag => tag.trim()) : [],
+        duration: v.duration || "0:00",
+        size: v.size || "0 MB",
+        format: v.format || "MP4",
+        quality: v.quality,
+        status: v.status as Video["status"],
+        views: v.views || 0,
+        thumbnail: v.thumbnail || "/placeholder.svg",
+        videoUrl: v.video_url || "",
+        createdAt: new Date(v.created_at).toISOString().split('T')[0],
+        uploadedBy: v.uploaded_by || "Admin",
+        isActive: v.is_active,
+      }));
+      
+      setVideos(mappedVideos);
+      setMeta(response.meta);
+    } catch (err: any) {
+      setError(err?.message || "Failed to load videos");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadVideos();
+  }, [searchTerm, selectedCategory, selectedStatus, selectedQuality]);
+
+  // Filter and search logic (now handled by API)
+  const filteredVideos = videos;
 
   // Filter options
   const filters = [
@@ -303,42 +274,31 @@ export default function VideoBank() {
   };
 
   const handleAddSubmit = async () => {
-    if (!formData.title || !formData.category || !formData.videoFile) {
-      toast.error("Please fill in all required fields and select a video file");
+    if (!formData.title || !formData.category) {
+      toast.error("Please fill in all required fields");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      // Simulate upload process
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      const newVideo: Video = {
-        id: Date.now().toString(),
+      const payload = {
         title: formData.title,
         description: formData.description,
         category: formData.category,
-        subCategory: formData.subCategory,
-        tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
-        duration: "0:00", // Would be determined after upload
-        size: "0 MB", // Would be determined after upload
-        format: "MP4",
+        sub_category: formData.subCategory,
+        tags: formData.tags,
         quality: formData.quality,
         status: formData.status,
-        views: 0,
-        thumbnail: "/placeholder.svg",
-        videoUrl: `/videos/${formData.title.toLowerCase().replace(/\s+/g, '-')}.mp4`,
-        createdAt: new Date().toISOString().split('T')[0],
-        uploadedBy: "Current User",
-        isActive: formData.isActive,
+        is_active: formData.isActive,
       };
 
-      setVideos(prev => [newVideo, ...prev]);
+      await createVideoApi(payload);
       setIsAddDrawerOpen(false);
       resetForm();
-      toast.success("Video uploaded successfully!");
-    } catch (error) {
-      toast.error("Failed to upload video");
+      toast.success("Video created successfully!");
+      await loadVideos();
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to create video");
     } finally {
       setIsSubmitting(false);
     }
@@ -352,30 +312,25 @@ export default function VideoBank() {
 
     setIsSubmitting(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      setVideos(prev => prev.map(video => 
-        video.id === selectedVideo.id 
-          ? {
-              ...video,
+      const payload = {
               title: formData.title,
               description: formData.description,
               category: formData.category,
-              subCategory: formData.subCategory,
-              tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
+        sub_category: formData.subCategory,
+        tags: formData.tags,
               quality: formData.quality,
               status: formData.status,
-              isActive: formData.isActive,
-            }
-          : video
-      ));
+        is_active: formData.isActive,
+      };
 
+      await updateVideoApi(Number(selectedVideo.id), payload);
       setIsEditDrawerOpen(false);
       setSelectedVideo(null);
       resetForm();
       toast.success("Video updated successfully!");
-    } catch (error) {
-      toast.error("Failed to update video");
+      await loadVideos();
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to update video");
     } finally {
       setIsSubmitting(false);
     }
@@ -385,14 +340,13 @@ export default function VideoBank() {
     if (!selectedVideo) return;
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setVideos(prev => prev.filter(video => video.id !== selectedVideo.id));
+      await deleteVideoApi(Number(selectedVideo.id));
       setIsDeleteDrawerOpen(false);
       setSelectedVideo(null);
       toast.success("Video deleted successfully!");
-    } catch (error) {
-      toast.error("Failed to delete video");
+      await loadVideos();
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to delete video");
     }
   };
 
@@ -589,13 +543,23 @@ export default function VideoBank() {
         </CardHeader>
 
         <CardContent>
-          <DataTable
-            data={filteredVideos}
-            columns={columns}
-            actions={actions}
-            emptyMessage="No videos found"
-            onAdd={handleAdd}
-          />
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-muted-foreground">Loading videos...</div>
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-destructive">{error}</div>
+            </div>
+          ) : (
+            <DataTable
+              data={filteredVideos}
+              columns={columns}
+              actions={actions}
+              emptyMessage="No videos found"
+              onAdd={handleAdd}
+            />
+          )}
         </CardContent>
       </Card>
 

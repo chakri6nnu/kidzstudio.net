@@ -1,16 +1,34 @@
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { SideDrawer } from "@/components/ui/side-drawer";
 import { ConfirmDrawer } from "@/components/ui/confirm-drawer";
 import { FiltersPanel } from "@/components/ui/filters-panel";
 import { DataTable } from "@/components/ui/data-table";
-import { getLessonsApi, createLessonApi, updateLessonApi, deleteLessonApi, type Lesson as ApiLesson } from "@/lib/utils";
+import {
+  getLessonsApi,
+  createLessonApi,
+  updateLessonApi,
+  deleteLessonApi,
+  type Lesson as ApiLesson,
+} from "@/lib/utils";
 import { toast } from "sonner";
 import {
   Plus,
@@ -54,27 +72,29 @@ export default function LessonBank() {
       const mapped: Lesson[] = res.data.map((l: ApiLesson) => ({
         id: l.id,
         title: l.title,
-        category: '-',
-        subCategory: '-',
-        difficulty: '-',
-        duration: '-',
-        type: 'Text',
-        status: l.is_active ? 'Published' : 'Draft',
+        category: "-",
+        subCategory: "-",
+        difficulty: "-",
+        duration: "-",
+        type: "Text",
+        status: l.is_active ? "Published" : "Draft",
         views: 0,
-        createdAt: new Date(l.created_at).toISOString().split('T')[0],
+        createdAt: new Date(l.created_at).toISOString().split("T")[0],
         description: l.description,
         content: l.content,
       }));
       setLessons(mapped);
       setMeta(res.meta);
     } catch (e: any) {
-      setError(e?.message || 'Failed to load lessons');
+      setError(e?.message || "Failed to load lessons");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDeleteDrawerOpen, setIsDeleteDrawerOpen] = useState(false);
@@ -107,81 +127,106 @@ export default function LessonBank() {
       await load();
       setSelectedLesson(null);
       setIsDeleteDrawerOpen(false);
-      toast.success('Lesson deleted');
+      toast.success("Lesson deleted");
     } catch (e: any) {
-      toast.error(e?.message || 'Failed to delete');
+      toast.error(e?.message || "Failed to delete");
     }
   };
 
   const handleSave = async (formData: FormData) => {
     const lessonData = {
-      title: String(formData.get('title') || ''),
-      description: String(formData.get('description') || ''),
-      content: String(formData.get('content') || ''),
-      is_active: (formData.get('status') || 'Draft') === 'Published',
+      title: String(formData.get("title") || ""),
+      description: String(formData.get("description") || ""),
+      content: String(formData.get("content") || ""),
+      is_active: (formData.get("status") || "Draft") === "Published",
     };
     try {
       if (selectedLesson) {
         await updateLessonApi(selectedLesson.id, lessonData);
-        toast.success('Lesson updated');
+        toast.success("Lesson updated");
       } else {
         await createLessonApi(lessonData);
-        toast.success('Lesson created');
+        toast.success("Lesson created");
       }
       setIsDrawerOpen(false);
       await load();
     } catch (e: any) {
-      toast.error(e?.message || 'Save failed');
+      toast.error(e?.message || "Save failed");
     }
   };
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case "Beginner": return "bg-success text-success-foreground";
-      case "Intermediate": return "bg-warning text-warning-foreground";
-      case "Advanced": return "bg-destructive text-destructive-foreground";
-      default: return "bg-secondary text-secondary-foreground";
+      case "Beginner":
+        return "bg-success text-success-foreground";
+      case "Intermediate":
+        return "bg-warning text-warning-foreground";
+      case "Advanced":
+        return "bg-destructive text-destructive-foreground";
+      default:
+        return "bg-secondary text-secondary-foreground";
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Published": return "bg-success text-success-foreground";
-      case "Draft": return "bg-muted text-muted-foreground";
-      case "Archived": return "bg-destructive text-destructive-foreground";
-      default: return "bg-secondary text-secondary-foreground";
+      case "Published":
+        return "bg-success text-success-foreground";
+      case "Draft":
+        return "bg-muted text-muted-foreground";
+      case "Archived":
+        return "bg-destructive text-destructive-foreground";
+      default:
+        return "bg-secondary text-secondary-foreground";
     }
   };
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case "Interactive": return "bg-primary text-primary-foreground";
-      case "Video": return "bg-accent text-accent-foreground";
-      case "Text": return "bg-secondary text-secondary-foreground";
-      default: return "bg-muted text-muted-foreground";
+      case "Interactive":
+        return "bg-primary text-primary-foreground";
+      case "Video":
+        return "bg-accent text-accent-foreground";
+      case "Text":
+        return "bg-secondary text-secondary-foreground";
+      default:
+        return "bg-muted text-muted-foreground";
     }
   };
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case "Interactive": return <Monitor className="h-3 w-3" />;
-      case "Video": return <Play className="h-3 w-3" />;
-      case "Text": return <FileText className="h-3 w-3" />;
-      default: return <BookOpen className="h-3 w-3" />;
+      case "Interactive":
+        return <Monitor className="h-3 w-3" />;
+      case "Video":
+        return <Play className="h-3 w-3" />;
+      case "Text":
+        return <FileText className="h-3 w-3" />;
+      default:
+        return <BookOpen className="h-3 w-3" />;
     }
   };
 
-  const uniqueCategories = [...new Set(lessons.map(l => l.category))];
+  const uniqueCategories = [...new Set(lessons.map((l) => l.category))];
 
-  const filteredLessons = lessons.filter(lesson => {
-    const matchesSearch = lesson.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         lesson.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         lesson.subCategory.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredLessons = lessons.filter((lesson) => {
+    const matchesSearch =
+      lesson.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lesson.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lesson.subCategory.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = !statusFilter || lesson.status === statusFilter;
-    const matchesDifficulty = !difficultyFilter || lesson.difficulty === difficultyFilter;
+    const matchesDifficulty =
+      !difficultyFilter || lesson.difficulty === difficultyFilter;
     const matchesType = !typeFilter || lesson.type === typeFilter;
-    const matchesCategory = !categoryFilter || lesson.category === categoryFilter;
-    return matchesSearch && matchesStatus && matchesDifficulty && matchesType && matchesCategory;
+    const matchesCategory =
+      !categoryFilter || lesson.category === categoryFilter;
+    return (
+      matchesSearch &&
+      matchesStatus &&
+      matchesDifficulty &&
+      matchesType &&
+      matchesCategory
+    );
   });
 
   const columns = [
@@ -205,7 +250,9 @@ export default function LessonBank() {
       render: (lesson: Lesson) => (
         <div>
           <div className="font-medium">{lesson.category}</div>
-          <div className="text-xs text-muted-foreground">{lesson.subCategory}</div>
+          <div className="text-xs text-muted-foreground">
+            {lesson.subCategory}
+          </div>
         </div>
       ),
     },
@@ -214,7 +261,10 @@ export default function LessonBank() {
       header: "Difficulty",
       sortable: true,
       render: (lesson: Lesson) => (
-        <Badge variant="secondary" className={getDifficultyColor(lesson.difficulty)}>
+        <Badge
+          variant="secondary"
+          className={getDifficultyColor(lesson.difficulty)}
+        >
           {lesson.difficulty}
         </Badge>
       ),
@@ -247,7 +297,9 @@ export default function LessonBank() {
       header: "Views",
       sortable: true,
       render: (lesson: Lesson) => (
-        <div className="font-medium">{(lesson.views || 0).toLocaleString()}</div>
+        <div className="font-medium">
+          {(lesson.views || 0).toLocaleString()}
+        </div>
       ),
     },
     {
@@ -287,8 +339,8 @@ export default function LessonBank() {
     },
   ];
 
-  const publishedCount = lessons.filter(l => l.status === "Published").length;
-  const draftCount = lessons.filter(l => l.status === "Draft").length;
+  const publishedCount = lessons.filter((l) => l.status === "Published").length;
+  const draftCount = lessons.filter((l) => l.status === "Draft").length;
   const totalViews = lessons.reduce((sum, l) => sum + l.views, 0);
 
   return (
@@ -303,7 +355,10 @@ export default function LessonBank() {
             Repository of educational lessons and learning materials
           </p>
         </div>
-        <Button onClick={handleAdd} className="bg-gradient-primary hover:bg-primary-hover shadow-primary">
+        <Button
+          onClick={handleAdd}
+          className="bg-gradient-primary hover:bg-primary-hover shadow-primary"
+        >
           <Plus className="mr-2 h-4 w-4" />
           Add Lesson
         </Button>
@@ -350,7 +405,9 @@ export default function LessonBank() {
             <Eye className="h-4 w-4 text-accent" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{(totalViews / 1000).toFixed(1)}K</div>
+            <div className="text-2xl font-bold">
+              {(totalViews / 1000).toFixed(1)}K
+            </div>
             <p className="text-xs text-success">Student engagement</p>
           </CardContent>
         </Card>
@@ -400,7 +457,7 @@ export default function LessonBank() {
             value: categoryFilter,
             options: [
               { label: "All Categories", value: "" },
-              ...uniqueCategories.map(cat => ({ label: cat, value: cat })),
+              ...uniqueCategories.map((cat) => ({ label: cat, value: cat })),
             ],
           },
         ]}
@@ -434,13 +491,20 @@ export default function LessonBank() {
         open={isDrawerOpen}
         onOpenChange={setIsDrawerOpen}
         title={selectedLesson ? "Edit Lesson" : "Create New Lesson"}
-        description={selectedLesson ? "Update the lesson details" : "Add a new lesson to the bank"}
+        description={
+          selectedLesson
+            ? "Update the lesson details"
+            : "Add a new lesson to the bank"
+        }
       >
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          const formData = new FormData(e.target as HTMLFormElement);
-          handleSave(formData);
-        }} className="space-y-6">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target as HTMLFormElement);
+            handleSave(formData);
+          }}
+          className="space-y-6"
+        >
           <div className="space-y-4">
             <div>
               <Label htmlFor="title">Lesson Title</Label>
@@ -467,7 +531,10 @@ export default function LessonBank() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="category">Category</Label>
-                <Select name="category" defaultValue={selectedLesson?.category || ""}>
+                <Select
+                  name="category"
+                  defaultValue={selectedLesson?.category || ""}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
@@ -495,7 +562,10 @@ export default function LessonBank() {
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="difficulty">Difficulty</Label>
-                <Select name="difficulty" defaultValue={selectedLesson?.difficulty || "Beginner"}>
+                <Select
+                  name="difficulty"
+                  defaultValue={selectedLesson?.difficulty || "Beginner"}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -508,7 +578,10 @@ export default function LessonBank() {
               </div>
               <div>
                 <Label htmlFor="type">Lesson Type</Label>
-                <Select name="type" defaultValue={selectedLesson?.type || "Interactive"}>
+                <Select
+                  name="type"
+                  defaultValue={selectedLesson?.type || "Interactive"}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -532,7 +605,10 @@ export default function LessonBank() {
 
             <div>
               <Label htmlFor="status">Status</Label>
-              <Select name="status" defaultValue={selectedLesson?.status || "Draft"}>
+              <Select
+                name="status"
+                defaultValue={selectedLesson?.status || "Draft"}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -558,7 +634,11 @@ export default function LessonBank() {
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => setIsDrawerOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDrawerOpen(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" className="bg-gradient-primary">
