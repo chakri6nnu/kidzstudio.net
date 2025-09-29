@@ -13,7 +13,7 @@
 | Question Types      | Done            | Done        | Done        | Done        | Done        | CRUD wired to /api/question-types       |
 | Lesson Bank         | Done            | Done        | Done        | Done        | Done        | CRUD wired to /api/lessons              |
 | Video Bank          | Done            | Done        | Done        | Done        | Done        | CRUD wired to /api/videos               |
-| Users               | Not started     | Not started | Not started | Not started | Not started |                                         |
+| Users               | Done            | Done        | Done        | Done        | Done        | CRUD wired to /api/users                |
 | User Groups         | Not started     | Not started | Not started | Not started | Not started |                                         |
 | Import Users        | Not started     | N/A         | Not started | N/A         | N/A         |                                         |
 | Categories          | Not started     | Not started | Not started | Not started | Not started |                                         |

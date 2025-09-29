@@ -498,7 +498,13 @@ export type Video = {
 };
 
 export async function getVideosApi(
-  filters: { search?: string; category?: string; status?: string; quality?: string; per_page?: number } = {}
+  filters: {
+    search?: string;
+    category?: string;
+    status?: string;
+    quality?: string;
+    per_page?: number;
+  } = {}
 ): Promise<{ data: Video[]; meta: any }> {
   const params = new URLSearchParams();
   Object.entries(filters).forEach(([k, v]) => {
@@ -531,10 +537,71 @@ export async function updateVideoApi(
   });
 }
 
-export async function deleteVideoApi(
-  id: number
-): Promise<{ message: string }> {
+export async function deleteVideoApi(id: number): Promise<{ message: string }> {
   return apiFetch(`/videos/${id}`, { method: "DELETE" });
+}
+
+// Users API
+export type User = {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string;
+  role: string;
+  group_id?: number;
+  is_active: boolean;
+  date_of_birth?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  zip_code?: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export async function getUsersApi(
+  filters: {
+    search?: string;
+    role?: string;
+    status?: string;
+    group_id?: number;
+    per_page?: number;
+  } = {}
+): Promise<{ data: User[]; meta: any }> {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== "") params.append(k, String(v));
+  });
+  const qs = params.toString();
+  return apiFetch(`/users${qs ? `?${qs}` : ""}`);
+}
+
+export async function getUserApi(id: number): Promise<{ data: User }> {
+  return apiFetch(`/users/${id}`);
+}
+
+export async function createUserApi(
+  payload: Partial<User> & { password: string }
+): Promise<{ message: string; data: User }> {
+  return apiFetch(`/users`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateUserApi(
+  id: number,
+  payload: Partial<User> & { password?: string }
+): Promise<{ message: string; data: User }> {
+  return apiFetch(`/users/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteUserApi(id: number): Promise<{ message: string }> {
+  return apiFetch(`/users/${id}`, { method: "DELETE" });
 }
 
 export async function removeSectionQuestion(

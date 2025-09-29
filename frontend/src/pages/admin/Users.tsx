@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -50,99 +50,68 @@ import {
 import UserForm from "@/components/forms/UserForm";
 import DeleteConfirmDialog from "@/components/dialogs/DeleteConfirmDialog";
 import ImportDialog from "@/components/dialogs/ImportDialog";
+import { 
+  getUsersApi, 
+  createUserApi, 
+  updateUserApi, 
+  deleteUserApi, 
+  type User as ApiUser 
+} from "@/lib/utils";
+import { toast } from "sonner";
 
 export default function Users() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRole, setSelectedRole] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [meta, setMeta] = useState<any>({});
 
-  const users = [
-    {
-      id: 1,
-      name: "Alice Johnson",
-      email: "alice@example.com",
-      avatar: "/avatars/alice.jpg",
-      role: "Student",
-      status: "Active",
-      joinDate: "2024-01-15",
-      lastActive: "2024-01-28",
-      examsCompleted: 12,
-      totalScore: 945,
-      subscriptionPlan: "Premium",
-      phone: "+1 (555) 123-4567",
-      group: "Engineering Batch 2024",
-    },
-    {
-      id: 2,
-      name: "Dr. Robert Smith",
-      email: "robert@example.com",
-      avatar: "/avatars/robert.jpg",
-      role: "Instructor",
-      status: "Active",
-      joinDate: "2023-08-10",
-      lastActive: "2024-01-28",
-      examsCreated: 35,
-      studentsManaged: 150,
-      subscriptionPlan: "Faculty",
-      phone: "+1 (555) 987-6543",
-      group: "Computer Science Faculty",
-    },
-    {
-      id: 3,
-      name: "Emma Davis",
-      email: "emma@example.com",
-      avatar: "/avatars/emma.jpg",
-      role: "Student",
-      status: "Suspended",
-      joinDate: "2024-01-20",
-      lastActive: "2024-01-25",
-      examsCompleted: 3,
-      totalScore: 180,
-      subscriptionPlan: "Basic",
-      phone: "+1 (555) 456-7890",
-      group: "Mathematics Group A",
-    },
-    {
-      id: 4,
-      name: "Michael Chen",
-      email: "michael@example.com",
-      avatar: "/avatars/michael.jpg",
-      role: "Admin",
-      status: "Active",
-      joinDate: "2023-05-01",
-      lastActive: "2024-01-28",
-      systemAccess: "Full",
-      permissions: "All",
-      subscriptionPlan: "System",
-      phone: "+1 (555) 321-0987",
-      group: "System Administrators",
-    },
-    {
-      id: 5,
-      name: "Sarah Wilson",
-      email: "sarah@example.com",
-      avatar: "/avatars/sarah.jpg",
-      role: "Student",
-      status: "Inactive",
-      joinDate: "2023-12-05",
-      lastActive: "2024-01-10",
-      examsCompleted: 8,
-      totalScore: 620,
-      subscriptionPlan: "Premium",
-      phone: "+1 (555) 654-3210",
-      group: "Physics Advanced",
-    },
-  ];
+  // Load users from API
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const filters: { search?: string; role?: string; status?: string; per_page?: number } = {
+        search: searchTerm || undefined,
+        role: selectedRole !== "all" ? selectedRole : undefined,
+        status: selectedStatus !== "all" ? selectedStatus : undefined,
+      };
+      const response = await getUsersApi(filters);
+      
+      // Map API response to UI format
+      const mappedUsers = response.data.map((u: ApiUser) => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        avatar: "/placeholder.svg", // Default avatar
+        role: u.role,
+        status: u.is_active ? "Active" : "Inactive",
+        joinDate: new Date(u.created_at).toISOString().split('T')[0],
+        lastActive: new Date(u.updated_at).toISOString().split('T')[0],
+        examsCompleted: 0, // Placeholder - needs to come from API
+        totalScore: 0, // Placeholder - needs to come from API
+        subscriptionPlan: "Basic", // Placeholder - needs to come from API
+        phone: u.phone || "",
+        group: "Default Group", // Placeholder - needs to come from API
+      }));
+      
+      setUsers(mappedUsers);
+      setMeta(response.meta);
+    } catch (err: any) {
+      setError(err?.message || "Failed to load users");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.group.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = selectedRole === "all" || user.role === selectedRole;
-    const matchesStatus = selectedStatus === "all" || user.status === selectedStatus;
-    
-    return matchesSearch && matchesRole && matchesStatus;
-  });
+  useEffect(() => {
+    loadUsers();
+  }, [searchTerm, selectedRole, selectedStatus]);
+
+  // Filter and search logic (now handled by API)
+  const filteredUsers = users;
 
   const handleFilterChange = (filterId: string, value: string) => {
     switch (filterId) {
@@ -253,7 +222,7 @@ export default function Users() {
             }
           />
           <UserForm
-            onSave={(data) => console.log("Save user:", data)}
+            onSave={handleSaveUser}
             onCancel={() => {}}
             trigger={
               <Button className="bg-gradient-primary hover:bg-primary-hover shadow-primary">
@@ -327,6 +296,15 @@ export default function Users() {
         </CardHeader>
 
         <CardContent>
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-muted-foreground">Loading users...</div>
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-destructive">{error}</div>
+            </div>
+          ) : (
           <div className="rounded-md border">
             <Table>
               <TableHeader>
@@ -448,17 +426,17 @@ export default function Users() {
                             Send Message
                           </DropdownMenuItem>
                           {user.status === "Active" ? (
-                            <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleToggleStatus(user)}>
                               <XCircle className="mr-2 h-4 w-4" />
                               Deactivate
                             </DropdownMenuItem>
                           ) : (
-                          <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleToggleStatus(user)}>
                             <CheckCircle className="mr-2 h-4 w-4" />
                             Activate
                           </DropdownMenuItem>
                         )}
-                        <DropdownMenuItem className="text-destructive">
+                      <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteUser(user)}>
                           <Trash2 className="mr-2 h-4 w-4" />
                           Delete User
                         </DropdownMenuItem>
@@ -470,8 +448,42 @@ export default function Users() {
             </TableBody>
           </Table>
         </div>
+          )}
       </CardContent>
     </Card>
   </div>
 );
+
+  // Handler functions
+  const handleToggleStatus = async (user: any) => {
+    try {
+      await updateUserApi(user.id, { is_active: user.status !== "Active" });
+      toast.success(`User ${user.status === "Active" ? "deactivated" : "activated"} successfully!`);
+      await loadUsers();
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update user status");
+    }
+  };
+
+  const handleDeleteUser = async (user: any) => {
+    if (confirm(`Are you sure you want to delete ${user.name}?`)) {
+      try {
+        await deleteUserApi(user.id);
+        toast.success("User deleted successfully!");
+        await loadUsers();
+      } catch (err: any) {
+        toast.error(err?.message || "Failed to delete user");
+      }
+    }
+  };
+
+  const handleSaveUser = async (data: any) => {
+    try {
+      await createUserApi(data);
+      toast.success("User created successfully!");
+      await loadUsers();
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to create user");
+    }
+  };
 }

@@ -1,18 +1,30 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { SideDrawer } from "@/components/ui/side-drawer";
 import { ConfirmDrawer } from "@/components/ui/confirm-drawer";
 import { FiltersPanel } from "@/components/ui/filters-panel";
 import { DataTable } from "@/components/ui/data-table";
 import Editor from "@/components/ui/editor";
-import { 
+import {
   Plus,
   Play,
   Edit,
@@ -28,12 +40,12 @@ import {
   HardDrive,
 } from "lucide-react";
 import { toast } from "sonner";
-import { 
-  getVideosApi, 
-  createVideoApi, 
-  updateVideoApi, 
-  deleteVideoApi, 
-  type Video as ApiVideo 
+import {
+  getVideosApi,
+  createVideoApi,
+  updateVideoApi,
+  deleteVideoApi,
+  type Video as ApiVideo,
 } from "@/lib/utils";
 
 interface Video {
@@ -66,13 +78,13 @@ export default function VideoBank() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedQuality, setSelectedQuality] = useState("all");
-  
+
   // Drawer states
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
   const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false);
   const [isDeleteDrawerOpen, setIsDeleteDrawerOpen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
-  
+
   // Form states
   const [formData, setFormData] = useState({
     title: "",
@@ -94,14 +106,20 @@ export default function VideoBank() {
     try {
       setLoading(true);
       setError("");
-      const filters: { search?: string; category?: string; status?: string; quality?: string; per_page?: number } = {
+      const filters: {
+        search?: string;
+        category?: string;
+        status?: string;
+        quality?: string;
+        per_page?: number;
+      } = {
         search: searchTerm || undefined,
         category: selectedCategory !== "all" ? selectedCategory : undefined,
         status: selectedStatus !== "all" ? selectedStatus : undefined,
         quality: selectedQuality !== "all" ? selectedQuality : undefined,
       };
       const response = await getVideosApi(filters);
-      
+
       // Map API response to UI format
       const mappedVideos: Video[] = response.data.map((v: ApiVideo) => ({
         id: v.id.toString(),
@@ -109,7 +127,7 @@ export default function VideoBank() {
         description: v.description || "",
         category: v.category,
         subCategory: v.sub_category || "",
-        tags: v.tags ? v.tags.split(',').map(tag => tag.trim()) : [],
+        tags: v.tags ? v.tags.split(",").map((tag) => tag.trim()) : [],
         duration: v.duration || "0:00",
         size: v.size || "0 MB",
         format: v.format || "MP4",
@@ -118,11 +136,11 @@ export default function VideoBank() {
         views: v.views || 0,
         thumbnail: v.thumbnail || "/placeholder.svg",
         videoUrl: v.video_url || "",
-        createdAt: new Date(v.created_at).toISOString().split('T')[0],
+        createdAt: new Date(v.created_at).toISOString().split("T")[0],
         uploadedBy: v.uploaded_by || "Admin",
         isActive: v.is_active,
       }));
-      
+
       setVideos(mappedVideos);
       setMeta(response.meta);
     } catch (err: any) {
@@ -154,8 +172,8 @@ export default function VideoBank() {
         { value: "History", label: "History" },
         { value: "English", label: "English" },
         { value: "Physics", label: "Physics" },
-        { value: "Chemistry", label: "Chemistry" }
-      ]
+        { value: "Chemistry", label: "Chemistry" },
+      ],
     },
     {
       key: "status",
@@ -166,10 +184,10 @@ export default function VideoBank() {
       options: [
         { value: "all", label: "All Status" },
         { value: "Published", label: "Published" },
-        { value: "Processing", label: "Processing" },  
+        { value: "Processing", label: "Processing" },
         { value: "Draft", label: "Draft" },
-        { value: "Failed", label: "Failed" }
-      ]
+        { value: "Failed", label: "Failed" },
+      ],
     },
     {
       key: "quality",
@@ -181,9 +199,9 @@ export default function VideoBank() {
         { value: "all", label: "All Quality" },
         { value: "1080p", label: "1080p HD" },
         { value: "720p", label: "720p HD" },
-        { value: "480p", label: "480p SD" }
-      ]
-    }
+        { value: "480p", label: "480p SD" },
+      ],
+    },
   ];
 
   // Helper functions
@@ -217,7 +235,7 @@ export default function VideoBank() {
 
   // CRUD operations
   const handleFilterChange = (filterId: string, value: string) => {
-    const filter = filters.find(f => f.key === filterId);
+    const filter = filters.find((f) => f.key === filterId);
     if (filter) {
       filter.onChange(value);
     }
@@ -313,13 +331,13 @@ export default function VideoBank() {
     setIsSubmitting(true);
     try {
       const payload = {
-              title: formData.title,
-              description: formData.description,
-              category: formData.category,
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
         sub_category: formData.subCategory,
         tags: formData.tags,
-              quality: formData.quality,
-              status: formData.status,
+        quality: formData.quality,
+        status: formData.status,
         is_active: formData.isActive,
       };
 
@@ -359,8 +377,8 @@ export default function VideoBank() {
       render: (video: Video) => (
         <div className="flex items-center space-x-3">
           <div className="w-16 h-10 bg-muted rounded overflow-hidden">
-            <img 
-              src={video.thumbnail} 
+            <img
+              src={video.thumbnail}
               alt={video.title}
               className="w-full h-full object-cover"
             />
@@ -372,7 +390,7 @@ export default function VideoBank() {
             </div>
           </div>
         </div>
-      )
+      ),
     },
     {
       key: "duration" as keyof Video,
@@ -382,7 +400,7 @@ export default function VideoBank() {
           <Clock className="mr-1 h-3 w-3" />
           {video.duration}
         </div>
-      )
+      ),
     },
     {
       key: "quality" as keyof Video,
@@ -391,12 +409,12 @@ export default function VideoBank() {
         <Badge variant="outline" className={getQualityColor(video.quality)}>
           {video.quality}
         </Badge>
-      )
+      ),
     },
     {
       key: "size" as keyof Video,
       header: "Size",
-      render: (video: Video) => video.size
+      render: (video: Video) => video.size,
     },
     {
       key: "views" as keyof Video,
@@ -407,7 +425,7 @@ export default function VideoBank() {
           <Eye className="mr-1 h-3 w-3" />
           {(video.views || 0).toLocaleString()}
         </div>
-      )
+      ),
     },
     {
       key: "status" as keyof Video,
@@ -416,14 +434,14 @@ export default function VideoBank() {
         <Badge variant="secondary" className={getStatusColor(video.status)}>
           {video.status}
         </Badge>
-      )
+      ),
     },
     {
       key: "createdAt" as keyof Video,
       header: "Created",
       sortable: true,
-      render: (video: Video) => video.createdAt
-    }
+      render: (video: Video) => video.createdAt,
+    },
   ];
 
   // Table actions
@@ -432,13 +450,13 @@ export default function VideoBank() {
       label: "Play",
       icon: <Play className="h-4 w-4" />,
       onClick: (video: Video) => {
-        window.open(video.videoUrl, '_blank');
-      }
+        window.open(video.videoUrl, "_blank");
+      },
     },
     {
       label: "Edit",
       icon: <Edit className="h-4 w-4" />,
-      onClick: handleEdit
+      onClick: handleEdit,
     },
     {
       label: "Download",
@@ -446,14 +464,14 @@ export default function VideoBank() {
       onClick: (video: Video) => {
         // Simulate download
         toast.success("Download started");
-      }
+      },
     },
     {
       label: "Delete",
       icon: <Trash2 className="h-4 w-4" />,
       onClick: handleDelete,
-      variant: "destructive" as const
-    }
+      variant: "destructive" as const,
+    },
   ];
 
   return (
@@ -468,7 +486,7 @@ export default function VideoBank() {
             Repository of educational videos and multimedia content
           </p>
         </div>
-        <Button 
+        <Button
           onClick={handleAdd}
           className="bg-gradient-primary hover:bg-primary-hover shadow-primary"
         >
@@ -497,7 +515,7 @@ export default function VideoBank() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {videos.filter(v => v.status === "Published").length}
+              {videos.filter((v) => v.status === "Published").length}
             </div>
             <p className="text-xs text-success">Ready for viewing</p>
           </CardContent>
@@ -510,7 +528,9 @@ export default function VideoBank() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {videos.reduce((sum, v) => sum + (v.views || 0), 0).toLocaleString()}
+              {videos
+                .reduce((sum, v) => sum + (v.views || 0), 0)
+                .toLocaleString()}
             </div>
             <p className="text-xs text-success">+18% from last month</p>
           </CardContent>
@@ -579,7 +599,9 @@ export default function VideoBank() {
               <Input
                 id="title"
                 value={formData.title}
-                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, title: e.target.value }))
+                }
                 placeholder="Enter video title"
                 className="mt-1"
               />
@@ -592,7 +614,12 @@ export default function VideoBank() {
               <div className="mt-1">
                 <Textarea
                   value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
                   placeholder="Enter video description..."
                   className="min-h-[100px]"
                 />
@@ -606,7 +633,9 @@ export default function VideoBank() {
                 </Label>
                 <Select
                   value={formData.category}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, category: value }))
+                  }
                 >
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Select category" />
@@ -629,7 +658,12 @@ export default function VideoBank() {
                 <Input
                   id="subCategory"
                   value={formData.subCategory}
-                  onChange={(e) => setFormData(prev => ({ ...prev, subCategory: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      subCategory: e.target.value,
+                    }))
+                  }
                   placeholder="Enter sub category"
                   className="mt-1"
                 />
@@ -643,7 +677,9 @@ export default function VideoBank() {
               <Input
                 id="tags"
                 value={formData.tags}
-                onChange={(e) => setFormData(prev => ({ ...prev, tags: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, tags: e.target.value }))
+                }
                 placeholder="Enter tags separated by commas"
                 className="mt-1"
               />
@@ -656,7 +692,9 @@ export default function VideoBank() {
                 </Label>
                 <Select
                   value={formData.quality}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, quality: value }))}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, quality: value }))
+                  }
                 >
                   <SelectTrigger className="mt-1">
                     <SelectValue />
@@ -675,7 +713,12 @@ export default function VideoBank() {
                 </Label>
                 <Select
                   value={formData.status}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as Video["status"] }))}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      status: value as Video["status"],
+                    }))
+                  }
                 >
                   <SelectTrigger className="mt-1">
                     <SelectValue />
@@ -696,7 +739,12 @@ export default function VideoBank() {
                 id="videoFile"
                 type="file"
                 accept="video/*"
-                onChange={(e) => setFormData(prev => ({ ...prev, videoFile: e.target.files?.[0] || null }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    videoFile: e.target.files?.[0] || null,
+                  }))
+                }
                 className="mt-1"
               />
             </div>
@@ -709,7 +757,12 @@ export default function VideoBank() {
                 id="thumbnailFile"
                 type="file"
                 accept="image/*"
-                onChange={(e) => setFormData(prev => ({ ...prev, thumbnailFile: e.target.files?.[0] || null }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    thumbnailFile: e.target.files?.[0] || null,
+                  }))
+                }
                 className="mt-1"
               />
             </div>
@@ -723,22 +776,24 @@ export default function VideoBank() {
               </div>
               <Switch
                 checked={formData.isActive}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
+                onCheckedChange={(checked) =>
+                  setFormData((prev) => ({ ...prev, isActive: checked }))
+                }
               />
             </div>
           </div>
 
           <div className="flex justify-end space-x-2 pt-4 border-t">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => setIsAddDrawerOpen(false)}
               disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button 
-              onClick={handleAddSubmit} 
+            <Button
+              onClick={handleAddSubmit}
               disabled={isSubmitting}
               className="bg-gradient-primary hover:bg-primary-hover"
             >
@@ -774,7 +829,9 @@ export default function VideoBank() {
               <Input
                 id="edit-title"
                 value={formData.title}
-                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, title: e.target.value }))
+                }
                 placeholder="Enter video title"
                 className="mt-1"
               />
@@ -787,7 +844,12 @@ export default function VideoBank() {
               <div className="mt-1">
                 <Textarea
                   value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
                   placeholder="Enter video description..."
                   className="min-h-[100px]"
                 />
@@ -801,7 +863,9 @@ export default function VideoBank() {
                 </Label>
                 <Select
                   value={formData.category}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, category: value }))
+                  }
                 >
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Select category" />
@@ -818,13 +882,21 @@ export default function VideoBank() {
               </div>
 
               <div>
-                <Label htmlFor="edit-subCategory" className="text-sm font-medium">
+                <Label
+                  htmlFor="edit-subCategory"
+                  className="text-sm font-medium"
+                >
                   Sub Category
                 </Label>
                 <Input
                   id="edit-subCategory"
                   value={formData.subCategory}
-                  onChange={(e) => setFormData(prev => ({ ...prev, subCategory: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      subCategory: e.target.value,
+                    }))
+                  }
                   placeholder="Enter sub category"
                   className="mt-1"
                 />
@@ -838,7 +910,9 @@ export default function VideoBank() {
               <Input
                 id="edit-tags"
                 value={formData.tags}
-                onChange={(e) => setFormData(prev => ({ ...prev, tags: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, tags: e.target.value }))
+                }
                 placeholder="Enter tags separated by commas"
                 className="mt-1"
               />
@@ -851,7 +925,9 @@ export default function VideoBank() {
                 </Label>
                 <Select
                   value={formData.quality}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, quality: value }))}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, quality: value }))
+                  }
                 >
                   <SelectTrigger className="mt-1">
                     <SelectValue />
@@ -870,7 +946,12 @@ export default function VideoBank() {
                 </Label>
                 <Select
                   value={formData.status}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as Video["status"] }))}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      status: value as Video["status"],
+                    }))
+                  }
                 >
                   <SelectTrigger className="mt-1">
                     <SelectValue />
@@ -894,22 +975,24 @@ export default function VideoBank() {
               </div>
               <Switch
                 checked={formData.isActive}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
+                onCheckedChange={(checked) =>
+                  setFormData((prev) => ({ ...prev, isActive: checked }))
+                }
               />
             </div>
           </div>
 
           <div className="flex justify-end space-x-2 pt-4 border-t">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => setIsEditDrawerOpen(false)}
               disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button 
-              onClick={handleEditSubmit} 
+            <Button
+              onClick={handleEditSubmit}
               disabled={isSubmitting}
               className="bg-gradient-primary hover:bg-primary-hover"
             >
