@@ -116,6 +116,20 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Import Users
     Route::post('/users/import', [\App\Http\Controllers\Api\UserImportController::class, 'store']);
+
+    // Categories API endpoints
+    Route::get('/categories', [\App\Http\Controllers\Api\CategoryController::class, 'index']);
+    Route::post('/categories', [\App\Http\Controllers\Api\CategoryController::class, 'store']);
+    Route::get('/categories/{category}', [\App\Http\Controllers\Api\CategoryController::class, 'show']);
+    Route::put('/categories/{category}', [\App\Http\Controllers\Api\CategoryController::class, 'update']);
+    Route::delete('/categories/{category}', [\App\Http\Controllers\Api\CategoryController::class, 'destroy']);
+
+    // Sub Categories API endpoints
+    Route::get('/sub-categories', [\App\Http\Controllers\Api\SubCategoryController::class, 'index']);
+    Route::post('/sub-categories', [\App\Http\Controllers\Api\SubCategoryController::class, 'store']);
+    Route::get('/sub-categories/{subCategory}', [\App\Http\Controllers\Api\SubCategoryController::class, 'show']);
+    Route::put('/sub-categories/{subCategory}', [\App\Http\Controllers\Api\SubCategoryController::class, 'update']);
+    Route::delete('/sub-categories/{subCategory}', [\App\Http\Controllers\Api\SubCategoryController::class, 'destroy']);
 });
 
 // CORS preflight handler (OPTIONS)

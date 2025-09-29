@@ -23,15 +23,15 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Upload, 
-  FileText, 
-  Download, 
-  CheckCircle, 
-  AlertCircle, 
+import {
+  Upload,
+  FileText,
+  Download,
+  CheckCircle,
+  AlertCircle,
   X,
   FileSpreadsheet,
-  Database
+  Database,
 } from "lucide-react";
 import { toast } from "sonner";
 import { getAuthToken } from "@/lib/utils";
@@ -43,17 +43,17 @@ interface ImportDialogProps {
   onImport: (data: any) => void;
   trigger?: React.ReactNode;
   sampleData?: any[];
-  importType?: 'users' | 'questions' | 'default';
+  importType?: "users" | "questions" | "default";
 }
 
-export default function ImportDialog({ 
-  title, 
-  description, 
-  acceptedFormats, 
-  onImport, 
+export default function ImportDialog({
+  title,
+  description,
+  acceptedFormats,
+  onImport,
   trigger,
   sampleData,
-  importType = 'default'
+  importType = "default",
 }: ImportDialogProps) {
   const [open, setOpen] = useState(false);
   const [importMethod, setImportMethod] = useState("file");
@@ -74,7 +74,7 @@ export default function ImportDialog({
   };
 
   const handleImport = async () => {
-    if (importType === 'users') {
+    if (importType === "users") {
       await handleUsersImport();
     } else {
       await handleDefaultImport();
@@ -92,43 +92,49 @@ export default function ImportDialog({
 
     try {
       const formData = new FormData();
-      formData.append('file', selectedFile);
-      if (selectedGroup) formData.append('group_id', selectedGroup);
-      formData.append('role', selectedRole);
-      formData.append('send_welcome_email', sendWelcomeEmail.toString());
+      formData.append("file", selectedFile);
+      if (selectedGroup) formData.append("group_id", selectedGroup);
+      formData.append("role", selectedRole);
+      formData.append("send_welcome_email", sendWelcomeEmail.toString());
 
       const token = getAuthToken();
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/users/import`, {
-        method: 'POST',
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: formData,
-      });
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api"
+        }/users/import`,
+        {
+          method: "POST",
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: formData,
+        }
+      );
 
       if (!response.ok) {
-        throw new Error('Import failed');
+        throw new Error("Import failed");
       }
 
       const result = await response.json();
-      
+
       setImporting(false);
       setProgress(100);
       setResults({
         total: result.data.imported_count + result.data.skipped_count,
         successful: result.data.imported_count,
         failed: result.data.skipped_count,
-        errors: result.data.errors || []
+        errors: result.data.errors || [],
       });
 
-      toast.success(`Import completed! ${result.data.imported_count} users imported successfully.`);
-      
+      toast.success(
+        `Import completed! ${result.data.imported_count} users imported successfully.`
+      );
+
       onImport({
         method: importMethod,
         file: selectedFile,
-        results: result.data
+        results: result.data,
       });
-
     } catch (error: any) {
       setImporting(false);
       toast.error(error?.message || "Import failed");
@@ -141,7 +147,7 @@ export default function ImportDialog({
 
     // Simulate import progress
     const progressInterval = setInterval(() => {
-      setProgress(prev => {
+      setProgress((prev) => {
         if (prev >= 100) {
           clearInterval(progressInterval);
           return 100;
@@ -160,10 +166,10 @@ export default function ImportDialog({
         errors: [
           "Row 15: Missing required field 'email'",
           "Row 23: Invalid phone number format",
-          "Row 45: Duplicate entry found"
-        ]
+          "Row 45: Duplicate entry found",
+        ],
       });
-      
+
       // Call the actual import function
       onImport({
         method: importMethod,
@@ -172,8 +178,8 @@ export default function ImportDialog({
         results: {
           total: 150,
           successful: 142,
-          failed: 8
-        }
+          failed: 8,
+        },
       });
     }, 2000);
   };
@@ -211,7 +217,11 @@ export default function ImportDialog({
         </DialogHeader>
 
         {!results ? (
-          <Tabs value={importMethod} onValueChange={setImportMethod} className="w-full">
+          <Tabs
+            value={importMethod}
+            onValueChange={setImportMethod}
+            className="w-full"
+          >
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="file">File Upload</TabsTrigger>
               <TabsTrigger value="paste">Paste Data</TabsTrigger>
@@ -223,11 +233,14 @@ export default function ImportDialog({
                   <CardTitle className="text-lg">Upload File</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {importType === 'users' && (
+                  {importType === "users" && (
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="userGroup">User Group</Label>
-                        <Select value={selectedGroup} onValueChange={setSelectedGroup}>
+                        <Select
+                          value={selectedGroup}
+                          onValueChange={setSelectedGroup}
+                        >
                           <SelectTrigger>
                             <SelectValue placeholder="Select group (optional)" />
                           </SelectTrigger>
@@ -239,13 +252,18 @@ export default function ImportDialog({
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="userRole">Default Role</Label>
-                        <Select value={selectedRole} onValueChange={setSelectedRole}>
+                        <Select
+                          value={selectedRole}
+                          onValueChange={setSelectedRole}
+                        >
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="student">Student</SelectItem>
-                            <SelectItem value="instructor">Instructor</SelectItem>
+                            <SelectItem value="instructor">
+                              Instructor
+                            </SelectItem>
                             <SelectItem value="admin">Admin</SelectItem>
                           </SelectContent>
                         </Select>
@@ -263,7 +281,7 @@ export default function ImportDialog({
                       </p>
                       <Input
                         type="file"
-                        accept={acceptedFormats.map(f => `.${f}`).join(",")}
+                        accept={acceptedFormats.map((f) => `.${f}`).join(",")}
                         onChange={handleFileSelect}
                         className="mt-2"
                       />
@@ -275,8 +293,8 @@ export default function ImportDialog({
                       <FileText className="h-4 w-4" />
                       <AlertDescription className="flex items-center justify-between">
                         <span>Selected: {selectedFile.name}</span>
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="sm"
                           onClick={() => setSelectedFile(null)}
                         >
@@ -303,7 +321,10 @@ export default function ImportDialog({
                             {Object.keys(sampleData[0] || {}).join(", ")}
                           </div>
                           {sampleData.slice(0, 2).map((row, index) => (
-                            <div key={index} className="whitespace-nowrap text-muted-foreground">
+                            <div
+                              key={index}
+                              className="whitespace-nowrap text-muted-foreground"
+                            >
                               {Object.values(row).join(", ")}
                             </div>
                           ))}
@@ -331,10 +352,12 @@ export default function ImportDialog({
                       onChange={(e) => setCsvData(e.target.value)}
                     />
                   </div>
-                  
+
                   <div className="text-xs text-muted-foreground">
-                    Expected format: header1,header2,header3<br/>
-                    value1,value2,value3<br/>
+                    Expected format: header1,header2,header3
+                    <br />
+                    value1,value2,value3
+                    <br />
                     value4,value5,value6
                   </div>
                 </CardContent>
@@ -353,14 +376,22 @@ export default function ImportDialog({
               <div className="grid grid-cols-3 gap-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold">{results.total}</div>
-                  <div className="text-sm text-muted-foreground">Total Records</div>
+                  <div className="text-sm text-muted-foreground">
+                    Total Records
+                  </div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-success">{results.successful}</div>
-                  <div className="text-sm text-muted-foreground">Successful</div>
+                  <div className="text-2xl font-bold text-success">
+                    {results.successful}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Successful
+                  </div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-destructive">{results.failed}</div>
+                  <div className="text-2xl font-bold text-destructive">
+                    {results.failed}
+                  </div>
                   <div className="text-sm text-muted-foreground">Failed</div>
                 </div>
               </div>
@@ -372,7 +403,9 @@ export default function ImportDialog({
                     {results.errors.map((error: string, index: number) => (
                       <Alert key={index} variant="destructive">
                         <AlertCircle className="h-4 w-4" />
-                        <AlertDescription className="text-xs">{error}</AlertDescription>
+                        <AlertDescription className="text-xs">
+                          {error}
+                        </AlertDescription>
                       </Alert>
                     ))}
                   </div>
@@ -381,7 +414,8 @@ export default function ImportDialog({
 
               <div className="flex items-center space-x-2">
                 <Badge variant="outline" className="text-success">
-                  Success Rate: {Math.round((results.successful / results.total) * 100)}%
+                  Success Rate:{" "}
+                  {Math.round((results.successful / results.total) * 100)}%
                 </Badge>
               </div>
             </CardContent>
@@ -403,8 +437,8 @@ export default function ImportDialog({
             {results ? "Close" : "Cancel"}
           </Button>
           {!results && (
-            <Button 
-              onClick={handleImport} 
+            <Button
+              onClick={handleImport}
               disabled={(!selectedFile && !csvData.trim()) || importing}
               className="bg-gradient-primary"
             >

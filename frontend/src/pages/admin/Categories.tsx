@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +21,14 @@ import {
   Hash,
   Archive,
 } from "lucide-react";
+import {
+  getCategoriesApi,
+  createCategoryApi,
+  updateCategoryApi,
+  deleteCategoryApi,
+  type Category as ApiCategory,
+} from "@/lib/utils";
+import { toast } from "sonner";
 
 interface Category {
   id: number;
@@ -36,87 +44,57 @@ interface Category {
 }
 
 export default function Categories() {
-  const [categories, setCategories] = useState<Category[]>([
-    {
-      id: 1,
-      name: "Programming",
-      description: "Software development and programming languages",
-      subcategories: 12,
-      questions: 456,
-      exams: 23,
-      color: "#3B82F6",
-      status: "Active",
-      created: "2024-01-15",
-      parent: null,
-    },
-    {
-      id: 2,
-      name: "JavaScript",
-      description: "JavaScript programming language and frameworks",
-      subcategories: 8,
-      questions: 234,
-      exams: 15,
-      color: "#F59E0B",
-      status: "Active",
-      created: "2024-01-15",
-      parent: "Programming",
-    },
-    {
-      id: 3,
-      name: "Mathematics",
-      description: "Mathematical concepts and problem solving",
-      subcategories: 15,
-      questions: 678,
-      exams: 34,
-      color: "#10B981",
-      status: "Active",
-      created: "2024-01-14",
-      parent: null,
-    },
-    {
-      id: 4,
-      name: "Algebra",
-      description: "Algebraic equations and concepts",
-      subcategories: 6,
-      questions: 189,
-      exams: 12,
-      color: "#059669",
-      status: "Active",
-      created: "2024-01-14",
-      parent: "Mathematics",
-    },
-    {
-      id: 5,
-      name: "Science",
-      description: "Natural sciences and scientific methods",
-      subcategories: 18,
-      questions: 523,
-      exams: 28,
-      color: "#8B5CF6",
-      status: "Active",
-      created: "2024-01-13",
-      parent: null,
-    },
-    {
-      id: 6,
-      name: "Physics",
-      description: "Physical laws and phenomena",
-      subcategories: 9,
-      questions: 267,
-      exams: 16,
-      color: "#7C3AED",
-      status: "Draft",
-      created: "2024-01-13",
-      parent: "Science",
-    },
-  ]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [meta, setMeta] = useState<any>(null);
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDeleteDrawerOpen, setIsDeleteDrawerOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [parentFilter, setParentFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+
+  // Load categories from API
+  const loadCategories = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const filters: { search?: string; status?: string; type?: string; per_page?: number } = {
+        search: searchTerm || undefined,
+        status: statusFilter !== "all" ? statusFilter : undefined,
+        type: typeFilter !== "all" ? typeFilter : undefined,
+      };
+      const response = await getCategoriesApi(filters);
+      
+      // Map API response to UI format
+      const mappedCategories: Category[] = response.data.map((c: ApiCategory) => ({
+        id: c.id,
+        name: c.name,
+        description: c.description || "",
+        subcategories: c.sub_categories_count || 0,
+        questions: c.questions_count || 0,
+        exams: c.exams_count || 0,
+        color: c.color || "#3B82F6",
+        status: c.is_active ? "Active" : "Inactive",
+        created: new Date(c.created_at).toLocaleDateString(),
+        parent: null, // Categories don't have parents in this structure
+      }));
+      
+      setCategories(mappedCategories);
+      setMeta(response.meta);
+    } catch (err: any) {
+      setError(err?.message || "Failed to load categories");
+      toast.error("Failed to load categories");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCategories();
+  }, [searchTerm, statusFilter, typeFilter]);
 
   const handleAdd = () => {
     setSelectedCategory(null);
@@ -133,33 +111,43 @@ export default function Categories() {
     setIsDeleteDrawerOpen(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (selectedCategory) {
-      setCategories(prev => prev.filter(c => c.id !== selectedCategory.id));
-      setSelectedCategory(null);
+      try {
+        await deleteCategoryApi(selectedCategory.id);
+        setCategories(prev => prev.filter(c => c.id !== selectedCategory.id));
+        setSelectedCategory(null);
+        toast.success("Category deleted successfully!");
+      } catch (err: any) {
+        toast.error(err?.message || "Failed to delete category");
+      }
     }
   };
 
-  const handleSave = (formData: FormData) => {
-    const categoryData = {
-      id: selectedCategory?.id || Date.now(),
-      name: formData.get("name") as string,
-      description: formData.get("description") as string,
-      color: formData.get("color") as string,
-      status: formData.get("status") as string,
-      parent: formData.get("parent") as string || null,
-      subcategories: selectedCategory?.subcategories || 0,
-      questions: selectedCategory?.questions || 0,
-      exams: selectedCategory?.exams || 0,
-      created: selectedCategory?.created || new Date().toISOString().split('T')[0],
-    };
+  const handleSave = async (formData: FormData) => {
+    try {
+      const categoryData = {
+        name: formData.get("name") as string,
+        description: formData.get("description") as string,
+        type: formData.get("type") as string,
+        color: formData.get("color") as string,
+        is_active: formData.get("status") === "Active",
+      };
 
-    if (selectedCategory) {
-      setCategories(prev => prev.map(c => c.id === selectedCategory.id ? categoryData : c));
-    } else {
-      setCategories(prev => [...prev, categoryData]);
+      if (selectedCategory) {
+        await updateCategoryApi(selectedCategory.id, categoryData);
+        toast.success("Category updated successfully!");
+      } else {
+        await createCategoryApi(categoryData);
+        toast.success("Category created successfully!");
+      }
+      
+      setIsDrawerOpen(false);
+      setSelectedCategory(null);
+      loadCategories(); // Refresh the list
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to save category");
     }
-    setIsDrawerOpen(false);
   };
 
   const getStatusColor = (status: string) => {
@@ -177,17 +165,6 @@ export default function Categories() {
 
   const parentCategories = categories.filter(cat => !cat.parent);
   const childCategories = categories.filter(cat => cat.parent);
-
-  const filteredCategories = categories.filter(category => {
-    const matchesSearch = category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         category.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = !statusFilter || category.status === statusFilter;
-    const matchesParent = !parentFilter || 
-                         (parentFilter === "main" && !category.parent) ||
-                         (parentFilter === "sub" && category.parent) ||
-                         category.parent === parentFilter;
-    return matchesSearch && matchesStatus && matchesParent;
-  });
 
   const columns = [
     {
@@ -370,43 +347,44 @@ export default function Categories() {
             label: "Status",
             value: statusFilter,
             options: [
-              { label: "All Statuses", value: "" },
-              { label: "Active", value: "Active" },
-              { label: "Draft", value: "Draft" },
-              { label: "Inactive", value: "Inactive" },
+              { label: "All Statuses", value: "all" },
+              { label: "Active", value: "active" },
+              { label: "Inactive", value: "inactive" },
             ],
           },
           {
-            id: "parent",
+            id: "type",
             label: "Type",
-            value: parentFilter,
+            value: typeFilter,
             options: [
-              { label: "All Types", value: "" },
-              { label: "Main Categories", value: "main" },
-              { label: "Subcategories", value: "sub" },
-              ...parentCategories.map(cat => ({ label: cat.name, value: cat.name })),
+              { label: "All Types", value: "all" },
+              { label: "Academic", value: "academic" },
+              { label: "General", value: "general" },
+              { label: "Skill", value: "skill" },
             ],
           },
         ]}
         onFilterChange={(filterId, value) => {
           if (filterId === "status") setStatusFilter(value);
-          if (filterId === "parent") setParentFilter(value);
+          if (filterId === "type") setTypeFilter(value);
         }}
         onClearFilters={() => {
           setSearchTerm("");
-          setStatusFilter("");
-          setParentFilter("");
+          setStatusFilter("all");
+          setTypeFilter("all");
         }}
         onExport={() => console.log("Export categories")}
       />
 
       {/* Data Table */}
       <DataTable
-        data={filteredCategories}
+        data={categories}
         columns={columns}
         actions={actions}
         emptyMessage="No categories found. Create your first category to organize content."
         onAdd={handleAdd}
+        loading={loading}
+        error={error}
       />
 
       {/* Add/Edit Drawer */}
@@ -445,18 +423,15 @@ export default function Categories() {
             </div>
 
             <div>
-              <Label htmlFor="parent">Parent Category (Optional)</Label>
-              <Select name="parent" defaultValue={selectedCategory?.parent || ""}>
+              <Label htmlFor="type">Category Type</Label>
+              <Select name="type" defaultValue={selectedCategory?.type || "academic"}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select parent category" />
+                  <SelectValue placeholder="Select category type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No Parent (Main Category)</SelectItem>
-                  {parentCategories.map(category => (
-                    <SelectItem key={category.id} value={category.name}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="academic">Academic</SelectItem>
+                  <SelectItem value="general">General</SelectItem>
+                  <SelectItem value="skill">Skill</SelectItem>
                 </SelectContent>
               </Select>
             </div>

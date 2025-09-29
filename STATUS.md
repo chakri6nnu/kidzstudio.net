@@ -16,8 +16,8 @@
 | Users               | Done            | Done        | Done        | Done        | Done        | CRUD wired to /api/users                |
 | User Groups         | Done            | Done        | Done        | Done        | Done        | CRUD wired to /api/user-groups          |
 | Import Users        | Done            | N/A         | Done        | N/A         | N/A         | POST /api/users/import wired            |
-| Categories          | Not started     | Not started | Not started | Not started | Not started |                                         |
-| Sub Categories      | Not started     | Not started | Not started | Not started | Not started |                                         |
+| Categories          | Done            | Done        | Done        | Done        | Done        | CRUD wired to /api/categories           |
+| Sub Categories      | Done            | Done        | Done        | Done        | Done        | CRUD wired to /api/sub-categories       |
 | Tags                | Not started     | Not started | Not started | Not started | Not started |                                         |
 | Sections            | Not started     | Not started | Not started | Not started | Not started |                                         |
 | Skills              | Not started     | Not started | Not started | Not started | Not started |                                         |

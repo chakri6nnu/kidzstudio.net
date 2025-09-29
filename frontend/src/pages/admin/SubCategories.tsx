@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,16 @@ import {
   Hash,
   Archive,
 } from "lucide-react";
+import {
+  getSubCategoriesApi,
+  createSubCategoryApi,
+  updateSubCategoryApi,
+  deleteSubCategoryApi,
+  getCategoriesApi,
+  type SubCategory as ApiSubCategory,
+  type Category as ApiCategory,
+} from "@/lib/utils";
+import { toast } from "sonner";
 
 interface SubCategory {
   id: string;
@@ -35,63 +45,68 @@ interface SubCategory {
 }
 
 export default function SubCategories() {
-  const [subCategories, setSubCategories] = useState<SubCategory[]>([
-    {
-      id: "sub_AtlMfH6GOOK",
-      code: "sub_AtlMfH6GOOK",
-      name: "English / Verbal Reasoning",
-      category: "UK Grammar School 11+ Exam Preparation",
-      type: "Course",
-      status: "Active",
-      description: "English language and verbal reasoning skills",
-      created: "2024-01-15",
-      questions: 145,
-      exams: 8,
-    },
-    {
-      id: "sub_dPCsEXsNqhp",
-      code: "sub_dPCsEXsNqhp", 
-      name: "Mathematics / Numerical Reasoning",
-      category: "UK Grammar School 11+ Exam Preparation",
-      type: "Course",
-      status: "Active",
-      description: "Mathematical concepts and numerical reasoning",
-      created: "2024-01-15",
-      questions: 234,
-      exams: 12,
-    },
-    {
-      id: "sub_ZHvspItUqJP",
-      code: "sub_ZHvspItUqJP",
-      name: "Non-Verbal Reasoning (NVR)",
-      category: "UK Grammar School 11+ Exam Preparation", 
-      type: "Course",
-      status: "Active",
-      description: "Pattern recognition and spatial reasoning",
-      created: "2024-01-14",
-      questions: 189,
-      exams: 9,
-    },
-    {
-      id: "sub_vpQphqm6j4",
-      code: "sub_vpQphqm6j4",
-      name: "Creative & Essay Writing",
-      category: "UK Grammar School 11+ Exam Preparation",
-      type: "Course", 
-      status: "Active",
-      description: "Creative writing and essay composition skills",
-      created: "2024-01-14",
-      questions: 67,
-      exams: 5,
-    }
-  ]);
+  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
+  const [categories, setCategories] = useState<ApiCategory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [meta, setMeta] = useState<any>(null);
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDeleteDrawerOpen, setIsDeleteDrawerOpen] = useState(false);
   const [selectedSubCategory, setSelectedSubCategory] = useState<SubCategory | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+
+  // Load sub-categories and categories from API
+  const loadSubCategories = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const filters: { search?: string; status?: string; category_id?: string; per_page?: number } = {
+        search: searchTerm || undefined,
+        status: statusFilter !== "all" ? statusFilter : undefined,
+        category_id: categoryFilter !== "all" ? categoryFilter : undefined,
+      };
+      const response = await getSubCategoriesApi(filters);
+      
+      // Map API response to UI format
+      const mappedSubCategories: SubCategory[] = response.data.map((sc: ApiSubCategory) => ({
+        id: sc.id.toString(),
+        code: `SUB${sc.id.toString().padStart(4, '0')}`,
+        name: sc.name,
+        category: sc.category.name,
+        type: sc.category.type,
+        status: sc.is_active ? "Active" : "Inactive",
+        description: sc.description || "",
+        created: new Date(sc.created_at).toLocaleDateString(),
+        questions: sc.questions_count || 0,
+        exams: sc.exams_count || 0,
+      }));
+      
+      setSubCategories(mappedSubCategories);
+      setMeta(response.meta);
+    } catch (err: any) {
+      setError(err?.message || "Failed to load sub-categories");
+      toast.error("Failed to load sub-categories");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadCategories = async () => {
+    try {
+      const response = await getCategoriesApi({});
+      setCategories(response.data);
+    } catch (err: any) {
+      console.error("Failed to load categories:", err);
+    }
+  };
+
+  useEffect(() => {
+    loadSubCategories();
+    loadCategories();
+  }, [searchTerm, statusFilter, categoryFilter]);
 
   const handleAdd = () => {
     setSelectedSubCategory(null);
@@ -108,33 +123,42 @@ export default function SubCategories() {
     setIsDeleteDrawerOpen(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (selectedSubCategory) {
-      setSubCategories(prev => prev.filter(sc => sc.id !== selectedSubCategory.id));
-      setSelectedSubCategory(null);
+      try {
+        await deleteSubCategoryApi(parseInt(selectedSubCategory.id));
+        setSubCategories(prev => prev.filter(sc => sc.id !== selectedSubCategory.id));
+        setSelectedSubCategory(null);
+        toast.success("Sub-category deleted successfully!");
+      } catch (err: any) {
+        toast.error(err?.message || "Failed to delete sub-category");
+      }
     }
   };
 
-  const handleSave = (formData: FormData) => {
-    const subCategoryData = {
-      id: selectedSubCategory?.id || `sub_${Date.now()}`,
-      code: formData.get("code") as string || `sub_${Date.now()}`,
-      name: formData.get("name") as string,
-      category: formData.get("category") as string,
-      type: formData.get("type") as string,
-      status: formData.get("status") as string,
-      description: formData.get("description") as string,
-      created: selectedSubCategory?.created || new Date().toISOString().split('T')[0],
-      questions: selectedSubCategory?.questions || 0,
-      exams: selectedSubCategory?.exams || 0,
-    };
+  const handleSave = async (formData: FormData) => {
+    try {
+      const subCategoryData = {
+        name: formData.get("name") as string,
+        description: formData.get("description") as string,
+        category_id: parseInt(formData.get("category") as string),
+        is_active: formData.get("status") === "Active",
+      };
 
-    if (selectedSubCategory) {
-      setSubCategories(prev => prev.map(sc => sc.id === selectedSubCategory.id ? subCategoryData : sc));
-    } else {
-      setSubCategories(prev => [...prev, subCategoryData]);
+      if (selectedSubCategory) {
+        await updateSubCategoryApi(parseInt(selectedSubCategory.id), subCategoryData);
+        toast.success("Sub-category updated successfully!");
+      } else {
+        await createSubCategoryApi(subCategoryData);
+        toast.success("Sub-category created successfully!");
+      }
+      
+      setIsDrawerOpen(false);
+      setSelectedSubCategory(null);
+      loadSubCategories(); // Refresh the list
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to save sub-category");
     }
-    setIsDrawerOpen(false);
   };
 
   const getStatusColor = (status: string) => {
@@ -150,16 +174,7 @@ export default function SubCategories() {
     }
   };
 
-  const uniqueCategories = [...new Set(subCategories.map(sc => sc.category))];
-
-  const filteredSubCategories = subCategories.filter(subCategory => {
-    const matchesSearch = subCategory.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         subCategory.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         subCategory.category.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = !statusFilter || subCategory.status === statusFilter;
-    const matchesCategory = !categoryFilter || subCategory.category === categoryFilter;
-    return matchesSearch && matchesStatus && matchesCategory;
-  });
+  const uniqueCategories = categories.map(cat => ({ label: cat.name, value: cat.id.toString() }));
 
   const columns = [
     {
@@ -331,10 +346,9 @@ export default function SubCategories() {
             label: "Status",
             value: statusFilter,
             options: [
-              { label: "All Statuses", value: "" },
-              { label: "Active", value: "Active" },
-              { label: "Draft", value: "Draft" },
-              { label: "Inactive", value: "Inactive" },
+              { label: "All Statuses", value: "all" },
+              { label: "Active", value: "active" },
+              { label: "Inactive", value: "inactive" },
             ],
           },
           {
@@ -342,8 +356,8 @@ export default function SubCategories() {
             label: "Parent Category",
             value: categoryFilter,
             options: [
-              { label: "All Categories", value: "" },
-              ...uniqueCategories.map(cat => ({ label: cat, value: cat })),
+              { label: "All Categories", value: "all" },
+              ...uniqueCategories,
             ],
           },
         ]}
@@ -353,19 +367,21 @@ export default function SubCategories() {
         }}
         onClearFilters={() => {
           setSearchTerm("");
-          setStatusFilter("");
-          setCategoryFilter("");
+          setStatusFilter("all");
+          setCategoryFilter("all");
         }}
         onExport={() => console.log("Export subcategories")}
       />
 
       {/* Data Table */}
       <DataTable
-        data={filteredSubCategories}
+        data={subCategories}
         columns={columns}
         actions={actions}
         emptyMessage="No subcategories found. Create your first subcategory to organize content."
         onAdd={handleAdd}
+        loading={loading}
+        error={error}
       />
 
       {/* Add/Edit Drawer */}
@@ -392,16 +408,6 @@ export default function SubCategories() {
               />
             </div>
 
-            <div>
-              <Label htmlFor="code">Code</Label>
-              <Input
-                id="code"
-                name="code"
-                defaultValue={selectedSubCategory?.code}
-                placeholder="Enter unique code (e.g., sub_abc123)"
-                required
-              />
-            </div>
 
             <div>
               <Label htmlFor="description">Description</Label>
@@ -422,34 +428,14 @@ export default function SubCategories() {
                 </SelectTrigger>
                 <SelectContent>
                   {uniqueCategories.map(category => (
-                    <SelectItem key={category} value={category}>
-                      {category}
+                    <SelectItem key={category.value} value={category.value}>
+                      {category.label}
                     </SelectItem>
                   ))}
-                  <SelectItem value="UK Grammar School 11+ Exam Preparation">
-                    UK Grammar School 11+ Exam Preparation
-                  </SelectItem>
-                  <SelectItem value="Programming">Programming</SelectItem>
-                  <SelectItem value="Mathematics">Mathematics</SelectItem>
-                  <SelectItem value="Science">Science</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div>
-              <Label htmlFor="type">Type</Label>
-              <Select name="type" defaultValue={selectedSubCategory?.type || "Course"}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Course">Course</SelectItem>
-                  <SelectItem value="Topic">Topic</SelectItem>
-                  <SelectItem value="Module">Module</SelectItem>
-                  <SelectItem value="Section">Section</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
 
             <div>
               <Label htmlFor="status">Status</Label>
