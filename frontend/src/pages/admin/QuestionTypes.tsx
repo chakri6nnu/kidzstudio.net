@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,8 @@ import { SideDrawer } from "@/components/ui/side-drawer";
 import { ConfirmDrawer } from "@/components/ui/confirm-drawer";
 import { FiltersPanel } from "@/components/ui/filters-panel";
 import { DataTable } from "@/components/ui/data-table";
+import { getAdminQuestionTypesApi, createAdminQuestionTypeApi, updateAdminQuestionTypeApi, deleteAdminQuestionTypeApi, type AdminQuestionType } from "@/lib/utils";
+import { toast } from "sonner";
 import {
   Plus,
   Edit,
@@ -39,104 +41,35 @@ interface QuestionType {
 }
 
 export default function QuestionTypes() {
-  const [questionTypes, setQuestionTypes] = useState<QuestionType[]>([
-    {
-      id: 1,
-      name: "Multiple Choice",
-      code: "MCQ",
-      description: "Single correct answer from multiple options",
-      isActive: true,
-      questions: 1248,
-      icon: "○",
-      settings: {
-        allowMultipleAnswers: false,
-        showExplanation: true,
-        timeLimit: 60,
-        difficulty: "Medium",
-      },
-      created: "2024-01-15",
-    },
-    {
-      id: 2,
-      name: "True/False",
-      code: "TF",
-      description: "Binary choice between true and false",
-      isActive: true,
-      questions: 324,
-      icon: "✓",
-      settings: {
-        allowMultipleAnswers: false,
-        showExplanation: true,
-        timeLimit: 30,
-        difficulty: "Easy",
-      },
-      created: "2024-01-14",
-    },
-    {
-      id: 3,
-      name: "Fill in the Blanks",
-      code: "FIB",
-      description: "Complete the sentence with missing words",
-      isActive: true,
-      questions: 567,
-      icon: "___",
-      settings: {
-        allowMultipleAnswers: false,
-        showExplanation: true,
-        timeLimit: 90,
-        difficulty: "Medium",
-      },
-      created: "2024-01-13",
-    },
-    {
-      id: 4,
-      name: "Essay Question",
-      code: "ESSAY",
-      description: "Long-form written response",
-      isActive: true,
-      questions: 89,
-      icon: "📝",
-      settings: {
-        allowMultipleAnswers: false,
-        showExplanation: false,
-        timeLimit: 1800,
-        difficulty: "Hard",
-      },
-      created: "2024-01-12",
-    },
-    {
-      id: 5,
-      name: "Multiple Select",
-      code: "MSQ",
-      description: "Multiple correct answers from options",
-      isActive: false,
-      questions: 156,
-      icon: "☑",
-      settings: {
-        allowMultipleAnswers: true,
-        showExplanation: true,
-        timeLimit: 90,
-        difficulty: "Hard",
-      },
-      created: "2024-01-11",
-    },
-    {
-      id: 6,
-      name: "Matching",
-      code: "MATCH",
-      description: "Match items from two columns",
-      isActive: true,
-      questions: 78,
-      icon: "↔",
-      settings: {
-        allowMultipleAnswers: false,
-        showExplanation: true,
-        timeLimit: 120,
-        difficulty: "Medium",
-      },
-      created: "2024-01-10",
-    },
-  ]);
+  const [questionTypes, setQuestionTypes] = useState<QuestionType[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const load = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const res = await getAdminQuestionTypesApi();
+      const mapped: QuestionType[] = res.data.map((qt: AdminQuestionType) => ({
+        id: qt.id,
+        name: qt.name,
+        code: qt.code,
+        description: qt.description || '',
+        isActive: qt.is_active,
+        questions: 0,
+        icon: '○',
+        settings: { allowMultipleAnswers: false, showExplanation: true, timeLimit: 60, difficulty: 'Medium' },
+        created: new Date(qt.created_at).toISOString().split('T')[0],
+      }));
+      setQuestionTypes(mapped);
+    } catch (e: any) {
+      setError(e?.message || 'Failed to load question types');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDeleteDrawerOpen, setIsDeleteDrawerOpen] = useState(false);
@@ -159,14 +92,20 @@ export default function QuestionTypes() {
     setIsDeleteDrawerOpen(true);
   };
 
-  const handleConfirmDelete = () => {
-    if (selectedQuestionType) {
-      setQuestionTypes(prev => prev.filter(qt => qt.id !== selectedQuestionType.id));
+  const handleConfirmDelete = async () => {
+    if (!selectedQuestionType) return;
+    try {
+      await deleteAdminQuestionTypeApi(selectedQuestionType.id);
+      await load();
       setSelectedQuestionType(null);
+      setIsDeleteDrawerOpen(false);
+      toast.success('Question type deleted');
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to delete');
     }
   };
 
-  const handleSave = (formData: FormData) => {
+  const handleSave = async (formData: FormData) => {
     const questionTypeData = {
       id: selectedQuestionType?.id || Date.now(),
       name: formData.get("name") as string,
@@ -183,13 +122,29 @@ export default function QuestionTypes() {
       questions: selectedQuestionType?.questions || 0,
       created: selectedQuestionType?.created || new Date().toISOString().split('T')[0],
     };
-
+    try {
     if (selectedQuestionType) {
-      setQuestionTypes(prev => prev.map(qt => qt.id === selectedQuestionType.id ? questionTypeData : qt));
+        await updateAdminQuestionTypeApi(selectedQuestionType.id, {
+          name: questionTypeData.name,
+          code: questionTypeData.code,
+          description: questionTypeData.description,
+          is_active: questionTypeData.isActive,
+        });
+        toast.success('Question type updated');
     } else {
-      setQuestionTypes(prev => [...prev, questionTypeData]);
+        await createAdminQuestionTypeApi({
+          name: questionTypeData.name,
+          code: questionTypeData.code,
+          description: questionTypeData.description,
+          is_active: questionTypeData.isActive,
+        });
+        toast.success('Question type created');
     }
     setIsDrawerOpen(false);
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message || 'Save failed');
+    }
   };
 
   const handleToggleStatus = (id: number) => {

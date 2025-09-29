@@ -331,6 +331,90 @@ export async function deleteQuizTypeApi(
   return apiFetch(`/quiz-types/${id}`, { method: "DELETE" });
 }
 
+// Comprehensions API
+export type Comprehension = {
+  id: number;
+  title: string;
+  passage: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  questions_count?: number;
+};
+
+export async function getComprehensionsApi(
+  filters: { search?: string; per_page?: number } = {}
+): Promise<{ data: Comprehension[]; meta: any }> {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== "") params.append(k, String(v));
+  });
+  const qs = params.toString();
+  return apiFetch(`/comprehensions${qs ? `?${qs}` : ""}`);
+}
+
+export async function createComprehensionApi(
+  payload: Partial<Comprehension>
+): Promise<{ message: string; data: Comprehension }> {
+  return apiFetch(`/comprehensions`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateComprehensionApi(
+  id: number,
+  payload: Partial<Comprehension>
+): Promise<{ message: string; data: Comprehension }> {
+  return apiFetch(`/comprehensions/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteComprehensionApi(
+  id: number
+): Promise<{ message: string }> {
+  return apiFetch(`/comprehensions/${id}`, { method: "DELETE" });
+}
+
+// Question Types API (admin)
+export type AdminQuestionType = {
+  id: number;
+  name: string;
+  code: string;
+  description?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export async function getAdminQuestionTypesApi(
+  filters: { search?: string; per_page?: number } = {}
+): Promise<{ data: AdminQuestionType[]; meta: any }> {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== "") params.append(k, String(v));
+  });
+  const qs = params.toString();
+  return apiFetch(`/question-types${qs ? `?${qs}` : ""}`);
+}
+
+export async function createAdminQuestionTypeApi(payload: Partial<AdminQuestionType>): Promise<{ message: string; data: AdminQuestionType }> {
+  return apiFetch(`/question-types`, { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export async function updateAdminQuestionTypeApi(
+  id: number,
+  payload: Partial<AdminQuestionType>
+): Promise<{ message: string; data: AdminQuestionType }> {
+  return apiFetch(`/question-types/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+}
+
+export async function deleteAdminQuestionTypeApi(id: number): Promise<{ message: string }> {
+  return apiFetch(`/question-types/${id}`, { method: 'DELETE' });
+}
+
 export async function removeSectionQuestion(
   examId: number,
   sectionId: number,

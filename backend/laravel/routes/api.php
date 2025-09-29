@@ -71,6 +71,20 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Import questions
     Route::post('/questions/import', [\App\Http\Controllers\Api\QuestionImportController::class, 'store']);
+
+    // Comprehensions API endpoints
+    Route::get('/comprehensions', [\App\Http\Controllers\Api\ComprehensionController::class, 'index']);
+    Route::post('/comprehensions', [\App\Http\Controllers\Api\ComprehensionController::class, 'store']);
+    Route::get('/comprehensions/{comprehension}', [\App\Http\Controllers\Api\ComprehensionController::class, 'show']);
+    Route::put('/comprehensions/{comprehension}', [\App\Http\Controllers\Api\ComprehensionController::class, 'update']);
+    Route::delete('/comprehensions/{comprehension}', [\App\Http\Controllers\Api\ComprehensionController::class, 'destroy']);
+
+    // Question Types API endpoints
+    Route::get('/question-types', [\App\Http\Controllers\Api\QuestionTypeController::class, 'index']);
+    Route::post('/question-types', [\App\Http\Controllers\Api\QuestionTypeController::class, 'store']);
+    Route::get('/question-types/{questionType}', [\App\Http\Controllers\Api\QuestionTypeController::class, 'show']);
+    Route::put('/question-types/{questionType}', [\App\Http\Controllers\Api\QuestionTypeController::class, 'update']);
+    Route::delete('/question-types/{questionType}', [\App\Http\Controllers\Api\QuestionTypeController::class, 'destroy']);
 });
 
 // CORS preflight handler (OPTIONS)

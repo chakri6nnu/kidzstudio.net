@@ -9,8 +9,8 @@
 | Quiz Types          | Done            | Done        | Done        | Done        | Done        | CRUD wired to /api/quiz-types           |
 | Questions (Library) | Done            | N/A         | Done        | N/A         | N/A         | Filters + pagination via /api/questions |
 | Import Questions    | Done            | N/A         | Done        | N/A         | N/A         | POST /api/questions/import wired        |
-| Comprehensions      | Not started     | Not started | Not started | Not started | Not started |                                         |
-| Question Types      | Not started     | Not started | Not started | Not started | Not started |                                         |
+| Comprehensions      | Done            | Done        | Done        | Done        | Done        | CRUD wired to /api/comprehensions       |
+| Question Types      | Done            | Done        | Done        | Done        | Done        | CRUD wired to /api/question-types        |
 | Lesson Bank         | Not started     | Not started | Not started | Not started | Not started |                                         |
 | Video Bank          | Not started     | Not started | Not started | Not started | Not started |                                         |
 | Users               | Not started     | Not started | Not started | Not started | Not started |                                         |
