@@ -1,12 +1,24 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { SideDrawer } from "@/components/ui/side-drawer";
 import { ConfirmDrawer } from "@/components/ui/confirm-drawer";
 import { FiltersPanel } from "@/components/ui/filters-panel";
@@ -60,13 +72,18 @@ export default function Sections() {
     try {
       setLoading(true);
       setError("");
-      const filters: { search?: string; status?: string; type?: string; per_page?: number } = {
+      const filters: {
+        search?: string;
+        status?: string;
+        type?: string;
+        per_page?: number;
+      } = {
         search: searchTerm || undefined,
         status: statusFilter !== "all" ? statusFilter : undefined,
         type: typeFilter !== "all" ? typeFilter : undefined,
       };
       const response = await getSectionsApi(filters);
-      
+
       // Map API response to UI format
       const mappedSections: Section[] = response.data.map((s: ApiSection) => ({
         id: s.id,
@@ -78,7 +95,7 @@ export default function Sections() {
         questions: s.questions_count || 0,
         createdAt: new Date(s.created_at).toLocaleDateString(),
       }));
-      
+
       setSections(mappedSections);
       setMeta(response.meta);
     } catch (err: any) {
@@ -112,7 +129,7 @@ export default function Sections() {
     if (selectedSection) {
       try {
         await deleteSectionApi(selectedSection.id);
-        setSections(prev => prev.filter(s => s.id !== selectedSection.id));
+        setSections((prev) => prev.filter((s) => s.id !== selectedSection.id));
         setSelectedSection(null);
         toast.success("Section deleted successfully!");
       } catch (err: any) {
@@ -138,7 +155,7 @@ export default function Sections() {
         await createSectionApi(sectionData);
         toast.success("Section created successfully!");
       }
-      
+
       setIsDrawerOpen(false);
       setSelectedSection(null);
       loadSections(); // Refresh the list
@@ -149,12 +166,12 @@ export default function Sections() {
 
   const handleToggleStatus = async (id: number) => {
     try {
-      const section = sections.find(s => s.id === id);
+      const section = sections.find((s) => s.id === id);
       if (section) {
         await updateSectionApi(id, { is_active: !section.isActive });
-        setSections(prev => prev.map(s => 
-          s.id === id ? { ...s, isActive: !s.isActive } : s
-        ));
+        setSections((prev) =>
+          prev.map((s) => (s.id === id ? { ...s, isActive: !s.isActive } : s))
+        );
         toast.success("Section status updated successfully!");
       }
     } catch (err: any) {
@@ -163,21 +180,24 @@ export default function Sections() {
   };
 
   const getStatusColor = (isActive: boolean) => {
-    return isActive 
-      ? "bg-success text-success-foreground" 
+    return isActive
+      ? "bg-success text-success-foreground"
       : "bg-muted text-muted-foreground";
   };
 
-  const uniqueCategories = [...new Set(sections.map(s => s.category))];
+  const uniqueCategories = [...new Set(sections.map((s) => s.category))];
 
-  const filteredSections = sections.filter(section => {
-    const matchesSearch = section.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         section.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         section.category.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = !statusFilter || 
-                         (statusFilter === "active" && section.isActive) ||
-                         (statusFilter === "inactive" && !section.isActive);
-    const matchesCategory = !categoryFilter || section.category === categoryFilter;
+  const filteredSections = sections.filter((section) => {
+    const matchesSearch =
+      section.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      section.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      section.category.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      !statusFilter ||
+      (statusFilter === "active" && section.isActive) ||
+      (statusFilter === "inactive" && !section.isActive);
+    const matchesCategory =
+      !categoryFilter || section.category === categoryFilter;
     return matchesSearch && matchesStatus && matchesCategory;
   });
 
@@ -219,7 +239,9 @@ export default function Sections() {
       header: "Questions",
       sortable: true,
       render: (section: Section) => (
-        <div className="font-medium">{(section.questions || 0).toLocaleString()}</div>
+        <div className="font-medium">
+          {(section.questions || 0).toLocaleString()}
+        </div>
       ),
     },
     {
@@ -228,7 +250,10 @@ export default function Sections() {
       sortable: true,
       render: (section: Section) => (
         <div className="flex items-center space-x-2">
-          <Badge variant="secondary" className={getStatusColor(section.isActive)}>
+          <Badge
+            variant="secondary"
+            className={getStatusColor(section.isActive)}
+          >
             {section.isActive ? "Active" : "Inactive"}
           </Badge>
           <Switch
@@ -265,8 +290,8 @@ export default function Sections() {
     },
   ];
 
-  const activeCount = sections.filter(s => s.isActive).length;
-  const inactiveCount = sections.filter(s => !s.isActive).length;
+  const activeCount = sections.filter((s) => s.isActive).length;
+  const inactiveCount = sections.filter((s) => !s.isActive).length;
   const totalQuestions = sections.reduce((sum, s) => sum + s.questions, 0);
 
   return (
@@ -281,7 +306,10 @@ export default function Sections() {
             Organize content into logical sections for better structure
           </p>
         </div>
-        <Button onClick={handleAdd} className="bg-gradient-primary hover:bg-primary-hover shadow-primary">
+        <Button
+          onClick={handleAdd}
+          className="bg-gradient-primary hover:bg-primary-hover shadow-primary"
+        >
           <Plus className="mr-2 h-4 w-4" />
           Add Section
         </Button>
@@ -291,7 +319,9 @@ export default function Sections() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="bg-gradient-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Sections</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Sections
+            </CardTitle>
             <Grid3X3 className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
@@ -302,7 +332,9 @@ export default function Sections() {
 
         <Card className="bg-gradient-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Sections</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Active Sections
+            </CardTitle>
             <CheckCircle className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
@@ -313,7 +345,9 @@ export default function Sections() {
 
         <Card className="bg-gradient-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Inactive Sections</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Inactive Sections
+            </CardTitle>
             <XCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -324,11 +358,15 @@ export default function Sections() {
 
         <Card className="bg-gradient-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Questions</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Questions
+            </CardTitle>
             <Hash className="h-4 w-4 text-accent" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{(totalQuestions || 0).toLocaleString()}</div>
+            <div className="text-2xl font-bold">
+              {(totalQuestions || 0).toLocaleString()}
+            </div>
             <p className="text-xs text-success">Across all sections</p>
           </CardContent>
         </Card>
@@ -390,13 +428,20 @@ export default function Sections() {
         open={isDrawerOpen}
         onOpenChange={setIsDrawerOpen}
         title={selectedSection ? "Edit Section" : "Create New Section"}
-        description={selectedSection ? "Update the section details" : "Add a new section to organize content"}
+        description={
+          selectedSection
+            ? "Update the section details"
+            : "Add a new section to organize content"
+        }
       >
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          const formData = new FormData(e.target as HTMLFormElement);
-          handleSave(formData);
-        }} className="space-y-6">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target as HTMLFormElement);
+            handleSave(formData);
+          }}
+          className="space-y-6"
+        >
           <div className="space-y-4">
             <div>
               <Label htmlFor="name">Section Name</Label>
@@ -433,12 +478,15 @@ export default function Sections() {
 
             <div>
               <Label htmlFor="category">Category</Label>
-              <Select name="category" defaultValue={selectedSection?.category || ""}>
+              <Select
+                name="category"
+                defaultValue={selectedSection?.category || ""}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {uniqueCategories.map(category => (
+                  {uniqueCategories.map((category) => (
                     <SelectItem key={category} value={category}>
                       {category}
                     </SelectItem>
@@ -446,7 +494,9 @@ export default function Sections() {
                   <SelectItem value="Mathematics">Mathematics</SelectItem>
                   <SelectItem value="English">English</SelectItem>
                   <SelectItem value="Reasoning">Reasoning</SelectItem>
-                  <SelectItem value="General Studies">General Studies</SelectItem>
+                  <SelectItem value="General Studies">
+                    General Studies
+                  </SelectItem>
                   <SelectItem value="Science">Science</SelectItem>
                 </SelectContent>
               </Select>
@@ -463,7 +513,11 @@ export default function Sections() {
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => setIsDrawerOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDrawerOpen(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" className="bg-gradient-primary">

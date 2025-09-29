@@ -151,6 +151,34 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/skills/{skill}', [\App\Http\Controllers\Api\SkillController::class, 'show']);
     Route::put('/skills/{skill}', [\App\Http\Controllers\Api\SkillController::class, 'update']);
     Route::delete('/skills/{skill}', [\App\Http\Controllers\Api\SkillController::class, 'destroy']);
+
+    // Topics API endpoints
+    Route::get('/topics', [\App\Http\Controllers\Api\TopicController::class, 'index']);
+    Route::post('/topics', [\App\Http\Controllers\Api\TopicController::class, 'store']);
+    Route::get('/topics/{topic}', [\App\Http\Controllers\Api\TopicController::class, 'show']);
+    Route::put('/topics/{topic}', [\App\Http\Controllers\Api\TopicController::class, 'update']);
+    Route::delete('/topics/{topic}', [\App\Http\Controllers\Api\TopicController::class, 'destroy']);
+
+    // Plans API endpoints
+    Route::get('/plans', [\App\Http\Controllers\Api\PlanController::class, 'index']);
+    Route::post('/plans', [\App\Http\Controllers\Api\PlanController::class, 'store']);
+    Route::get('/plans/{plan}', [\App\Http\Controllers\Api\PlanController::class, 'show']);
+    Route::put('/plans/{plan}', [\App\Http\Controllers\Api\PlanController::class, 'update']);
+    Route::delete('/plans/{plan}', [\App\Http\Controllers\Api\PlanController::class, 'destroy']);
+
+    // Subscriptions API endpoints
+    Route::get('/subscriptions', [\App\Http\Controllers\Api\SubscriptionController::class, 'index']);
+    Route::post('/subscriptions', [\App\Http\Controllers\Api\SubscriptionController::class, 'store']);
+    Route::get('/subscriptions/{subscription}', [\App\Http\Controllers\Api\SubscriptionController::class, 'show']);
+    Route::put('/subscriptions/{subscription}', [\App\Http\Controllers\Api\SubscriptionController::class, 'update']);
+    Route::delete('/subscriptions/{subscription}', [\App\Http\Controllers\Api\SubscriptionController::class, 'destroy']);
+
+    // Settings API endpoints
+    Route::get('/settings', [\App\Http\Controllers\Api\SettingController::class, 'index']);
+    Route::post('/settings', [\App\Http\Controllers\Api\SettingController::class, 'store']);
+    Route::get('/settings/{setting}', [\App\Http\Controllers\Api\SettingController::class, 'show']);
+    Route::put('/settings/{setting}', [\App\Http\Controllers\Api\SettingController::class, 'update']);
+    Route::delete('/settings/{setting}', [\App\Http\Controllers\Api\SettingController::class, 'destroy']);
 });
 
 // CORS preflight handler (OPTIONS)

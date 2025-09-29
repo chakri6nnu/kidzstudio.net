@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,27 +32,149 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { MoreHorizontal, Plus, Search, Eye } from "lucide-react";
+import { toast } from "sonner";
+import {
+  getSubscriptionsApi,
+  createSubscriptionApi,
+  updateSubscriptionApi,
+  deleteSubscriptionApi,
+  getPlansApi,
+  getUsersApi,
+  type Subscription as ApiSubscription,
+  type Plan,
+  type User,
+} from "@/lib/utils";
+
+type Subscription = ApiSubscription;
+
+interface ApiResponse {
+  data: Subscription[];
+  meta: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+  };
+}
 
 export default function Subscriptions() {
-  const [selectedSubscription, setSelectedSubscription] = useState<any>(null);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [meta, setMeta] = useState({
+    current_page: 1,
+    last_page: 1,
+    per_page: 10,
+    total: 0,
+  });
+  const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [planFilter, setPlanFilter] = useState("all");
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
 
-  const subscriptions = [
-    {
-      id: "subscription_Jo4vKZTwnDO",
-      code: "subscription_Jo4vKZTwnDO", 
-      plan: "Mathematics / Numerical Reasoning Mathematics / Numerical Reasoning Exam Preparation - 1 Months Plan",
-      user: "Jithin Sriram Chennu",
-      starts: "Sep 27, 2025",
-      ends: "Oct 27, 2025",
-      payment: "payment_IPEaqV67ZvHM3fCO",
-      status: "ACTIVE"
-    }
-  ];
+  // Load subscriptions from API
+  useEffect(() => {
+    const loadSubscriptions = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await getSubscriptionsApi({
+          search: searchTerm,
+          status: statusFilter,
+          plan_id: planFilter,
+          per_page: 10,
+        });
+        setSubscriptions((response as ApiResponse).data);
+        setMeta((response as ApiResponse).meta);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load subscriptions");
+        toast.error("Failed to load subscriptions");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const handleViewDetails = (subscription: any) => {
+    loadSubscriptions();
+  }, [searchTerm, statusFilter, planFilter]);
+
+  // Load plans and users for dropdowns
+  useEffect(() => {
+    const loadLookups = async () => {
+      try {
+        const [plansResponse, usersResponse] = await Promise.all([
+          getPlansApi({ per_page: 100 }),
+          getUsersApi({ per_page: 100 }),
+        ]);
+        setPlans((plansResponse as { data: Plan[] }).data);
+        setUsers((usersResponse as { data: User[] }).data);
+      } catch (err) {
+        console.error("Failed to load lookup data:", err);
+      }
+    };
+
+    loadLookups();
+  }, []);
+
+  const handleViewDetails = (subscription: Subscription) => {
     setSelectedSubscription(subscription);
     setIsDetailsOpen(true);
+  };
+
+  const handleCreateSubscription = async (formData: Partial<Subscription>) => {
+    try {
+      await createSubscriptionApi(formData);
+      toast.success("Subscription created successfully");
+      // Reload subscriptions
+      const response = await getSubscriptionsApi({
+        search: searchTerm,
+        status: statusFilter,
+        plan_id: planFilter,
+        per_page: 10,
+      });
+      setSubscriptions((response as ApiResponse).data);
+      setMeta((response as ApiResponse).meta);
+    } catch (err) {
+      toast.error("Failed to create subscription");
+    }
+  };
+
+  const handleUpdateSubscription = async (id: number, formData: Partial<Subscription>) => {
+    try {
+      await updateSubscriptionApi(id, formData);
+      toast.success("Subscription updated successfully");
+      // Reload subscriptions
+      const response = await getSubscriptionsApi({
+        search: searchTerm,
+        status: statusFilter,
+        plan_id: planFilter,
+        per_page: 10,
+      });
+      setSubscriptions((response as ApiResponse).data);
+      setMeta((response as ApiResponse).meta);
+    } catch (err) {
+      toast.error("Failed to update subscription");
+    }
+  };
+
+  const handleDeleteSubscription = async (id: number) => {
+    try {
+      await deleteSubscriptionApi(id);
+      toast.success("Subscription deleted successfully");
+      // Reload subscriptions
+      const response = await getSubscriptionsApi({
+        search: searchTerm,
+        status: statusFilter,
+        plan_id: planFilter,
+        per_page: 10,
+      });
+      setSubscriptions((response as ApiResponse).data);
+      setMeta((response as ApiResponse).meta);
+    } catch (err) {
+      toast.error("Failed to delete subscription");
+    }
   };
 
   return (
@@ -70,104 +192,121 @@ export default function Subscriptions() {
         </Button>
       </div>
 
+      {/* Filters */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center space-x-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Search subscriptions..."
+                className="pl-10 w-64"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+                <SelectItem value="expired">Expired</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={planFilter} onValueChange={setPlanFilter}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Plan" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Plans</SelectItem>
+                {plans.map((plan) => (
+                  <SelectItem key={plan.id} value={plan.id.toString()}>
+                    {plan.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Table */}
       <Card>
         <CardContent className="p-0">
-          <div className="p-6 border-b">
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Search Code"
-                  className="pl-10 w-40"
-                />
-              </div>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Search Plan"
-                  className="pl-10 w-40"
-                />
-              </div>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Search User"
-                  className="pl-10 w-40"
-                />
-              </div>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Search Payment"
-                  className="pl-10 w-40"
-                />
-              </div>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Search Status"
-                  className="pl-10 w-40"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-md border-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>CODE</TableHead>
-                  <TableHead>PLAN</TableHead>
-                  <TableHead>USER</TableHead>
-                  <TableHead>STARTS</TableHead>
-                  <TableHead>ENDS</TableHead>
-                  <TableHead>PAYMENT</TableHead>
-                  <TableHead>STATUS</TableHead>
-                  <TableHead>ACTIONS</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {subscriptions.map((subscription) => (
-                  <TableRow key={subscription.id} className="hover:bg-muted/50">
-                    <TableCell>
-                      <Badge variant="secondary" className="bg-primary text-primary-foreground">
-                        {subscription.code}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="max-w-xs">
-                      <div className="truncate text-sm">{subscription.plan}</div>
-                    </TableCell>
-                    <TableCell>{subscription.user}</TableCell>
-                    <TableCell>{subscription.starts}</TableCell>
-                    <TableCell>{subscription.ends}</TableCell>
-                    <TableCell>{subscription.payment}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="bg-success text-success-foreground">
-                        {subscription.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleViewDetails(subscription)}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            Actions
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+          {loading ? (
+            <div className="p-6 text-center">Loading subscriptions...</div>
+          ) : error ? (
+            <div className="p-6 text-center text-red-500">{error}</div>
+          ) : (
+            <div className="rounded-md border-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>PLAN</TableHead>
+                    <TableHead>USER</TableHead>
+                    <TableHead>START DATE</TableHead>
+                    <TableHead>END DATE</TableHead>
+                    <TableHead>STATUS</TableHead>
+                    <TableHead>ACTIONS</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {subscriptions.map((subscription) => (
+                    <TableRow key={subscription.id} className="hover:bg-muted/50">
+                      <TableCell>
+                        <Badge variant="secondary" className="bg-primary text-primary-foreground">
+                          #{subscription.id}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="max-w-xs">
+                        <div className="truncate text-sm">{subscription.plan?.name || 'N/A'}</div>
+                      </TableCell>
+                      <TableCell>{subscription.user?.name || 'N/A'}</TableCell>
+                      <TableCell>{new Date(subscription.start_date).toLocaleDateString()}</TableCell>
+                      <TableCell>{subscription.end_date ? new Date(subscription.end_date).toLocaleDateString() : 'N/A'}</TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant="secondary" 
+                          className={
+                            subscription.status === 'active' 
+                              ? "bg-success text-success-foreground"
+                              : subscription.status === 'cancelled'
+                              ? "bg-destructive text-destructive-foreground"
+                              : "bg-muted text-muted-foreground"
+                          }
+                        >
+                          {subscription.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <span className="sr-only">Open menu</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleViewDetails(subscription)}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Details
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
           {/* Pagination */}
           <div className="flex items-center justify-between p-6 border-t">

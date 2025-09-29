@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,149 +26,78 @@ import {
   Crown,
   Star,
   Zap,
-  Infinity,
+  Infinity as InfinityIcon,
 } from "lucide-react";
+import { toast } from "sonner";
+import {
+  getPlansApi,
+  createPlanApi,
+  updatePlanApi,
+  deletePlanApi,
+  type Plan as ApiPlan,
+} from "@/lib/utils";
 
-interface Plan {
-  id: number;
-  name: string;
-  description: string;
-  price: number;
-  currency: string;
-  billing: string;
-  status: string;
-  subscribers: number;
-  features: {
-    exams: number | string;
-    questions: number | string;
-    users: number | string;
-    storage: string;
-    support: string;
-    analytics: boolean;
-    customBranding: boolean;
-    api: boolean;
+type Plan = ApiPlan;
+
+interface ApiResponse {
+  data: Plan[];
+  meta: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
   };
-  limits: {
-    maxExams: number;
-    maxUsers: number;
-    maxQuestions: number;
-  };
-  created: string;
 }
 
 export default function Plans() {
-  const [plans, setPlans] = useState<Plan[]>([
-    {
-      id: 1,
-      name: "Basic",
-      description: "Essential features for individual learners",
-      price: 9.99,
-      currency: "USD",
-      billing: "monthly",
-      status: "Active",
-      subscribers: 245,
-      features: {
-        exams: 10,
-        questions: 500,
-        users: 1,
-        storage: "1GB",
-        support: "Basic",
-        analytics: false,
-        customBranding: false,
-        api: false,
-      },
-      limits: {
-        maxExams: 10,
-        maxUsers: 1,
-        maxQuestions: 500,
-      },
-      created: "2024-01-15",
-    },
-    {
-      id: 2,
-      name: "Professional",
-      description: "Advanced features for small teams",
-      price: 29.99,
-      currency: "USD",
-      billing: "monthly",
-      status: "Active",
-      subscribers: 89,
-      features: {
-        exams: 50,
-        questions: 2000,
-        users: 10,
-        storage: "10GB",
-        support: "Priority",
-        analytics: true,
-        customBranding: false,
-        api: true,
-      },
-      limits: {
-        maxExams: 50,
-        maxUsers: 10,
-        maxQuestions: 2000,
-      },
-      created: "2024-01-15",
-    },
-    {
-      id: 3,
-      name: "Enterprise",
-      description: "Full-featured solution for organizations",
-      price: 99.99,
-      currency: "USD",
-      billing: "monthly",
-      status: "Active",
-      subscribers: 34,
-      features: {
-        exams: "Unlimited",
-        questions: "Unlimited",
-        users: "Unlimited",
-        storage: "100GB",
-        support: "24/7 Premium",
-        analytics: true,
-        customBranding: true,
-        api: true,
-      },
-      limits: {
-        maxExams: -1,
-        maxUsers: -1,
-        maxQuestions: -1,
-      },
-      created: "2024-01-15",
-    },
-    {
-      id: 4,
-      name: "Free Trial",
-      description: "Try all features for 14 days",
-      price: 0,
-      currency: "USD",
-      billing: "trial",
-      status: "Active",
-      subscribers: 456,
-      features: {
-        exams: 5,
-        questions: 100,
-        users: 1,
-        storage: "500MB",
-        support: "Community",
-        analytics: false,
-        customBranding: false,
-        api: false,
-      },
-      limits: {
-        maxExams: 5,
-        maxUsers: 1,
-        maxQuestions: 100,
-      },
-      created: "2024-01-15",
-    },
-  ]);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [meta, setMeta] = useState({
+    current_page: 1,
+    last_page: 1,
+    per_page: 10,
+    total: 0,
+  });
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDeleteDrawerOpen, setIsDeleteDrawerOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [priceRange, setPriceRange] = useState({ min: "", max: "" });
+  const [sortBy, setSortBy] = useState("name");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // Load plans from API
+  useEffect(() => {
+    const loadPlans = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await getPlansApi({
+          search: searchTerm,
+          status: statusFilter,
+          type: typeFilter,
+          price_min: priceRange.min ? Number(priceRange.min) : undefined,
+          price_max: priceRange.max ? Number(priceRange.max) : undefined,
+          per_page: itemsPerPage,
+        });
+        setPlans((response as ApiResponse).data);
+        setMeta((response as ApiResponse).meta);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load plans");
+        toast.error("Failed to load plans");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPlans();
+  }, [searchTerm, statusFilter, typeFilter, priceRange, currentPage, itemsPerPage]);
 
   const handleAdd = () => {
     setSelectedPlan(null);
@@ -185,59 +114,121 @@ export default function Plans() {
     setIsDeleteDrawerOpen(true);
   };
 
-  const handleConfirmDelete = () => {
-    if (selectedPlan) {
-      setPlans(prev => prev.filter(p => p.id !== selectedPlan.id));
-      setSelectedPlan(null);
+  const handleAddSubmit = async (formData: Partial<Plan>) => {
+    try {
+      await createPlanApi(formData);
+      toast.success("Plan created successfully");
+      setIsDrawerOpen(false);
+      // Reload plans
+      const response = await getPlansApi({
+        search: searchTerm,
+        status: statusFilter,
+        type: typeFilter,
+        price_min: priceRange.min ? Number(priceRange.min) : undefined,
+        price_max: priceRange.max ? Number(priceRange.max) : undefined,
+        per_page: itemsPerPage,
+      });
+      setPlans((response as ApiResponse).data);
+      setMeta((response as ApiResponse).meta);
+    } catch (err) {
+      toast.error("Failed to create plan");
     }
   };
 
-  const handleSave = (formData: FormData) => {
+  const handleEditSubmit = async (formData: Partial<Plan>) => {
+    if (!selectedPlan) return;
+    try {
+      await updatePlanApi(selectedPlan.id, formData);
+      toast.success("Plan updated successfully");
+      setIsDrawerOpen(false);
+      // Reload plans
+      const response = await getPlansApi({
+        search: searchTerm,
+        status: statusFilter,
+        type: typeFilter,
+        price_min: priceRange.min ? Number(priceRange.min) : undefined,
+        price_max: priceRange.max ? Number(priceRange.max) : undefined,
+        per_page: itemsPerPage,
+      });
+      setPlans((response as ApiResponse).data);
+      setMeta((response as ApiResponse).meta);
+    } catch (err) {
+      toast.error("Failed to update plan");
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedPlan) return;
+    try {
+      await deletePlanApi(selectedPlan.id);
+      toast.success("Plan deleted successfully");
+      setIsDeleteDrawerOpen(false);
+      // Reload plans
+      const response = await getPlansApi({
+        search: searchTerm,
+        status: statusFilter,
+        type: typeFilter,
+        price_min: priceRange.min ? Number(priceRange.min) : undefined,
+        price_max: priceRange.max ? Number(priceRange.max) : undefined,
+        per_page: itemsPerPage,
+      });
+      setPlans((response as ApiResponse).data);
+      setMeta((response as ApiResponse).meta);
+    } catch (err) {
+      toast.error("Failed to delete plan");
+    }
+  };
+
+  const handleConfirmDelete = () => {
+    handleDeleteConfirm();
+  };
+
+  const handleSave = async (formData: FormData) => {
     const planData = {
-      id: selectedPlan?.id || Date.now(),
       name: formData.get("name") as string,
       description: formData.get("description") as string,
       price: parseFloat(formData.get("price") as string) || 0,
       currency: formData.get("currency") as string,
-      billing: formData.get("billing") as string,
-      status: formData.get("status") as string,
-      subscribers: selectedPlan?.subscribers || 0,
-      features: {
-        exams: formData.get("exams") as string,
-        questions: formData.get("questions") as string,
-        users: formData.get("users") as string,
-        storage: formData.get("storage") as string,
-        support: formData.get("support") as string,
-        analytics: formData.get("analytics") === "on",
-        customBranding: formData.get("customBranding") === "on",
-        api: formData.get("api") === "on",
-      },
-      limits: {
-        maxExams: parseInt(formData.get("maxExams") as string) || 0,
-        maxUsers: parseInt(formData.get("maxUsers") as string) || 0,
-        maxQuestions: parseInt(formData.get("maxQuestions") as string) || 0,
-      },
-      created: selectedPlan?.created || new Date().toISOString().split('T')[0],
+      billing_cycle: formData.get("billing") as "monthly" | "yearly" | "lifetime",
+      type: formData.get("type") as "free" | "premium" | "enterprise",
+      is_active: formData.get("status") === "active",
+      features: formData.get("features") ? JSON.parse(formData.get("features") as string) : [],
+      sort_order: parseInt(formData.get("sort_order") as string) || 0,
+      trial_days: parseInt(formData.get("trial_days") as string) || 0,
     };
 
     if (selectedPlan) {
-      setPlans(prev => prev.map(p => p.id === selectedPlan.id ? planData : p));
+      await handleEditSubmit(planData);
     } else {
-      setPlans(prev => [...prev, planData]);
+      await handleAddSubmit(planData);
     }
-    setIsDrawerOpen(false);
   };
 
-  const togglePlanStatus = (planId: number) => {
-    setPlans(prev => prev.map(plan => 
-      plan.id === planId 
-        ? { ...plan, status: plan.status === "Active" ? "Inactive" : "Active" }
-        : plan
-    ));
+  const togglePlanStatus = async (planId: number) => {
+    const plan = plans.find(p => p.id === planId);
+    if (!plan) return;
+    
+    try {
+      await updatePlanApi(planId, { is_active: !plan.is_active });
+      toast.success("Plan status updated successfully");
+      // Reload plans
+      const response = await getPlansApi({
+        search: searchTerm,
+        status: statusFilter,
+        type: typeFilter,
+        price_min: priceRange.min ? Number(priceRange.min) : undefined,
+        price_max: priceRange.max ? Number(priceRange.max) : undefined,
+        per_page: itemsPerPage,
+      });
+      setPlans((response as ApiResponse).data);
+      setMeta((response as ApiResponse).meta);
+    } catch (err) {
+      toast.error("Failed to update plan status");
+    }
   };
 
-  const getStatusColor = (status: string) => {
-    return status === "Active" 
+  const getStatusColor = (isActive: boolean) => {
+    return isActive 
       ? "bg-success text-success-foreground" 
       : "bg-muted text-muted-foreground";
   };
@@ -253,7 +244,7 @@ export default function Plans() {
       case "professional":
         return <Crown className="h-5 w-5" />;
       case "enterprise":
-        return <Infinity className="h-5 w-5" />;
+        return <InfinityIcon className="h-5 w-5" />;
       default:
         return <DollarSign className="h-5 w-5" />;
     }
@@ -264,19 +255,14 @@ export default function Plans() {
     return `$${price}/${billing === "monthly" ? "mo" : billing}`;
   };
 
-  const formatFeatureValue = (value: any) => {
+  const formatFeatureValue = (value: unknown) => {
     if (value === true) return <CheckCircle className="h-4 w-4 text-success" />;
     if (value === false) return <XCircle className="h-4 w-4 text-muted-foreground" />;
-    if (value === "Unlimited" || value === -1) return <Infinity className="h-4 w-4 text-accent" />;
+    if (value === "Unlimited" || value === -1) return <InfinityIcon className="h-4 w-4 text-accent" />;
     return value;
   };
 
-  const filteredPlans = plans.filter(plan => {
-    const matchesSearch = plan.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         plan.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = !statusFilter || plan.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  // Remove client-side filtering as it's now handled by the API
 
   const columns = [
     {
@@ -288,7 +274,7 @@ export default function Plans() {
           {getPlanIcon(plan.name)}
           <div>
             <div className="font-medium">{plan.name}</div>
-            <div className="text-sm text-muted-foreground">{formatPrice(plan.price, plan.currency, plan.billing)}</div>
+            <div className="text-sm text-muted-foreground">{formatPrice(plan.price, plan.currency, plan.billing_cycle)}</div>
           </div>
         </div>
       ),
@@ -303,37 +289,37 @@ export default function Plans() {
       ),
     },
     {
-      key: "subscribers" as keyof Plan,
+      key: "subscriptions_count" as keyof Plan,
       header: "Subscribers",
       sortable: true,
       render: (plan: Plan) => (
         <div className="flex items-center">
           <Users className="mr-1 h-3 w-3" />
-          {plan.subscribers}
+          {plan.subscriptions_count}
         </div>
       ),
     },
     {
-      key: "status" as keyof Plan,
+      key: "is_active" as keyof Plan,
       header: "Status",
       sortable: true,
       render: (plan: Plan) => (
         <div className="flex items-center space-x-2">
-          <Badge variant="secondary" className={getStatusColor(plan.status)}>
-            {plan.status}
+          <Badge variant="secondary" className={getStatusColor(plan.is_active)}>
+            {plan.is_active ? "Active" : "Inactive"}
           </Badge>
           <Switch
-            checked={plan.status === "Active"}
+            checked={plan.is_active}
             onCheckedChange={() => togglePlanStatus(plan.id)}
           />
         </div>
       ),
     },
     {
-      key: "created" as keyof Plan,
+      key: "created_at" as keyof Plan,
       header: "Created",
       sortable: true,
-      render: (plan: Plan) => plan.created,
+      render: (plan: Plan) => new Date(plan.created_at).toLocaleDateString(),
     },
   ];
 
@@ -387,7 +373,7 @@ export default function Plans() {
             <DollarSign className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{plans.length}</div>
+            <div className="text-2xl font-bold">{meta.total}</div>
             <p className="text-xs text-success">All subscription tiers</p>
           </CardContent>
         </Card>
@@ -399,7 +385,7 @@ export default function Plans() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {plans.reduce((sum, plan) => sum + plan.subscribers, 0)}
+              {plans.reduce((sum, plan) => sum + plan.subscriptions_count, 0)}
             </div>
             <p className="text-xs text-success">+12% from last month</p>
           </CardContent>
@@ -412,7 +398,7 @@ export default function Plans() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${plans.reduce((sum, plan) => sum + ((plan.price || 0) * (plan.subscribers || 0)), 0).toLocaleString()}
+              ${plans.reduce((sum, plan) => sum + ((plan.price || 0) * (plan.subscriptions_count || 0)), 0).toLocaleString()}
             </div>
             <p className="text-xs text-success">+8% from last month</p>
           </CardContent>
@@ -448,17 +434,19 @@ export default function Plans() {
         ]}
         onFilterChange={(filterId, value) => {
           if (filterId === "status") setStatusFilter(value);
+          if (filterId === "type") setTypeFilter(value);
         }}
         onClearFilters={() => {
           setSearchTerm("");
-          setStatusFilter("");
+          setStatusFilter("all");
+          setTypeFilter("all");
         }}
         onExport={() => console.log("Export plans")}
       />
 
       {/* Data Table */}
       <DataTable
-        data={filteredPlans}
+        data={plans}
         columns={columns}
         actions={actions}
         emptyMessage="No plans found. Create your first subscription plan."
@@ -528,7 +516,7 @@ export default function Plans() {
               </div>
               <div>
                 <Label htmlFor="billing">Billing</Label>
-                <Select name="billing" defaultValue={selectedPlan?.billing || "monthly"}>
+                <Select name="billing" defaultValue={selectedPlan?.billing_cycle || "monthly"}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -541,17 +529,32 @@ export default function Plans() {
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="type">Type</Label>
+                <Select name="type" defaultValue={selectedPlan?.type || "free"}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="free">Free</SelectItem>
+                    <SelectItem value="premium">Premium</SelectItem>
+                    <SelectItem value="enterprise">Enterprise</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             <div>
               <Label htmlFor="status">Status</Label>
-              <Select name="status" defaultValue={selectedPlan?.status || "Active"}>
+                <Select name="status" defaultValue={selectedPlan?.is_active ? "active" : "inactive"}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Inactive">Inactive</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
                 </SelectContent>
               </Select>
+              </div>
             </div>
 
             <div className="space-y-4">
@@ -559,83 +562,36 @@ export default function Plans() {
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="exams">Max Exams</Label>
+                  <Label htmlFor="sort_order">Sort Order</Label>
                   <Input
-                    id="exams"
-                    name="exams"
-                    defaultValue={selectedPlan?.features.exams}
-                    placeholder="e.g. 10 or Unlimited"
+                    id="sort_order"
+                    name="sort_order"
+                    type="number"
+                    defaultValue={selectedPlan?.sort_order || 0}
+                    placeholder="0"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="questions">Max Questions</Label>
+                  <Label htmlFor="trial_days">Trial Days</Label>
                   <Input
-                    id="questions"
-                    name="questions"
-                    defaultValue={selectedPlan?.features.questions}
-                    placeholder="e.g. 500 or Unlimited"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="users">Max Users</Label>
-                  <Input
-                    id="users"
-                    name="users"
-                    defaultValue={selectedPlan?.features.users}
-                    placeholder="e.g. 1 or Unlimited"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="storage">Storage</Label>
-                  <Input
-                    id="storage"
-                    name="storage"
-                    defaultValue={selectedPlan?.features.storage}
-                    placeholder="e.g. 1GB"
+                    id="trial_days"
+                    name="trial_days"
+                    type="number"
+                    defaultValue={selectedPlan?.trial_days || 0}
+                    placeholder="0"
                   />
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="support">Support Level</Label>
-                <Select name="support" defaultValue={selectedPlan?.features.support || "Basic"}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Community">Community</SelectItem>
-                    <SelectItem value="Basic">Basic</SelectItem>
-                    <SelectItem value="Priority">Priority</SelectItem>
-                    <SelectItem value="24/7 Premium">24/7 Premium</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="analytics"
-                    name="analytics"
-                    defaultChecked={selectedPlan?.features.analytics}
-                  />
-                  <Label htmlFor="analytics">Analytics & Reporting</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="customBranding"
-                    name="customBranding"
-                    defaultChecked={selectedPlan?.features.customBranding}
-                  />
-                  <Label htmlFor="customBranding">Custom Branding</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="api"
-                    name="api"
-                    defaultChecked={selectedPlan?.features.api}
-                  />
-                  <Label htmlFor="api">API Access</Label>
-                </div>
+                <Label htmlFor="features">Features (JSON)</Label>
+                <Textarea
+                  id="features"
+                  name="features"
+                  defaultValue={selectedPlan?.features ? JSON.stringify(selectedPlan.features) : "[]"}
+                  placeholder='["Feature 1", "Feature 2"]'
+                  rows={3}
+                />
               </div>
             </div>
           </div>

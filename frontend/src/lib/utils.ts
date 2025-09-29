@@ -997,3 +997,269 @@ export const deleteSkillApi = async (id: number) => {
   });
   return response;
 };
+
+// Topics API functions
+export interface Topic {
+  id: number;
+  name: string;
+  description?: string;
+  category_id: number;
+  category: Category;
+  skill_id?: number;
+  skill?: Skill;
+  is_active: boolean;
+  sort_order?: number;
+  difficulty_level?: "beginner" | "intermediate" | "advanced";
+  questions_count: number;
+  lessons_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export const getTopicsApi = async (filters?: {
+  search?: string;
+  status?: string;
+  category_id?: string;
+  skill_id?: string;
+  per_page?: number;
+}) => {
+  const queryParams = new URLSearchParams();
+  if (filters?.search) queryParams.append("search", filters.search);
+  if (filters?.status && filters.status !== "all")
+    queryParams.append("status", filters.status);
+  if (filters?.category_id && filters.category_id !== "all")
+    queryParams.append("category_id", filters.category_id);
+  if (filters?.skill_id && filters.skill_id !== "all")
+    queryParams.append("skill_id", filters.skill_id);
+  if (filters?.per_page)
+    queryParams.append("per_page", filters.per_page.toString());
+
+  const response = await apiFetch(`/topics?${queryParams.toString()}`);
+  return response;
+};
+
+export const getTopicApi = async (id: number) => {
+  const response = await apiFetch(`/topics/${id}`);
+  return response;
+};
+
+export const createTopicApi = async (data: Partial<Topic>) => {
+  const response = await apiFetch("/topics", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  return response;
+};
+
+export const updateTopicApi = async (id: number, data: Partial<Topic>) => {
+  const response = await apiFetch(`/topics/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+  return response;
+};
+
+export const deleteTopicApi = async (id: number) => {
+  const response = await apiFetch(`/topics/${id}`, {
+    method: "DELETE",
+  });
+  return response;
+};
+
+// Plans API functions
+export interface Plan {
+  id: number;
+  name: string;
+  description?: string;
+  type: "free" | "premium" | "enterprise";
+  price: number;
+  currency: string;
+  billing_cycle: "monthly" | "yearly" | "lifetime";
+  features?: string[];
+  is_active: boolean;
+  sort_order?: number;
+  trial_days?: number;
+  subscriptions_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export const getPlansApi = async (filters?: {
+  search?: string;
+  status?: string;
+  type?: string;
+  price_min?: number;
+  price_max?: number;
+  per_page?: number;
+}) => {
+  const queryParams = new URLSearchParams();
+  if (filters?.search) queryParams.append("search", filters.search);
+  if (filters?.status && filters.status !== "all")
+    queryParams.append("status", filters.status);
+  if (filters?.type && filters.type !== "all")
+    queryParams.append("type", filters.type);
+  if (filters?.price_min) queryParams.append("price_min", filters.price_min.toString());
+  if (filters?.price_max) queryParams.append("price_max", filters.price_max.toString());
+  if (filters?.per_page)
+    queryParams.append("per_page", filters.per_page.toString());
+
+  const response = await apiFetch(`/plans?${queryParams.toString()}`);
+  return response;
+};
+
+export const getPlanApi = async (id: number) => {
+  const response = await apiFetch(`/plans/${id}`);
+  return response;
+};
+
+export const createPlanApi = async (data: Partial<Plan>) => {
+  const response = await apiFetch("/plans", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  return response;
+};
+
+export const updatePlanApi = async (id: number, data: Partial<Plan>) => {
+  const response = await apiFetch(`/plans/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+  return response;
+};
+
+export const deletePlanApi = async (id: number) => {
+  const response = await apiFetch(`/plans/${id}`, {
+    method: "DELETE",
+  });
+  return response;
+};
+
+// Subscriptions API functions
+export interface Subscription {
+  id: number;
+  user_id: number;
+  user: User;
+  plan_id: number;
+  plan: Plan;
+  status: "active" | "inactive" | "cancelled" | "expired";
+  start_date: string;
+  end_date?: string;
+  auto_renew: boolean;
+  payment_method?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export const getSubscriptionsApi = async (filters?: {
+  search?: string;
+  status?: string;
+  plan_id?: string;
+  start_date?: string;
+  end_date?: string;
+  per_page?: number;
+}) => {
+  const queryParams = new URLSearchParams();
+  if (filters?.search) queryParams.append("search", filters.search);
+  if (filters?.status && filters.status !== "all")
+    queryParams.append("status", filters.status);
+  if (filters?.plan_id && filters.plan_id !== "all")
+    queryParams.append("plan_id", filters.plan_id);
+  if (filters?.start_date) queryParams.append("start_date", filters.start_date);
+  if (filters?.end_date) queryParams.append("end_date", filters.end_date);
+  if (filters?.per_page)
+    queryParams.append("per_page", filters.per_page.toString());
+
+  const response = await apiFetch(`/subscriptions?${queryParams.toString()}`);
+  return response;
+};
+
+export const getSubscriptionApi = async (id: number) => {
+  const response = await apiFetch(`/subscriptions/${id}`);
+  return response;
+};
+
+export const createSubscriptionApi = async (data: Partial<Subscription>) => {
+  const response = await apiFetch("/subscriptions", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  return response;
+};
+
+export const updateSubscriptionApi = async (id: number, data: Partial<Subscription>) => {
+  const response = await apiFetch(`/subscriptions/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+  return response;
+};
+
+export const deleteSubscriptionApi = async (id: number) => {
+  const response = await apiFetch(`/subscriptions/${id}`, {
+    method: "DELETE",
+  });
+  return response;
+};
+
+// Settings API functions
+export interface Setting {
+  id: number;
+  key: string;
+  value: string;
+  type: "string" | "number" | "boolean" | "json" | "text";
+  category: string;
+  description?: string;
+  is_public: boolean;
+  sort_order?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export const getSettingsApi = async (filters?: {
+  search?: string;
+  category?: string;
+  type?: string;
+  per_page?: number;
+}) => {
+  const queryParams = new URLSearchParams();
+  if (filters?.search) queryParams.append("search", filters.search);
+  if (filters?.category && filters.category !== "all")
+    queryParams.append("category", filters.category);
+  if (filters?.type && filters.type !== "all")
+    queryParams.append("type", filters.type);
+  if (filters?.per_page)
+    queryParams.append("per_page", filters.per_page.toString());
+
+  const response = await apiFetch(`/settings?${queryParams.toString()}`);
+  return response;
+};
+
+export const getSettingApi = async (id: number) => {
+  const response = await apiFetch(`/settings/${id}`);
+  return response;
+};
+
+export const createSettingApi = async (data: Partial<Setting>) => {
+  const response = await apiFetch("/settings", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  return response;
+};
+
+export const updateSettingApi = async (id: number, data: Partial<Setting>) => {
+  const response = await apiFetch(`/settings/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+  return response;
+};
+
+export const deleteSettingApi = async (id: number) => {
+  const response = await apiFetch(`/settings/${id}`, {
+    method: "DELETE",
+  });
+  return response;
+};

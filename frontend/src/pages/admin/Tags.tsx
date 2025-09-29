@@ -1,17 +1,29 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { SideDrawer } from "@/components/ui/side-drawer";
 import { ConfirmDrawer } from "@/components/ui/confirm-drawer";
 import { FiltersPanel } from "@/components/ui/filters-panel";
 import { DataTable } from "@/components/ui/data-table";
-import { 
+import {
   Plus,
   Edit,
   Trash2,
@@ -60,13 +72,18 @@ export default function Tags() {
     try {
       setLoading(true);
       setError("");
-      const filters: { search?: string; status?: string; color?: string; per_page?: number } = {
+      const filters: {
+        search?: string;
+        status?: string;
+        color?: string;
+        per_page?: number;
+      } = {
         search: searchTerm || undefined,
         status: selectedStatus !== "all" ? selectedStatus : undefined,
         color: selectedColor !== "all" ? selectedColor : undefined,
       };
       const response = await getTagsApi(filters);
-      
+
       // Map API response to UI format
       const mappedTags: TagItem[] = response.data.map((t: ApiTag) => ({
         id: t.id.toString(),
@@ -80,7 +97,7 @@ export default function Tags() {
         createdAt: new Date(t.created_at).toLocaleDateString(),
         updatedAt: new Date(t.updated_at).toLocaleDateString(),
       }));
-      
+
       setTags(mappedTags);
       setMeta(response.meta);
     } catch (err: any) {
@@ -94,13 +111,13 @@ export default function Tags() {
   useEffect(() => {
     loadTags();
   }, [searchTerm, selectedStatus, selectedColor]);
-  
+
   // Drawer states
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
   const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false);
   const [isDeleteDrawerOpen, setIsDeleteDrawerOpen] = useState(false);
   const [selectedTag, setSelectedTag] = useState<TagItem | null>(null);
-  
+
   // Form states
   const [formData, setFormData] = useState({
     name: "",
@@ -125,7 +142,6 @@ export default function Tags() {
     { name: "Teal", value: "#14B8A6" },
   ];
 
-
   // Filter options
   const filters = [
     {
@@ -136,8 +152,11 @@ export default function Tags() {
       onChange: (value: string) => setSelectedColor(value),
       options: [
         { value: "all", label: "All Colors" },
-        ...tagColors.map(color => ({ value: color.value, label: color.name }))
-      ]
+        ...tagColors.map((color) => ({
+          value: color.value,
+          label: color.name,
+        })),
+      ],
     },
     {
       key: "status",
@@ -148,14 +167,14 @@ export default function Tags() {
       options: [
         { value: "all", label: "All Status" },
         { value: "active", label: "Active" },
-        { value: "inactive", label: "Inactive" }
-      ]
-    }
+        { value: "inactive", label: "Inactive" },
+      ],
+    },
   ];
 
   // CRUD operations
   const handleFilterChange = (filterId: string, value: string) => {
-    const filter = filters.find(f => f.key === filterId);
+    const filter = filters.find((f) => f.key === filterId);
     if (filter) {
       filter.onChange(value);
     }
@@ -275,7 +294,7 @@ export default function Tags() {
       sortable: true,
       render: (tag: TagItem) => (
         <div className="flex items-center space-x-3">
-          <div 
+          <div
             className="w-4 h-4 rounded-full border"
             style={{ backgroundColor: tag.color }}
           />
@@ -286,22 +305,25 @@ export default function Tags() {
             </div>
           </div>
         </div>
-      )
+      ),
     },
     {
       key: "color" as keyof TagItem,
       header: "Color",
       render: (tag: TagItem) => (
         <div className="flex items-center space-x-2">
-          <div 
+          <div
             className="w-6 h-6 rounded-full border border-gray-200"
             style={{ backgroundColor: tag.color }}
           />
-          <Badge variant="outline" style={{ color: tag.color, borderColor: tag.color }}>
+          <Badge
+            variant="outline"
+            style={{ color: tag.color, borderColor: tag.color }}
+          >
             {tag.color}
           </Badge>
         </div>
-      )
+      ),
     },
     {
       key: "usageCount" as keyof TagItem,
@@ -318,7 +340,7 @@ export default function Tags() {
             {tag.questions} questions
           </div>
         </div>
-      )
+      ),
     },
     {
       key: "courses" as keyof TagItem,
@@ -329,26 +351,30 @@ export default function Tags() {
           <Users className="mr-1 h-3 w-3" />
           {tag.courses}
         </div>
-      )
+      ),
     },
     {
       key: "isActive" as keyof TagItem,
       header: "Status",
       render: (tag: TagItem) => (
-        <Badge 
-          variant="secondary" 
-          className={tag.isActive ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground"}
+        <Badge
+          variant="secondary"
+          className={
+            tag.isActive
+              ? "bg-success text-success-foreground"
+              : "bg-muted text-muted-foreground"
+          }
         >
           {tag.isActive ? "Active" : "Inactive"}
         </Badge>
-      )
+      ),
     },
     {
       key: "createdAt" as keyof TagItem,
       header: "Created",
       sortable: true,
-      render: (tag: TagItem) => tag.createdAt
-    }
+      render: (tag: TagItem) => tag.createdAt,
+    },
   ];
 
   // Table actions
@@ -358,19 +384,19 @@ export default function Tags() {
       icon: <Eye className="h-4 w-4" />,
       onClick: (tag: TagItem) => {
         toast.success(`Viewing usage for: ${tag.name}`);
-      }
+      },
     },
     {
       label: "Edit",
       icon: <Edit className="h-4 w-4" />,
-      onClick: handleEdit
+      onClick: handleEdit,
     },
     {
       label: "Delete",
       icon: <Trash2 className="h-4 w-4" />,
       onClick: handleDelete,
-      variant: "destructive" as const
-    }
+      variant: "destructive" as const,
+    },
   ];
 
   return (
@@ -385,7 +411,7 @@ export default function Tags() {
             Organize content with tags and labels for better categorization
           </p>
         </div>
-        <Button 
+        <Button
           onClick={handleAdd}
           className="bg-gradient-primary hover:bg-primary-hover shadow-primary"
         >
@@ -414,7 +440,7 @@ export default function Tags() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {tags.filter(t => t.isActive).length}
+              {tags.filter((t) => t.isActive).length}
             </div>
             <p className="text-xs text-success">Ready for use</p>
           </CardContent>
@@ -427,7 +453,9 @@ export default function Tags() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {tags.reduce((sum, t) => sum + (t.usageCount || 0), 0).toLocaleString()}
+              {tags
+                .reduce((sum, t) => sum + (t.usageCount || 0), 0)
+                .toLocaleString()}
             </div>
             <p className="text-xs text-success">Across all content</p>
           </CardContent>
@@ -490,7 +518,9 @@ export default function Tags() {
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, name: e.target.value }))
+                }
                 placeholder="Enter tag name"
                 className="mt-1"
               />
@@ -503,7 +533,12 @@ export default function Tags() {
               <Textarea
                 id="description"
                 value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
                 placeholder="Enter tag description"
                 className="mt-1 min-h-[100px]"
               />
@@ -518,26 +553,45 @@ export default function Tags() {
                   <Input
                     type="color"
                     value={formData.color}
-                    onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        color: e.target.value,
+                      }))
+                    }
                     className="w-12 h-10 rounded border-0 p-0 cursor-pointer"
                   />
                   <Input
                     value={formData.color}
-                    onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        color: e.target.value,
+                      }))
+                    }
                     placeholder="#3B82F6"
                     className="flex-1"
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium mb-2 block">Preset Colors</Label>
+                  <Label className="text-sm font-medium mb-2 block">
+                    Preset Colors
+                  </Label>
                   <div className="grid grid-cols-5 gap-2">
                     {tagColors.map((color) => (
                       <button
                         key={color.value}
                         type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, color: color.value }))}
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            color: color.value,
+                          }))
+                        }
                         className={`w-8 h-8 rounded-full border-2 transition-all ${
-                          formData.color === color.value ? "border-gray-800 scale-110" : "border-gray-200"
+                          formData.color === color.value
+                            ? "border-gray-800 scale-110"
+                            : "border-gray-200"
                         }`}
                         style={{ backgroundColor: color.value }}
                         title={color.name}
@@ -557,7 +611,9 @@ export default function Tags() {
               </div>
               <Switch
                 checked={formData.isActive}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
+                onCheckedChange={(checked) =>
+                  setFormData((prev) => ({ ...prev, isActive: checked }))
+                }
               />
             </div>
 
@@ -565,11 +621,14 @@ export default function Tags() {
             <div className="rounded-lg border p-3">
               <Label className="text-sm font-medium block mb-2">Preview</Label>
               <div className="flex items-center space-x-2">
-                <div 
+                <div
                   className="w-4 h-4 rounded-full border"
                   style={{ backgroundColor: formData.color }}
                 />
-                <Badge variant="secondary" style={{ color: formData.color, borderColor: formData.color }}>
+                <Badge
+                  variant="secondary"
+                  style={{ color: formData.color, borderColor: formData.color }}
+                >
                   {formData.name || "Tag Name"}
                 </Badge>
               </div>
@@ -577,16 +636,16 @@ export default function Tags() {
           </div>
 
           <div className="flex justify-end space-x-2 pt-4 border-t">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => setIsAddDrawerOpen(false)}
               disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button 
-              onClick={handleAddSubmit} 
+            <Button
+              onClick={handleAddSubmit}
               disabled={isSubmitting}
               className="bg-gradient-primary hover:bg-primary-hover"
             >
@@ -612,7 +671,9 @@ export default function Tags() {
               <Input
                 id="edit-name"
                 value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, name: e.target.value }))
+                }
                 placeholder="Enter tag name"
                 className="mt-1"
               />
@@ -625,7 +686,12 @@ export default function Tags() {
               <Textarea
                 id="edit-description"
                 value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
                 placeholder="Enter tag description"
                 className="mt-1 min-h-[100px]"
               />
@@ -640,26 +706,45 @@ export default function Tags() {
                   <Input
                     type="color"
                     value={formData.color}
-                    onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        color: e.target.value,
+                      }))
+                    }
                     className="w-12 h-10 rounded border-0 p-0 cursor-pointer"
                   />
                   <Input
                     value={formData.color}
-                    onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        color: e.target.value,
+                      }))
+                    }
                     placeholder="#3B82F6"
                     className="flex-1"
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium mb-2 block">Preset Colors</Label>
+                  <Label className="text-sm font-medium mb-2 block">
+                    Preset Colors
+                  </Label>
                   <div className="grid grid-cols-5 gap-2">
                     {tagColors.map((color) => (
                       <button
                         key={color.value}
                         type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, color: color.value }))}
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            color: color.value,
+                          }))
+                        }
                         className={`w-8 h-8 rounded-full border-2 transition-all ${
-                          formData.color === color.value ? "border-gray-800 scale-110" : "border-gray-200"
+                          formData.color === color.value
+                            ? "border-gray-800 scale-110"
+                            : "border-gray-200"
                         }`}
                         style={{ backgroundColor: color.value }}
                         title={color.name}
@@ -679,7 +764,9 @@ export default function Tags() {
               </div>
               <Switch
                 checked={formData.isActive}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
+                onCheckedChange={(checked) =>
+                  setFormData((prev) => ({ ...prev, isActive: checked }))
+                }
               />
             </div>
 
@@ -687,11 +774,14 @@ export default function Tags() {
             <div className="rounded-lg border p-3">
               <Label className="text-sm font-medium block mb-2">Preview</Label>
               <div className="flex items-center space-x-2">
-                <div 
+                <div
                   className="w-4 h-4 rounded-full border"
                   style={{ backgroundColor: formData.color }}
                 />
-                <Badge variant="secondary" style={{ color: formData.color, borderColor: formData.color }}>
+                <Badge
+                  variant="secondary"
+                  style={{ color: formData.color, borderColor: formData.color }}
+                >
                   {formData.name || "Tag Name"}
                 </Badge>
               </div>
@@ -699,16 +789,16 @@ export default function Tags() {
           </div>
 
           <div className="flex justify-end space-x-2 pt-4 border-t">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => setIsEditDrawerOpen(false)}
               disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button 
-              onClick={handleEditSubmit} 
+            <Button
+              onClick={handleEditSubmit}
               disabled={isSubmitting}
               className="bg-gradient-primary hover:bg-primary-hover"
             >

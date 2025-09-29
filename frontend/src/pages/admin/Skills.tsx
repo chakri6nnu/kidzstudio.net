@@ -1,17 +1,29 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { SideDrawer } from "@/components/ui/side-drawer";
 import { ConfirmDrawer } from "@/components/ui/confirm-drawer";
 import { FiltersPanel } from "@/components/ui/filters-panel";
 import { DataTable } from "@/components/ui/data-table";
-import { 
+import {
   Plus,
   Edit,
   Trash2,
@@ -66,14 +78,20 @@ export default function Skills() {
     try {
       setLoading(true);
       setError("");
-      const filters: { search?: string; status?: string; level?: string; category_id?: string; per_page?: number } = {
+      const filters: {
+        search?: string;
+        status?: string;
+        level?: string;
+        category_id?: string;
+        per_page?: number;
+      } = {
         search: searchTerm || undefined,
         status: selectedStatus !== "all" ? selectedStatus : undefined,
         level: selectedLevel !== "all" ? selectedLevel : undefined,
         category_id: selectedCategory !== "all" ? selectedCategory : undefined,
       };
       const response = await getSkillsApi(filters);
-      
+
       // Map API response to UI format
       const mappedSkills: Skill[] = response.data.map((s: ApiSkill) => ({
         id: s.id.toString(),
@@ -81,7 +99,8 @@ export default function Skills() {
         code: s.name.substring(0, 2).toUpperCase(), // Generate code from name
         description: s.description || "",
         category: s.category.name,
-        level: s.level.charAt(0).toUpperCase() + s.level.slice(1) as Skill["level"],
+        level: (s.level.charAt(0).toUpperCase() +
+          s.level.slice(1)) as Skill["level"],
         isActive: s.is_active,
         questions: s.questions_count || 0,
         lessons: 0, // Not available in API
@@ -89,7 +108,7 @@ export default function Skills() {
         createdAt: new Date(s.created_at).toLocaleDateString(),
         updatedAt: new Date(s.updated_at).toLocaleDateString(),
       }));
-      
+
       setSkills(mappedSkills);
       setMeta(response.meta);
     } catch (err: any) {
@@ -113,13 +132,13 @@ export default function Skills() {
     loadSkills();
     loadCategories();
   }, [searchTerm, selectedStatus, selectedLevel, selectedCategory]);
-  
+
   // Drawer states
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
   const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false);
   const [isDeleteDrawerOpen, setIsDeleteDrawerOpen] = useState(false);
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
-  
+
   // Form states
   const [formData, setFormData] = useState({
     name: "",
@@ -132,7 +151,6 @@ export default function Skills() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-
   // Filter options
   const filters = [
     {
@@ -143,8 +161,11 @@ export default function Skills() {
       onChange: (value: string) => setSelectedCategory(value),
       options: [
         { value: "all", label: "All Categories" },
-        ...categories.map(cat => ({ value: cat.id.toString(), label: cat.name }))
-      ]
+        ...categories.map((cat) => ({
+          value: cat.id.toString(),
+          label: cat.name,
+        })),
+      ],
     },
     {
       key: "level",
@@ -156,8 +177,8 @@ export default function Skills() {
         { value: "all", label: "All Levels" },
         { value: "Beginner", label: "Beginner" },
         { value: "Intermediate", label: "Intermediate" },
-        { value: "Advanced", label: "Advanced" }
-      ]
+        { value: "Advanced", label: "Advanced" },
+      ],
     },
     {
       key: "status",
@@ -168,9 +189,9 @@ export default function Skills() {
       options: [
         { value: "all", label: "All Status" },
         { value: "active", label: "Active" },
-        { value: "inactive", label: "Inactive" }
-      ]
-    }
+        { value: "inactive", label: "Inactive" },
+      ],
+    },
   ];
 
   // Helper functions
@@ -208,7 +229,7 @@ export default function Skills() {
 
   // CRUD operations
   const handleFilterChange = (filterId: string, value: string) => {
-    const filter = filters.find(f => f.key === filterId);
+    const filter = filters.find((f) => f.key === filterId);
     if (filter) {
       filter.onChange(value);
     }
@@ -217,7 +238,7 @@ export default function Skills() {
   const handleClearFilters = () => {
     setSearchTerm("");
     setSelectedCategory("all");
-    setSelectedLevel("all"); 
+    setSelectedLevel("all");
     setSelectedStatus("all");
   };
 
@@ -340,7 +361,7 @@ export default function Skills() {
             Code: {skill.code}
           </div>
         </div>
-      )
+      ),
     },
     {
       key: "category" as keyof Skill,
@@ -349,7 +370,7 @@ export default function Skills() {
         <Badge variant="outline" className={getCategoryColor(skill.category)}>
           {skill.category}
         </Badge>
-      )
+      ),
     },
     {
       key: "level" as keyof Skill,
@@ -358,7 +379,7 @@ export default function Skills() {
         <Badge variant="outline" className={getLevelColor(skill.level)}>
           {skill.level}
         </Badge>
-      )
+      ),
     },
     {
       key: "description" as keyof Skill,
@@ -367,7 +388,7 @@ export default function Skills() {
         <div className="max-w-xs truncate text-sm text-muted-foreground">
           {skill.description}
         </div>
-      )
+      ),
     },
     {
       key: "questions" as keyof Skill,
@@ -383,7 +404,7 @@ export default function Skills() {
             {skill.lessons} lessons
           </div>
         </div>
-      )
+      ),
     },
     {
       key: "students" as keyof Skill,
@@ -394,26 +415,30 @@ export default function Skills() {
           <Users className="mr-1 h-3 w-3" />
           {(skill.students || 0).toLocaleString()}
         </div>
-      )
+      ),
     },
     {
       key: "isActive" as keyof Skill,
       header: "Status",
       render: (skill: Skill) => (
-        <Badge 
-          variant="secondary" 
-          className={skill.isActive ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground"}
+        <Badge
+          variant="secondary"
+          className={
+            skill.isActive
+              ? "bg-success text-success-foreground"
+              : "bg-muted text-muted-foreground"
+          }
         >
           {skill.isActive ? "Active" : "Inactive"}
         </Badge>
-      )
+      ),
     },
     {
       key: "createdAt" as keyof Skill,
       header: "Created",
       sortable: true,
-      render: (skill: Skill) => skill.createdAt
-    }
+      render: (skill: Skill) => skill.createdAt,
+    },
   ];
 
   // Table actions
@@ -423,19 +448,19 @@ export default function Skills() {
       icon: <Eye className="h-4 w-4" />,
       onClick: (skill: Skill) => {
         toast.success(`Viewing skill: ${skill.name}`);
-      }
+      },
     },
     {
       label: "Edit",
       icon: <Edit className="h-4 w-4" />,
-      onClick: handleEdit
+      onClick: handleEdit,
     },
     {
       label: "Delete",
       icon: <Trash2 className="h-4 w-4" />,
       onClick: handleDelete,
-      variant: "destructive" as const
-    }
+      variant: "destructive" as const,
+    },
   ];
 
   return (
@@ -450,7 +475,7 @@ export default function Skills() {
             Manage learning skills and competencies for student development
           </p>
         </div>
-        <Button 
+        <Button
           onClick={handleAdd}
           className="bg-gradient-primary hover:bg-primary-hover shadow-primary"
         >
@@ -479,7 +504,7 @@ export default function Skills() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {skills.filter(s => s.isActive).length}
+              {skills.filter((s) => s.isActive).length}
             </div>
             <p className="text-xs text-success">Ready for use</p>
           </CardContent>
@@ -487,12 +512,16 @@ export default function Skills() {
 
         <Card className="bg-gradient-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Questions</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Questions
+            </CardTitle>
             <Target className="h-4 w-4 text-accent" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {skills.reduce((sum, s) => sum + (s.questions || 0), 0).toLocaleString()}
+              {skills
+                .reduce((sum, s) => sum + (s.questions || 0), 0)
+                .toLocaleString()}
             </div>
             <p className="text-xs text-success">Across all skills</p>
           </CardContent>
@@ -500,12 +529,16 @@ export default function Skills() {
 
         <Card className="bg-gradient-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Students
+            </CardTitle>
             <Users className="h-4 w-4 text-warning" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {skills.reduce((sum, s) => sum + (s.students || 0), 0).toLocaleString()}
+              {skills
+                .reduce((sum, s) => sum + (s.students || 0), 0)
+                .toLocaleString()}
             </div>
             <p className="text-xs text-success">Learning these skills</p>
           </CardContent>
@@ -555,7 +588,9 @@ export default function Skills() {
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, name: e.target.value }))
+                }
                 placeholder="Enter skill name"
                 className="mt-1"
               />
@@ -568,7 +603,12 @@ export default function Skills() {
               <Input
                 id="code"
                 value={formData.code}
-                onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    code: e.target.value.toUpperCase(),
+                  }))
+                }
                 placeholder="Enter skill code (e.g., PS)"
                 className="mt-1"
                 maxLength={5}
@@ -582,7 +622,12 @@ export default function Skills() {
               <Textarea
                 id="description"
                 value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
                 placeholder="Enter skill description"
                 className="mt-1 min-h-[100px]"
               />
@@ -595,7 +640,9 @@ export default function Skills() {
                 </Label>
                 <Select
                   value={formData.category}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, category: value }))
+                  }
                 >
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Select category" />
@@ -617,7 +664,12 @@ export default function Skills() {
                 </Label>
                 <Select
                   value={formData.level}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, level: value as Skill["level"] }))}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      level: value as Skill["level"],
+                    }))
+                  }
                 >
                   <SelectTrigger className="mt-1">
                     <SelectValue />
@@ -640,22 +692,24 @@ export default function Skills() {
               </div>
               <Switch
                 checked={formData.isActive}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
+                onCheckedChange={(checked) =>
+                  setFormData((prev) => ({ ...prev, isActive: checked }))
+                }
               />
             </div>
           </div>
 
           <div className="flex justify-end space-x-2 pt-4 border-t">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => setIsAddDrawerOpen(false)}
               disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button 
-              onClick={handleAddSubmit} 
+            <Button
+              onClick={handleAddSubmit}
               disabled={isSubmitting}
               className="bg-gradient-primary hover:bg-primary-hover"
             >
@@ -681,7 +735,9 @@ export default function Skills() {
               <Input
                 id="edit-name"
                 value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, name: e.target.value }))
+                }
                 placeholder="Enter skill name"
                 className="mt-1"
               />
@@ -694,7 +750,12 @@ export default function Skills() {
               <Input
                 id="edit-code"
                 value={formData.code}
-                onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    code: e.target.value.toUpperCase(),
+                  }))
+                }
                 placeholder="Enter skill code (e.g., PS)"
                 className="mt-1"
                 maxLength={5}
@@ -708,7 +769,12 @@ export default function Skills() {
               <Textarea
                 id="edit-description"
                 value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
                 placeholder="Enter skill description"
                 className="mt-1 min-h-[100px]"
               />
@@ -721,7 +787,9 @@ export default function Skills() {
                 </Label>
                 <Select
                   value={formData.category}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, category: value }))
+                  }
                 >
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Select category" />
@@ -743,7 +811,12 @@ export default function Skills() {
                 </Label>
                 <Select
                   value={formData.level}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, level: value as Skill["level"] }))}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      level: value as Skill["level"],
+                    }))
+                  }
                 >
                   <SelectTrigger className="mt-1">
                     <SelectValue />
@@ -766,22 +839,24 @@ export default function Skills() {
               </div>
               <Switch
                 checked={formData.isActive}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
+                onCheckedChange={(checked) =>
+                  setFormData((prev) => ({ ...prev, isActive: checked }))
+                }
               />
             </div>
           </div>
 
           <div className="flex justify-end space-x-2 pt-4 border-t">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => setIsEditDrawerOpen(false)}
               disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button 
-              onClick={handleEditSubmit} 
+            <Button
+              onClick={handleEditSubmit}
               disabled={isSubmitting}
               className="bg-gradient-primary hover:bg-primary-hover"
             >

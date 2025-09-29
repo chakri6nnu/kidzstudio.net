@@ -21,8 +21,8 @@
 | Tags                | Done            | Done        | Done        | Done        | Done        | CRUD wired to /api/tags                 |
 | Sections            | Done            | Done        | Done        | Done        | Done        | CRUD wired to /api/sections             |
 | Skills              | Done            | Done        | Done        | Done        | Done        | CRUD wired to /api/skills               |
-| Topics              | Not started     | Not started | Not started | Not started | Not started |                                         |
-| Plans               | Not started     | Not started | Not started | Not started | Not started |                                         |
-| Subscriptions       | Not started     | Not started | Not started | Not started | Not started |                                         |
+| Topics              | Done            | Done        | Done        | Done        | Done        | CRUD wired to /api/topics               |
+| Plans               | Done            | Done        | Done        | Done        | Done        | CRUD wired to /api/plans                |
+| Subscriptions       | Done            | Done        | Done        | Done        | Done        | CRUD wired to /api/subscriptions        |
 | Payments            | Not started     | Not started | Not started | Not started | Not started |                                         |
-| Settings (All)      | Not started     | N/A         | Not started | N/A         | N/A         |                                         |
+| Settings (All)      | Done            | N/A         | Done        | N/A         | N/A         | CRUD wired to /api/settings             |

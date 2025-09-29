@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,8 +8,31 @@ import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Upload, Save, RotateCcw, Settings, Globe, Image } from "lucide-react";
+import { toast } from "sonner";
+import {
+  getSettingsApi,
+  createSettingApi,
+  updateSettingApi,
+  deleteSettingApi,
+  type Setting as ApiSetting,
+} from "@/lib/utils";
+
+type Setting = ApiSetting;
+
+interface ApiResponse {
+  data: Setting[];
+  meta: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+  };
+}
 
 export default function GeneralSettings() {
+  const [settings, setSettings] = useState<Setting[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     app_name: "KidzStudio",
     tag_line: "Next Generation Online Exam Platform",
@@ -23,14 +46,80 @@ export default function GeneralSettings() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  // Load settings from API
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await getSettingsApi({
+          category: "general",
+          per_page: 100,
+        });
+        const settingsData = (response as ApiResponse).data;
+        setSettings(settingsData);
+        
+        // Map settings to form data
+        const mappedData = {
+          app_name: settingsData.find(s => s.key === 'app_name')?.value || "KidzStudio",
+          tag_line: settingsData.find(s => s.key === 'tag_line')?.value || "Next Generation Online Exam Platform",
+          seo_description: settingsData.find(s => s.key === 'seo_description')?.value || "",
+          can_register: settingsData.find(s => s.key === 'can_register')?.value === 'true',
+          logo_path: settingsData.find(s => s.key === 'logo_path')?.value || "",
+          white_logo_path: settingsData.find(s => s.key === 'white_logo_path')?.value || "",
+          favicon_path: settingsData.find(s => s.key === 'favicon_path')?.value || "",
+        };
+        setFormData(mappedData);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load settings");
+        toast.error("Failed to load settings");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSettings();
+  }, []);
+
   const handleSave = async () => {
     setSaving(true);
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Update or create each setting
+      const settingsToUpdate = [
+        { key: 'app_name', value: formData.app_name, type: 'string', category: 'general' },
+        { key: 'tag_line', value: formData.tag_line, type: 'string', category: 'general' },
+        { key: 'seo_description', value: formData.seo_description, type: 'text', category: 'general' },
+        { key: 'can_register', value: formData.can_register.toString(), type: 'boolean', category: 'general' },
+        { key: 'logo_path', value: formData.logo_path, type: 'string', category: 'general' },
+        { key: 'white_logo_path', value: formData.white_logo_path, type: 'string', category: 'general' },
+        { key: 'favicon_path', value: formData.favicon_path, type: 'string', category: 'general' },
+      ];
+
+      for (const setting of settingsToUpdate) {
+        const existingSetting = settings.find(s => s.key === setting.key);
+        if (existingSetting) {
+          await updateSettingApi(existingSetting.id, setting);
+        } else {
+          await createSettingApi(setting);
+        }
+      }
+
       setSaving(false);
       setSaved(true);
+      toast.success("Settings saved successfully");
       setTimeout(() => setSaved(false), 3000);
-    }, 1000);
+      
+      // Reload settings
+      const response = await getSettingsApi({
+        category: "general",
+        per_page: 100,
+      });
+      const settingsData = (response as ApiResponse).data;
+      setSettings(settingsData);
+    } catch (err) {
+      setSaving(false);
+      toast.error("Failed to save settings");
+    }
   };
 
   const handleReset = () => {
@@ -69,6 +158,22 @@ export default function GeneralSettings() {
           </Button>
         </div>
       </div>
+
+      {loading && (
+        <Alert>
+          <AlertDescription>
+            Loading settings...
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {error && (
+        <Alert className="border-destructive bg-destructive/10">
+          <AlertDescription className="text-destructive">
+            {error}
+          </AlertDescription>
+        </Alert>
+      )}
 
       {saved && (
         <Alert className="border-success bg-success/10">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,17 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  getTopicsApi,
+  createTopicApi,
+  updateTopicApi,
+  deleteTopicApi,
+  getCategoriesApi,
+  getSkillsApi,
+  type Topic as ApiTopic,
+  type Category as ApiCategory,
+  type Skill as ApiSkill,
+} from "@/lib/utils";
 
 interface Topic {
   id: string;
@@ -41,91 +52,79 @@ interface Topic {
 }
 
 export default function Topics() {
-  const [topics, setTopics] = useState<Topic[]>([
-    {
-      id: "1",
-      name: "Algebra",
-      description: "Mathematical expressions, equations, and functions for solving problems",
-      category: "Mathematics",
-      parentTopic: null,
-      isActive: true,
-      questions: 1248,
-      subTopics: 8,
-      students: 892,
-      createdAt: "2024-01-15",
-      updatedAt: "2024-01-20",
-    },
-    {
-      id: "2",
-      name: "Linear Equations",
-      description: "First-degree polynomial equations in one or more variables",
-      category: "Mathematics",
-      parentTopic: "Algebra",
-      isActive: true,
-      questions: 324,
-      subTopics: 0,
-      students: 445,
-      createdAt: "2024-01-14",
-      updatedAt: "2024-01-19",
-    },
-    {
-      id: "3",
-      name: "Grammar",
-      description: "English language rules and structure for effective communication",
-      category: "English",
-      parentTopic: null,
-      isActive: true,
-      questions: 967,
-      subTopics: 12,
-      students: 1123,
-      createdAt: "2024-01-13",
-      updatedAt: "2024-01-18",
-    },
-    {
-      id: "4",
-      name: "Tenses",
-      description: "Verb forms indicating time of action in English grammar",
-      category: "English",
-      parentTopic: "Grammar",
-      isActive: true,
-      questions: 445,
-      subTopics: 0,
-      students: 687,
-      createdAt: "2024-01-12",
-      updatedAt: "2024-01-17",
-    },
-    {
-      id: "5",
-      name: "Physics",
-      description: "Natural science studying matter, energy, and their interactions",
-      category: "Science",
-      parentTopic: null,
-      isActive: false,
-      questions: 756,
-      subTopics: 15,
-      students: 534,
-      createdAt: "2024-01-11",
-      updatedAt: "2024-01-16",
-    },
-    {
-      id: "6",
-      name: "Mechanics",
-      description: "Motion of objects and forces acting upon them in physics",
-      category: "Science",
-      parentTopic: "Physics",
-      isActive: true,
-      questions: 289,
-      subTopics: 0,
-      students: 234,
-      createdAt: "2024-01-10",
-      updatedAt: "2024-01-15",
-    },
-  ]);
+  const [topics, setTopics] = useState<Topic[]>([]);
+  const [categories, setCategories] = useState<ApiCategory[]>([]);
+  const [skills, setSkills] = useState<ApiSkill[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [meta, setMeta] = useState<any>(null);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [selectedType, setSelectedType] = useState("all");
+  const [selectedSkill, setSelectedSkill] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
+
+  // Load topics, categories, and skills from API
+  const loadTopics = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const filters: { search?: string; status?: string; category_id?: string; skill_id?: string; per_page?: number } = {
+        search: searchTerm || undefined,
+        status: selectedStatus !== "all" ? selectedStatus : undefined,
+        category_id: selectedCategory !== "all" ? selectedCategory : undefined,
+        skill_id: selectedSkill !== "all" ? selectedSkill : undefined,
+      };
+      const response = await getTopicsApi(filters);
+      
+      // Map API response to UI format
+      const mappedTopics: Topic[] = response.data.map((t: ApiTopic) => ({
+        id: t.id.toString(),
+        name: t.name,
+        description: t.description || "",
+        category: t.category.name,
+        parentTopic: null, // Topics don't have parent topics in this structure
+        isActive: t.is_active,
+        questions: t.questions_count || 0,
+        subTopics: 0, // Not available in API
+        students: 0, // Not available in API
+        createdAt: new Date(t.created_at).toLocaleDateString(),
+        updatedAt: new Date(t.updated_at).toLocaleDateString(),
+      }));
+      
+      setTopics(mappedTopics);
+      setMeta(response.meta);
+    } catch (err: any) {
+      setError(err?.message || "Failed to load topics");
+      toast.error("Failed to load topics");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadCategories = async () => {
+    try {
+      const response = await getCategoriesApi({});
+      setCategories(response.data);
+    } catch (err: any) {
+      console.error("Failed to load categories:", err);
+    }
+  };
+
+  const loadSkills = async () => {
+    try {
+      const response = await getSkillsApi({});
+      setSkills(response.data);
+    } catch (err: any) {
+      console.error("Failed to load skills:", err);
+    }
+  };
+
+  useEffect(() => {
+    loadTopics();
+    loadCategories();
+    loadSkills();
+  }, [searchTerm, selectedStatus, selectedCategory, selectedSkill]);
   
   // Drawer states
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
@@ -144,27 +143,6 @@ export default function Topics() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Filter and search logic
-  const filteredTopics = topics.filter(topic => {
-    const matchesSearch = topic.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         topic.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         topic.category.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === "all" || topic.category === selectedCategory;
-    const matchesType = selectedType === "all" || 
-                       (selectedType === "main" && !topic.parentTopic) ||
-                       (selectedType === "sub" && topic.parentTopic);
-    const matchesStatus = selectedStatus === "all" || 
-                         (selectedStatus === "active" && topic.isActive) ||
-                         (selectedStatus === "inactive" && !topic.isActive);
-    
-    return matchesSearch && matchesCategory && matchesType && matchesStatus;
-  });
-
-  // Available parent topics (only main topics)
-  const parentTopics = topics.filter(topic => !topic.parentTopic);
-
-  // Unique categories for form dropdown
-  const categories = ["Mathematics", "English", "Science", "History", "Geography", "Physics", "Chemistry", "Biology"];
 
   // Filter options
   const filters = [
@@ -176,19 +154,18 @@ export default function Topics() {
       onChange: (value: string) => setSelectedCategory(value),
       options: [
         { value: "all", label: "All Categories" },
-        ...categories.map(cat => ({ value: cat, label: cat }))
+        ...categories.map(cat => ({ value: cat.id.toString(), label: cat.name }))
       ]
     },
     {
-      key: "type",
+      key: "skill",
       type: "select" as const,
-      label: "Type",
-      value: selectedType,
-      onChange: (value: string) => setSelectedType(value),
+      label: "Skill",
+      value: selectedSkill,
+      onChange: (value: string) => setSelectedSkill(value),
       options: [
-        { value: "all", label: "All Types" },
-        { value: "main", label: "Main Topics" },
-        { value: "sub", label: "Sub Topics" }
+        { value: "all", label: "All Skills" },
+        ...skills.map(skill => ({ value: skill.id.toString(), label: skill.name }))
       ]
     },
     {
@@ -244,7 +221,7 @@ export default function Topics() {
   const handleClearFilters = () => {
     setSearchTerm("");
     setSelectedCategory("all");
-    setSelectedType("all");
+    setSelectedSkill("all");
     setSelectedStatus("all");
   };
 
@@ -287,39 +264,23 @@ export default function Topics() {
       return;
     }
 
-    // Check if name already exists in same category
-    if (topics.some(topic => 
-      topic.name.toLowerCase() === formData.name.toLowerCase() && 
-      topic.category === formData.category
-    )) {
-      toast.error("Topic name already exists in this category");
-      return;
-    }
-
     setIsSubmitting(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const newTopic: Topic = {
-        id: Date.now().toString(),
+      const topicData = {
         name: formData.name,
         description: formData.description,
-        category: formData.category,
-        parentTopic: formData.parentTopic || null,
-        isActive: formData.isActive,
-        questions: 0,
-        subTopics: 0,
-        students: 0,
-        createdAt: new Date().toISOString().split('T')[0],
-        updatedAt: new Date().toISOString().split('T')[0],
+        category_id: parseInt(formData.category),
+        skill_id: formData.parentTopic ? parseInt(formData.parentTopic) : undefined,
+        is_active: formData.isActive,
       };
 
-      setTopics(prev => [newTopic, ...prev]);
+      await createTopicApi(topicData);
       setIsAddDrawerOpen(false);
       resetForm();
       toast.success("Topic created successfully!");
-    } catch (error) {
-      toast.error("Failed to create topic");
+      loadTopics(); // Refresh the list
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to create topic");
     } finally {
       setIsSubmitting(false);
     }
@@ -331,40 +292,24 @@ export default function Topics() {
       return;
     }
 
-    // Check if name already exists (excluding current topic)
-    if (topics.some(topic => 
-      topic.id !== selectedTopic.id &&
-      topic.name.toLowerCase() === formData.name.toLowerCase() && 
-      topic.category === formData.category
-    )) {
-      toast.error("Topic name already exists in this category");
-      return;
-    }
-
     setIsSubmitting(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const topicData = {
+        name: formData.name,
+        description: formData.description,
+        category_id: parseInt(formData.category),
+        skill_id: formData.parentTopic ? parseInt(formData.parentTopic) : undefined,
+        is_active: formData.isActive,
+      };
 
-      setTopics(prev => prev.map(topic => 
-        topic.id === selectedTopic.id 
-          ? {
-              ...topic,
-              name: formData.name,
-              description: formData.description,
-              category: formData.category,
-              parentTopic: formData.parentTopic || null,
-              isActive: formData.isActive,
-              updatedAt: new Date().toISOString().split('T')[0],
-            }
-          : topic
-      ));
-
+      await updateTopicApi(parseInt(selectedTopic.id), topicData);
       setIsEditDrawerOpen(false);
       setSelectedTopic(null);
       resetForm();
       toast.success("Topic updated successfully!");
-    } catch (error) {
-      toast.error("Failed to update topic");
+      loadTopics(); // Refresh the list
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update topic");
     } finally {
       setIsSubmitting(false);
     }
@@ -373,22 +318,14 @@ export default function Topics() {
   const handleDeleteConfirm = async () => {
     if (!selectedTopic) return;
 
-    // Check if topic has sub-topics
-    const hasSubTopics = topics.some(topic => topic.parentTopic === selectedTopic.name);
-    if (hasSubTopics) {
-      toast.error("Cannot delete topic with sub-topics. Delete sub-topics first.");
-      return;
-    }
-
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setTopics(prev => prev.filter(topic => topic.id !== selectedTopic.id));
+      await deleteTopicApi(parseInt(selectedTopic.id));
       setIsDeleteDrawerOpen(false);
       setSelectedTopic(null);
       toast.success("Topic deleted successfully!");
-    } catch (error) {
-      toast.error("Failed to delete topic");
+      loadTopics(); // Refresh the list
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to delete topic");
     }
   };
 
@@ -594,11 +531,13 @@ export default function Topics() {
 
         <CardContent>
           <DataTable
-            data={filteredTopics}
+            data={topics}
             columns={columns}
             actions={actions}
             emptyMessage="No topics found"
             onAdd={handleAdd}
+            loading={loading}
+            error={error}
           />
         </CardContent>
       </Card>
