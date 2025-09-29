@@ -1,17 +1,29 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { SideDrawer } from "@/components/ui/side-drawer";
 import { ConfirmDrawer } from "@/components/ui/confirm-drawer";
 import { FiltersPanel } from "@/components/ui/filters-panel";
 import { DataTable } from "@/components/ui/data-table";
-import { 
+import {
   Plus,
   Edit,
   Trash2,
@@ -69,14 +81,20 @@ export default function Topics() {
     try {
       setLoading(true);
       setError("");
-      const filters: { search?: string; status?: string; category_id?: string; skill_id?: string; per_page?: number } = {
+      const filters: {
+        search?: string;
+        status?: string;
+        category_id?: string;
+        skill_id?: string;
+        per_page?: number;
+      } = {
         search: searchTerm || undefined,
         status: selectedStatus !== "all" ? selectedStatus : undefined,
         category_id: selectedCategory !== "all" ? selectedCategory : undefined,
         skill_id: selectedSkill !== "all" ? selectedSkill : undefined,
       };
       const response = await getTopicsApi(filters);
-      
+
       // Map API response to UI format
       const mappedTopics: Topic[] = response.data.map((t: ApiTopic) => ({
         id: t.id.toString(),
@@ -91,7 +109,7 @@ export default function Topics() {
         createdAt: new Date(t.created_at).toLocaleDateString(),
         updatedAt: new Date(t.updated_at).toLocaleDateString(),
       }));
-      
+
       setTopics(mappedTopics);
       setMeta(response.meta);
     } catch (err: any) {
@@ -125,13 +143,13 @@ export default function Topics() {
     loadCategories();
     loadSkills();
   }, [searchTerm, selectedStatus, selectedCategory, selectedSkill]);
-  
+
   // Drawer states
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
   const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false);
   const [isDeleteDrawerOpen, setIsDeleteDrawerOpen] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
-  
+
   // Form states
   const [formData, setFormData] = useState({
     name: "",
@@ -143,7 +161,6 @@ export default function Topics() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-
   // Filter options
   const filters = [
     {
@@ -154,8 +171,11 @@ export default function Topics() {
       onChange: (value: string) => setSelectedCategory(value),
       options: [
         { value: "all", label: "All Categories" },
-        ...categories.map(cat => ({ value: cat.id.toString(), label: cat.name }))
-      ]
+        ...categories.map((cat) => ({
+          value: cat.id.toString(),
+          label: cat.name,
+        })),
+      ],
     },
     {
       key: "skill",
@@ -165,8 +185,11 @@ export default function Topics() {
       onChange: (value: string) => setSelectedSkill(value),
       options: [
         { value: "all", label: "All Skills" },
-        ...skills.map(skill => ({ value: skill.id.toString(), label: skill.name }))
-      ]
+        ...skills.map((skill) => ({
+          value: skill.id.toString(),
+          label: skill.name,
+        })),
+      ],
     },
     {
       key: "status",
@@ -177,9 +200,9 @@ export default function Topics() {
       options: [
         { value: "all", label: "All Status" },
         { value: "active", label: "Active" },
-        { value: "inactive", label: "Inactive" }
-      ]
-    }
+        { value: "inactive", label: "Inactive" },
+      ],
+    },
   ];
 
   // Helper functions
@@ -188,7 +211,7 @@ export default function Topics() {
   };
 
   const getTypeColor = (topic: Topic) => {
-    return topic.parentTopic 
+    return topic.parentTopic
       ? "bg-primary/10 text-primary"
       : "bg-accent/10 text-accent";
   };
@@ -212,7 +235,7 @@ export default function Topics() {
 
   // CRUD operations
   const handleFilterChange = (filterId: string, value: string) => {
-    const filter = filters.find(f => f.key === filterId);
+    const filter = filters.find((f) => f.key === filterId);
     if (filter) {
       filter.onChange(value);
     }
@@ -270,7 +293,9 @@ export default function Topics() {
         name: formData.name,
         description: formData.description,
         category_id: parseInt(formData.category),
-        skill_id: formData.parentTopic ? parseInt(formData.parentTopic) : undefined,
+        skill_id: formData.parentTopic
+          ? parseInt(formData.parentTopic)
+          : undefined,
         is_active: formData.isActive,
       };
 
@@ -298,7 +323,9 @@ export default function Topics() {
         name: formData.name,
         description: formData.description,
         category_id: parseInt(formData.category),
-        skill_id: formData.parentTopic ? parseInt(formData.parentTopic) : undefined,
+        skill_id: formData.parentTopic
+          ? parseInt(formData.parentTopic)
+          : undefined,
         is_active: formData.isActive,
       };
 
@@ -339,7 +366,9 @@ export default function Topics() {
         <div className="flex items-center space-x-2">
           {topic.parentTopic && (
             <>
-              <span className="text-muted-foreground text-sm">{topic.parentTopic}</span>
+              <span className="text-muted-foreground text-sm">
+                {topic.parentTopic}
+              </span>
               <ChevronRight className="h-3 w-3 text-muted-foreground" />
             </>
           )}
@@ -350,7 +379,7 @@ export default function Topics() {
             </Badge>
           </div>
         </div>
-      )
+      ),
     },
     {
       key: "category" as keyof Topic,
@@ -359,7 +388,7 @@ export default function Topics() {
         <Badge variant="outline" className={getCategoryColor(topic.category)}>
           {topic.category}
         </Badge>
-      )
+      ),
     },
     {
       key: "description" as keyof Topic,
@@ -368,7 +397,7 @@ export default function Topics() {
         <div className="max-w-xs truncate text-sm text-muted-foreground">
           {topic.description}
         </div>
-      )
+      ),
     },
     {
       key: "questions" as keyof Topic,
@@ -386,7 +415,7 @@ export default function Topics() {
             </div>
           )}
         </div>
-      )
+      ),
     },
     {
       key: "students" as keyof Topic,
@@ -397,26 +426,30 @@ export default function Topics() {
           <Users className="mr-1 h-3 w-3" />
           {(topic.students || 0).toLocaleString()}
         </div>
-      )
+      ),
     },
     {
       key: "isActive" as keyof Topic,
       header: "Status",
       render: (topic: Topic) => (
-        <Badge 
-          variant="secondary" 
-          className={topic.isActive ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground"}
+        <Badge
+          variant="secondary"
+          className={
+            topic.isActive
+              ? "bg-success text-success-foreground"
+              : "bg-muted text-muted-foreground"
+          }
         >
           {topic.isActive ? "Active" : "Inactive"}
         </Badge>
-      )
+      ),
     },
     {
       key: "createdAt" as keyof Topic,
       header: "Created",
       sortable: true,
-      render: (topic: Topic) => topic.createdAt
-    }
+      render: (topic: Topic) => topic.createdAt,
+    },
   ];
 
   // Table actions
@@ -426,24 +459,24 @@ export default function Topics() {
       icon: <Eye className="h-4 w-4" />,
       onClick: (topic: Topic) => {
         toast.success(`Viewing topic: ${topic.name}`);
-      }
+      },
     },
     {
       label: "Edit",
       icon: <Edit className="h-4 w-4" />,
-      onClick: handleEdit
+      onClick: handleEdit,
     },
     {
       label: "Delete",
       icon: <Trash2 className="h-4 w-4" />,
       onClick: handleDelete,
-      variant: "destructive" as const
-    }
+      variant: "destructive" as const,
+    },
   ];
 
   // Statistics
-  const mainTopics = topics.filter(t => !t.parentTopic);
-  const subTopics = topics.filter(t => t.parentTopic);
+  const mainTopics = topics.filter((t) => !t.parentTopic);
+  const subTopics = topics.filter((t) => t.parentTopic);
 
   return (
     <div className="p-6 space-y-6">
@@ -457,7 +490,7 @@ export default function Topics() {
             Organize content by topics and subtopics for structured learning
           </p>
         </div>
-        <Button 
+        <Button
           onClick={handleAdd}
           className="bg-gradient-primary hover:bg-primary-hover shadow-primary"
         >
@@ -503,12 +536,16 @@ export default function Topics() {
 
         <Card className="bg-gradient-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Questions</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Questions
+            </CardTitle>
             <Hash className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {topics.reduce((sum, t) => sum + (t.questions || 0), 0).toLocaleString()}
+              {topics
+                .reduce((sum, t) => sum + (t.questions || 0), 0)
+                .toLocaleString()}
             </div>
             <p className="text-xs text-success">Across all topics</p>
           </CardContent>
@@ -558,7 +595,9 @@ export default function Topics() {
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, name: e.target.value }))
+                }
                 placeholder="Enter topic name"
                 className="mt-1"
               />
@@ -571,7 +610,12 @@ export default function Topics() {
               <Textarea
                 id="description"
                 value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
                 placeholder="Enter topic description"
                 className="mt-1 min-h-[100px]"
               />
@@ -584,14 +628,18 @@ export default function Topics() {
                 </Label>
                 <Select
                   value={formData.category}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, category: value }))
+                  }
                 >
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map(category => (
-                      <SelectItem key={category} value={category}>{category}</SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -603,15 +651,19 @@ export default function Topics() {
                 </Label>
                 <Select
                   value={formData.parentTopic}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, parentTopic: value }))}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, parentTopic: value }))
+                  }
                 >
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Select parent topic" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">None (Main Topic)</SelectItem>
-                    {parentTopics.map(topic => (
-                      <SelectItem key={topic.id} value={topic.name}>{topic.name}</SelectItem>
+                    {parentTopics.map((topic) => (
+                      <SelectItem key={topic.id} value={topic.name}>
+                        {topic.name}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -627,22 +679,24 @@ export default function Topics() {
               </div>
               <Switch
                 checked={formData.isActive}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
+                onCheckedChange={(checked) =>
+                  setFormData((prev) => ({ ...prev, isActive: checked }))
+                }
               />
             </div>
           </div>
 
           <div className="flex justify-end space-x-2 pt-4 border-t">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => setIsAddDrawerOpen(false)}
               disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button 
-              onClick={handleAddSubmit} 
+            <Button
+              onClick={handleAddSubmit}
               disabled={isSubmitting}
               className="bg-gradient-primary hover:bg-primary-hover"
             >
@@ -668,7 +722,9 @@ export default function Topics() {
               <Input
                 id="edit-name"
                 value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, name: e.target.value }))
+                }
                 placeholder="Enter topic name"
                 className="mt-1"
               />
@@ -681,7 +737,12 @@ export default function Topics() {
               <Textarea
                 id="edit-description"
                 value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
                 placeholder="Enter topic description"
                 className="mt-1 min-h-[100px]"
               />
@@ -694,26 +755,35 @@ export default function Topics() {
                 </Label>
                 <Select
                   value={formData.category}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, category: value }))
+                  }
                 >
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map(category => (
-                      <SelectItem key={category} value={category}>{category}</SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <Label htmlFor="edit-parentTopic" className="text-sm font-medium">
+                <Label
+                  htmlFor="edit-parentTopic"
+                  className="text-sm font-medium"
+                >
                   Parent Topic (Optional)
                 </Label>
                 <Select
                   value={formData.parentTopic}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, parentTopic: value }))}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, parentTopic: value }))
+                  }
                 >
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Select parent topic" />
@@ -721,9 +791,11 @@ export default function Topics() {
                   <SelectContent>
                     <SelectItem value="">None (Main Topic)</SelectItem>
                     {parentTopics
-                      .filter(topic => topic.id !== selectedTopic?.id) // Don't allow self as parent
-                      .map(topic => (
-                        <SelectItem key={topic.id} value={topic.name}>{topic.name}</SelectItem>
+                      .filter((topic) => topic.id !== selectedTopic?.id) // Don't allow self as parent
+                      .map((topic) => (
+                        <SelectItem key={topic.id} value={topic.name}>
+                          {topic.name}
+                        </SelectItem>
                       ))}
                   </SelectContent>
                 </Select>
@@ -739,22 +811,24 @@ export default function Topics() {
               </div>
               <Switch
                 checked={formData.isActive}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
+                onCheckedChange={(checked) =>
+                  setFormData((prev) => ({ ...prev, isActive: checked }))
+                }
               />
             </div>
           </div>
 
           <div className="flex justify-end space-x-2 pt-4 border-t">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => setIsEditDrawerOpen(false)}
               disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button 
-              onClick={handleEditSubmit} 
+            <Button
+              onClick={handleEditSubmit}
               disabled={isSubmitting}
               className="bg-gradient-primary hover:bg-primary-hover"
             >

@@ -1098,8 +1098,10 @@ export const getPlansApi = async (filters?: {
     queryParams.append("status", filters.status);
   if (filters?.type && filters.type !== "all")
     queryParams.append("type", filters.type);
-  if (filters?.price_min) queryParams.append("price_min", filters.price_min.toString());
-  if (filters?.price_max) queryParams.append("price_max", filters.price_max.toString());
+  if (filters?.price_min)
+    queryParams.append("price_min", filters.price_min.toString());
+  if (filters?.price_max)
+    queryParams.append("price_max", filters.price_max.toString());
   if (filters?.per_page)
     queryParams.append("per_page", filters.per_page.toString());
 
@@ -1188,7 +1190,10 @@ export const createSubscriptionApi = async (data: Partial<Subscription>) => {
   return response;
 };
 
-export const updateSubscriptionApi = async (id: number, data: Partial<Subscription>) => {
+export const updateSubscriptionApi = async (
+  id: number,
+  data: Partial<Subscription>
+) => {
   const response = await apiFetch(`/subscriptions/${id}`, {
     method: "PUT",
     body: JSON.stringify(data),

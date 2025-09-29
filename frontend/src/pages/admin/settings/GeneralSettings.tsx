@@ -1,5 +1,11 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,7 +42,8 @@ export default function GeneralSettings() {
   const [formData, setFormData] = useState({
     app_name: "KidzStudio",
     tag_line: "Next Generation Online Exam Platform",
-    seo_description: "KidzStudio is a comprehensive online examination platform for educational institutions and corporate training programs.",
+    seo_description:
+      "KidzStudio is a comprehensive online examination platform for educational institutions and corporate training programs.",
     can_register: true,
     logo_path: "",
     white_logo_path: "",
@@ -58,20 +65,32 @@ export default function GeneralSettings() {
         });
         const settingsData = (response as ApiResponse).data;
         setSettings(settingsData);
-        
+
         // Map settings to form data
         const mappedData = {
-          app_name: settingsData.find(s => s.key === 'app_name')?.value || "KidzStudio",
-          tag_line: settingsData.find(s => s.key === 'tag_line')?.value || "Next Generation Online Exam Platform",
-          seo_description: settingsData.find(s => s.key === 'seo_description')?.value || "",
-          can_register: settingsData.find(s => s.key === 'can_register')?.value === 'true',
-          logo_path: settingsData.find(s => s.key === 'logo_path')?.value || "",
-          white_logo_path: settingsData.find(s => s.key === 'white_logo_path')?.value || "",
-          favicon_path: settingsData.find(s => s.key === 'favicon_path')?.value || "",
+          app_name:
+            settingsData.find((s) => s.key === "app_name")?.value ||
+            "KidzStudio",
+          tag_line:
+            settingsData.find((s) => s.key === "tag_line")?.value ||
+            "Next Generation Online Exam Platform",
+          seo_description:
+            settingsData.find((s) => s.key === "seo_description")?.value || "",
+          can_register:
+            settingsData.find((s) => s.key === "can_register")?.value ===
+            "true",
+          logo_path:
+            settingsData.find((s) => s.key === "logo_path")?.value || "",
+          white_logo_path:
+            settingsData.find((s) => s.key === "white_logo_path")?.value || "",
+          favicon_path:
+            settingsData.find((s) => s.key === "favicon_path")?.value || "",
         };
         setFormData(mappedData);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load settings");
+        setError(
+          err instanceof Error ? err.message : "Failed to load settings"
+        );
         toast.error("Failed to load settings");
       } finally {
         setLoading(false);
@@ -86,17 +105,52 @@ export default function GeneralSettings() {
     try {
       // Update or create each setting
       const settingsToUpdate = [
-        { key: 'app_name', value: formData.app_name, type: 'string', category: 'general' },
-        { key: 'tag_line', value: formData.tag_line, type: 'string', category: 'general' },
-        { key: 'seo_description', value: formData.seo_description, type: 'text', category: 'general' },
-        { key: 'can_register', value: formData.can_register.toString(), type: 'boolean', category: 'general' },
-        { key: 'logo_path', value: formData.logo_path, type: 'string', category: 'general' },
-        { key: 'white_logo_path', value: formData.white_logo_path, type: 'string', category: 'general' },
-        { key: 'favicon_path', value: formData.favicon_path, type: 'string', category: 'general' },
+        {
+          key: "app_name",
+          value: formData.app_name,
+          type: "string",
+          category: "general",
+        },
+        {
+          key: "tag_line",
+          value: formData.tag_line,
+          type: "string",
+          category: "general",
+        },
+        {
+          key: "seo_description",
+          value: formData.seo_description,
+          type: "text",
+          category: "general",
+        },
+        {
+          key: "can_register",
+          value: formData.can_register.toString(),
+          type: "boolean",
+          category: "general",
+        },
+        {
+          key: "logo_path",
+          value: formData.logo_path,
+          type: "string",
+          category: "general",
+        },
+        {
+          key: "white_logo_path",
+          value: formData.white_logo_path,
+          type: "string",
+          category: "general",
+        },
+        {
+          key: "favicon_path",
+          value: formData.favicon_path,
+          type: "string",
+          category: "general",
+        },
       ];
 
       for (const setting of settingsToUpdate) {
-        const existingSetting = settings.find(s => s.key === setting.key);
+        const existingSetting = settings.find((s) => s.key === setting.key);
         if (existingSetting) {
           await updateSettingApi(existingSetting.id, setting);
         } else {
@@ -108,7 +162,7 @@ export default function GeneralSettings() {
       setSaved(true);
       toast.success("Settings saved successfully");
       setTimeout(() => setSaved(false), 3000);
-      
+
       // Reload settings
       const response = await getSettingsApi({
         category: "general",
@@ -125,8 +179,9 @@ export default function GeneralSettings() {
   const handleReset = () => {
     setFormData({
       app_name: "KidzStudio",
-      tag_line: "Next Generation Online Exam Platform", 
-      seo_description: "KidzStudio is a comprehensive online examination platform for educational institutions and corporate training programs.",
+      tag_line: "Next Generation Online Exam Platform",
+      seo_description:
+        "KidzStudio is a comprehensive online examination platform for educational institutions and corporate training programs.",
       can_register: true,
       logo_path: "",
       white_logo_path: "",
@@ -152,7 +207,11 @@ export default function GeneralSettings() {
             <RotateCcw className="mr-2 h-4 w-4" />
             Reset
           </Button>
-          <Button onClick={handleSave} disabled={saving} className="bg-gradient-primary">
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+            className="bg-gradient-primary"
+          >
             <Save className="mr-2 h-4 w-4" />
             {saving ? "Saving..." : "Save Settings"}
           </Button>
@@ -161,9 +220,7 @@ export default function GeneralSettings() {
 
       {loading && (
         <Alert>
-          <AlertDescription>
-            Loading settings...
-          </AlertDescription>
+          <AlertDescription>Loading settings...</AlertDescription>
         </Alert>
       )}
 
@@ -201,7 +258,9 @@ export default function GeneralSettings() {
               <Input
                 id="app_name"
                 value={formData.app_name}
-                onChange={(e) => setFormData(prev => ({ ...prev, app_name: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, app_name: e.target.value }))
+                }
                 placeholder="Enter application name"
                 maxLength={160}
                 required
@@ -216,7 +275,9 @@ export default function GeneralSettings() {
               <Input
                 id="tag_line"
                 value={formData.tag_line}
-                onChange={(e) => setFormData(prev => ({ ...prev, tag_line: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, tag_line: e.target.value }))
+                }
                 placeholder="Enter application tag line"
                 maxLength={160}
                 required
@@ -231,7 +292,12 @@ export default function GeneralSettings() {
               <Textarea
                 id="seo_description"
                 value={formData.seo_description}
-                onChange={(e) => setFormData(prev => ({ ...prev, seo_description: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    seo_description: e.target.value,
+                  }))
+                }
                 placeholder="Enter SEO meta description"
                 className="min-h-[80px]"
                 maxLength={255}
@@ -254,7 +320,9 @@ export default function GeneralSettings() {
               <Switch
                 id="can_register"
                 checked={formData.can_register}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, can_register: checked }))}
+                onCheckedChange={(checked) =>
+                  setFormData((prev) => ({ ...prev, can_register: checked }))
+                }
               />
             </div>
           </CardContent>
@@ -350,8 +418,14 @@ export default function GeneralSettings() {
               </p>
               <div className="flex items-center space-x-2 mt-4">
                 <span className="text-sm">Registration:</span>
-                <span className={`text-sm px-2 py-1 rounded ${formData.can_register ? 'bg-success/20 text-success' : 'bg-muted text-muted-foreground'}`}>
-                  {formData.can_register ? 'Enabled' : 'Disabled'}
+                <span
+                  className={`text-sm px-2 py-1 rounded ${
+                    formData.can_register
+                      ? "bg-success/20 text-success"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {formData.can_register ? "Enabled" : "Disabled"}
                 </span>
               </div>
             </div>

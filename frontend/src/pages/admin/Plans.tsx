@@ -1,12 +1,24 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SideDrawer } from "@/components/ui/side-drawer";
 import { ConfirmDrawer } from "@/components/ui/confirm-drawer";
@@ -97,7 +109,14 @@ export default function Plans() {
     };
 
     loadPlans();
-  }, [searchTerm, statusFilter, typeFilter, priceRange, currentPage, itemsPerPage]);
+  }, [
+    searchTerm,
+    statusFilter,
+    typeFilter,
+    priceRange,
+    currentPage,
+    itemsPerPage,
+  ]);
 
   const handleAdd = () => {
     setSelectedPlan(null);
@@ -189,10 +208,15 @@ export default function Plans() {
       description: formData.get("description") as string,
       price: parseFloat(formData.get("price") as string) || 0,
       currency: formData.get("currency") as string,
-      billing_cycle: formData.get("billing") as "monthly" | "yearly" | "lifetime",
+      billing_cycle: formData.get("billing") as
+        | "monthly"
+        | "yearly"
+        | "lifetime",
       type: formData.get("type") as "free" | "premium" | "enterprise",
       is_active: formData.get("status") === "active",
-      features: formData.get("features") ? JSON.parse(formData.get("features") as string) : [],
+      features: formData.get("features")
+        ? JSON.parse(formData.get("features") as string)
+        : [],
       sort_order: parseInt(formData.get("sort_order") as string) || 0,
       trial_days: parseInt(formData.get("trial_days") as string) || 0,
     };
@@ -205,9 +229,9 @@ export default function Plans() {
   };
 
   const togglePlanStatus = async (planId: number) => {
-    const plan = plans.find(p => p.id === planId);
+    const plan = plans.find((p) => p.id === planId);
     if (!plan) return;
-    
+
     try {
       await updatePlanApi(planId, { is_active: !plan.is_active });
       toast.success("Plan status updated successfully");
@@ -228,14 +252,14 @@ export default function Plans() {
   };
 
   const getStatusColor = (isActive: boolean) => {
-    return isActive 
-      ? "bg-success text-success-foreground" 
+    return isActive
+      ? "bg-success text-success-foreground"
       : "bg-muted text-muted-foreground";
   };
 
   const getPlanIcon = (planName?: string) => {
     if (!planName) return <DollarSign className="h-5 w-5" />;
-    
+
     switch (planName.toLowerCase()) {
       case "free trial":
         return <Star className="h-5 w-5" />;
@@ -257,8 +281,10 @@ export default function Plans() {
 
   const formatFeatureValue = (value: unknown) => {
     if (value === true) return <CheckCircle className="h-4 w-4 text-success" />;
-    if (value === false) return <XCircle className="h-4 w-4 text-muted-foreground" />;
-    if (value === "Unlimited" || value === -1) return <InfinityIcon className="h-4 w-4 text-accent" />;
+    if (value === false)
+      return <XCircle className="h-4 w-4 text-muted-foreground" />;
+    if (value === "Unlimited" || value === -1)
+      return <InfinityIcon className="h-4 w-4 text-accent" />;
     return value;
   };
 
@@ -274,7 +300,9 @@ export default function Plans() {
           {getPlanIcon(plan.name)}
           <div>
             <div className="font-medium">{plan.name}</div>
-            <div className="text-sm text-muted-foreground">{formatPrice(plan.price, plan.currency, plan.billing_cycle)}</div>
+            <div className="text-sm text-muted-foreground">
+              {formatPrice(plan.price, plan.currency, plan.billing_cycle)}
+            </div>
           </div>
         </div>
       ),
@@ -284,7 +312,9 @@ export default function Plans() {
       header: "Description",
       render: (plan: Plan) => (
         <div className="max-w-xs">
-          <p className="text-sm text-muted-foreground line-clamp-2">{plan.description}</p>
+          <p className="text-sm text-muted-foreground line-clamp-2">
+            {plan.description}
+          </p>
         </div>
       ),
     },
@@ -359,7 +389,10 @@ export default function Plans() {
             Manage pricing plans and subscription features
           </p>
         </div>
-        <Button onClick={handleAdd} className="bg-gradient-primary hover:bg-primary-hover shadow-primary">
+        <Button
+          onClick={handleAdd}
+          className="bg-gradient-primary hover:bg-primary-hover shadow-primary"
+        >
           <Plus className="mr-2 h-4 w-4" />
           Create Plan
         </Button>
@@ -380,7 +413,9 @@ export default function Plans() {
 
         <Card className="bg-gradient-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Subscribers</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Active Subscribers
+            </CardTitle>
             <Users className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
@@ -393,12 +428,21 @@ export default function Plans() {
 
         <Card className="bg-gradient-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Monthly Revenue
+            </CardTitle>
             <DollarSign className="h-4 w-4 text-accent" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${plans.reduce((sum, plan) => sum + ((plan.price || 0) * (plan.subscriptions_count || 0)), 0).toLocaleString()}
+              $
+              {plans
+                .reduce(
+                  (sum, plan) =>
+                    sum + (plan.price || 0) * (plan.subscriptions_count || 0),
+                  0
+                )
+                .toLocaleString()}
             </div>
             <p className="text-xs text-success">+8% from last month</p>
           </CardContent>
@@ -406,7 +450,9 @@ export default function Plans() {
 
         <Card className="bg-gradient-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Conversion Rate
+            </CardTitle>
             <Calendar className="h-4 w-4 text-warning" />
           </CardHeader>
           <CardContent>
@@ -458,13 +504,20 @@ export default function Plans() {
         open={isDrawerOpen}
         onOpenChange={setIsDrawerOpen}
         title={selectedPlan ? "Edit Plan" : "Create New Plan"}
-        description={selectedPlan ? "Update the plan details" : "Add a new subscription plan"}
+        description={
+          selectedPlan
+            ? "Update the plan details"
+            : "Add a new subscription plan"
+        }
       >
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          const formData = new FormData(e.target as HTMLFormElement);
-          handleSave(formData);
-        }} className="space-y-6">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target as HTMLFormElement);
+            handleSave(formData);
+          }}
+          className="space-y-6"
+        >
           <div className="space-y-4">
             <div>
               <Label htmlFor="name">Plan Name</Label>
@@ -503,7 +556,10 @@ export default function Plans() {
               </div>
               <div>
                 <Label htmlFor="currency">Currency</Label>
-                <Select name="currency" defaultValue={selectedPlan?.currency || "USD"}>
+                <Select
+                  name="currency"
+                  defaultValue={selectedPlan?.currency || "USD"}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -516,7 +572,10 @@ export default function Plans() {
               </div>
               <div>
                 <Label htmlFor="billing">Billing</Label>
-                <Select name="billing" defaultValue={selectedPlan?.billing_cycle || "monthly"}>
+                <Select
+                  name="billing"
+                  defaultValue={selectedPlan?.billing_cycle || "monthly"}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -543,23 +602,26 @@ export default function Plans() {
                   </SelectContent>
                 </Select>
               </div>
-            <div>
-              <Label htmlFor="status">Status</Label>
-                <Select name="status" defaultValue={selectedPlan?.is_active ? "active" : "inactive"}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
+              <div>
+                <Label htmlFor="status">Status</Label>
+                <Select
+                  name="status"
+                  defaultValue={selectedPlan?.is_active ? "active" : "inactive"}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
             <div className="space-y-4">
               <h3 className="font-medium">Features</h3>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="sort_order">Sort Order</Label>
@@ -588,7 +650,11 @@ export default function Plans() {
                 <Textarea
                   id="features"
                   name="features"
-                  defaultValue={selectedPlan?.features ? JSON.stringify(selectedPlan.features) : "[]"}
+                  defaultValue={
+                    selectedPlan?.features
+                      ? JSON.stringify(selectedPlan.features)
+                      : "[]"
+                  }
                   placeholder='["Feature 1", "Feature 2"]'
                   rows={3}
                 />
@@ -597,7 +663,11 @@ export default function Plans() {
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => setIsDrawerOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDrawerOpen(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" className="bg-gradient-primary">
