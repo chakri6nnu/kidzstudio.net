@@ -1,17 +1,35 @@
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { SideDrawer } from "@/components/ui/side-drawer";
 import { ConfirmDrawer } from "@/components/ui/confirm-drawer";
 import { FiltersPanel } from "@/components/ui/filters-panel";
 import { DataTable } from "@/components/ui/data-table";
-import { getAdminQuestionTypesApi, createAdminQuestionTypeApi, updateAdminQuestionTypeApi, deleteAdminQuestionTypeApi, type AdminQuestionType } from "@/lib/utils";
+import {
+  getAdminQuestionTypesApi,
+  createAdminQuestionTypeApi,
+  updateAdminQuestionTypeApi,
+  deleteAdminQuestionTypeApi,
+  type AdminQuestionType,
+} from "@/lib/utils";
 import { toast } from "sonner";
 import {
   Plus,
@@ -54,26 +72,34 @@ export default function QuestionTypes() {
         id: qt.id,
         name: qt.name,
         code: qt.code,
-        description: qt.description || '',
+        description: qt.description || "",
         isActive: qt.is_active,
         questions: 0,
-        icon: '○',
-        settings: { allowMultipleAnswers: false, showExplanation: true, timeLimit: 60, difficulty: 'Medium' },
-        created: new Date(qt.created_at).toISOString().split('T')[0],
+        icon: "○",
+        settings: {
+          allowMultipleAnswers: false,
+          showExplanation: true,
+          timeLimit: 60,
+          difficulty: "Medium",
+        },
+        created: new Date(qt.created_at).toISOString().split("T")[0],
       }));
       setQuestionTypes(mapped);
     } catch (e: any) {
-      setError(e?.message || 'Failed to load question types');
+      setError(e?.message || "Failed to load question types");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDeleteDrawerOpen, setIsDeleteDrawerOpen] = useState(false);
-  const [selectedQuestionType, setSelectedQuestionType] = useState<QuestionType | null>(null);
+  const [selectedQuestionType, setSelectedQuestionType] =
+    useState<QuestionType | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
@@ -99,9 +125,9 @@ export default function QuestionTypes() {
       await load();
       setSelectedQuestionType(null);
       setIsDeleteDrawerOpen(false);
-      toast.success('Question type deleted');
+      toast.success("Question type deleted");
     } catch (e: any) {
-      toast.error(e?.message || 'Failed to delete');
+      toast.error(e?.message || "Failed to delete");
     }
   };
 
@@ -120,51 +146,54 @@ export default function QuestionTypes() {
         difficulty: formData.get("difficulty") as string,
       },
       questions: selectedQuestionType?.questions || 0,
-      created: selectedQuestionType?.created || new Date().toISOString().split('T')[0],
+      created:
+        selectedQuestionType?.created || new Date().toISOString().split("T")[0],
     };
     try {
-    if (selectedQuestionType) {
+      if (selectedQuestionType) {
         await updateAdminQuestionTypeApi(selectedQuestionType.id, {
           name: questionTypeData.name,
           code: questionTypeData.code,
           description: questionTypeData.description,
           is_active: questionTypeData.isActive,
         });
-        toast.success('Question type updated');
-    } else {
+        toast.success("Question type updated");
+      } else {
         await createAdminQuestionTypeApi({
           name: questionTypeData.name,
           code: questionTypeData.code,
           description: questionTypeData.description,
           is_active: questionTypeData.isActive,
         });
-        toast.success('Question type created');
-    }
-    setIsDrawerOpen(false);
+        toast.success("Question type created");
+      }
+      setIsDrawerOpen(false);
       await load();
     } catch (e: any) {
-      toast.error(e?.message || 'Save failed');
+      toast.error(e?.message || "Save failed");
     }
   };
 
   const handleToggleStatus = (id: number) => {
-    setQuestionTypes(prev => prev.map(qt => 
-      qt.id === id ? { ...qt, isActive: !qt.isActive } : qt
-    ));
+    setQuestionTypes((prev) =>
+      prev.map((qt) => (qt.id === id ? { ...qt, isActive: !qt.isActive } : qt))
+    );
   };
 
   const getStatusColor = (isActive: boolean) => {
-    return isActive 
-      ? "bg-success text-success-foreground" 
+    return isActive
+      ? "bg-success text-success-foreground"
       : "bg-muted text-muted-foreground";
   };
 
-  const filteredQuestionTypes = questionTypes.filter(type => {
-    const matchesSearch = type.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         type.code.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = !statusFilter || 
-                         (statusFilter === "active" && type.isActive) ||
-                         (statusFilter === "inactive" && !type.isActive);
+  const filteredQuestionTypes = questionTypes.filter((type) => {
+    const matchesSearch =
+      type.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      type.code.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      !statusFilter ||
+      (statusFilter === "active" && type.isActive) ||
+      (statusFilter === "inactive" && !type.isActive);
     return matchesSearch && matchesStatus;
   });
 
@@ -205,7 +234,9 @@ export default function QuestionTypes() {
       header: "Questions",
       sortable: true,
       render: (questionType: QuestionType) => (
-        <div className="font-medium">{(questionType.questions || 0).toLocaleString()}</div>
+        <div className="font-medium">
+          {(questionType.questions || 0).toLocaleString()}
+        </div>
       ),
     },
     {
@@ -214,7 +245,10 @@ export default function QuestionTypes() {
       sortable: true,
       render: (questionType: QuestionType) => (
         <div className="flex items-center space-x-2">
-          <Badge variant="secondary" className={getStatusColor(questionType.isActive)}>
+          <Badge
+            variant="secondary"
+            className={getStatusColor(questionType.isActive)}
+          >
             {questionType.isActive ? "Active" : "Inactive"}
           </Badge>
           <Switch
@@ -236,7 +270,8 @@ export default function QuestionTypes() {
     {
       label: "Configure",
       icon: <Settings className="h-4 w-4" />,
-      onClick: (questionType: QuestionType) => console.log("Configure", questionType),
+      onClick: (questionType: QuestionType) =>
+        console.log("Configure", questionType),
     },
     {
       label: "Edit",
@@ -251,9 +286,12 @@ export default function QuestionTypes() {
     },
   ];
 
-  const activeCount = questionTypes.filter(qt => qt.isActive).length;
-  const inactiveCount = questionTypes.filter(qt => !qt.isActive).length;
-  const totalQuestions = questionTypes.reduce((sum, qt) => sum + qt.questions, 0);
+  const activeCount = questionTypes.filter((qt) => qt.isActive).length;
+  const inactiveCount = questionTypes.filter((qt) => !qt.isActive).length;
+  const totalQuestions = questionTypes.reduce(
+    (sum, qt) => sum + qt.questions,
+    0
+  );
 
   return (
     <div className="p-6 space-y-6">
@@ -267,7 +305,10 @@ export default function QuestionTypes() {
             Manage different types of questions and their formats
           </p>
         </div>
-        <Button onClick={handleAdd} className="bg-gradient-primary hover:bg-primary-hover shadow-primary">
+        <Button
+          onClick={handleAdd}
+          className="bg-gradient-primary hover:bg-primary-hover shadow-primary"
+        >
           <Plus className="mr-2 h-4 w-4" />
           Add Question Type
         </Button>
@@ -299,7 +340,9 @@ export default function QuestionTypes() {
 
         <Card className="bg-gradient-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Inactive Types</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Inactive Types
+            </CardTitle>
             <XCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -310,11 +353,15 @@ export default function QuestionTypes() {
 
         <Card className="bg-gradient-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Questions</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Questions
+            </CardTitle>
             <HelpCircle className="h-4 w-4 text-accent" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{(totalQuestions || 0).toLocaleString()}</div>
+            <div className="text-2xl font-bold">
+              {(totalQuestions || 0).toLocaleString()}
+            </div>
             <p className="text-xs text-success">Across all types</p>
           </CardContent>
         </Card>
@@ -359,14 +406,25 @@ export default function QuestionTypes() {
       <SideDrawer
         open={isDrawerOpen}
         onOpenChange={setIsDrawerOpen}
-        title={selectedQuestionType ? "Edit Question Type" : "Create New Question Type"}
-        description={selectedQuestionType ? "Update the question type details" : "Add a new question type for assessments"}
+        title={
+          selectedQuestionType
+            ? "Edit Question Type"
+            : "Create New Question Type"
+        }
+        description={
+          selectedQuestionType
+            ? "Update the question type details"
+            : "Add a new question type for assessments"
+        }
       >
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          const formData = new FormData(e.target as HTMLFormElement);
-          handleSave(formData);
-        }} className="space-y-6">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target as HTMLFormElement);
+            handleSave(formData);
+          }}
+          className="space-y-6"
+        >
           <div className="space-y-4">
             <div>
               <Label htmlFor="name">Type Name</Label>
@@ -423,10 +481,15 @@ export default function QuestionTypes() {
 
             <div className="space-y-4 border-t pt-4">
               <h3 className="font-medium">Settings</h3>
-              
+
               <div>
                 <Label htmlFor="difficulty">Default Difficulty</Label>
-                <Select name="difficulty" defaultValue={selectedQuestionType?.settings?.difficulty || "Medium"}>
+                <Select
+                  name="difficulty"
+                  defaultValue={
+                    selectedQuestionType?.settings?.difficulty || "Medium"
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -455,16 +518,22 @@ export default function QuestionTypes() {
                   <Switch
                     id="allowMultipleAnswers"
                     name="allowMultipleAnswers"
-                    defaultChecked={selectedQuestionType?.settings?.allowMultipleAnswers}
+                    defaultChecked={
+                      selectedQuestionType?.settings?.allowMultipleAnswers
+                    }
                   />
-                  <Label htmlFor="allowMultipleAnswers">Allow Multiple Answers</Label>
+                  <Label htmlFor="allowMultipleAnswers">
+                    Allow Multiple Answers
+                  </Label>
                 </div>
 
                 <div className="flex items-center space-x-2">
                   <Switch
                     id="showExplanation"
                     name="showExplanation"
-                    defaultChecked={selectedQuestionType?.settings?.showExplanation ?? true}
+                    defaultChecked={
+                      selectedQuestionType?.settings?.showExplanation ?? true
+                    }
                   />
                   <Label htmlFor="showExplanation">Show Explanation</Label>
                 </div>
@@ -473,11 +542,17 @@ export default function QuestionTypes() {
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => setIsDrawerOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDrawerOpen(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" className="bg-gradient-primary">
-              {selectedQuestionType ? "Update Question Type" : "Create Question Type"}
+              {selectedQuestionType
+                ? "Update Question Type"
+                : "Create Question Type"}
             </Button>
           </div>
         </form>

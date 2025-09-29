@@ -85,6 +85,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/question-types/{questionType}', [\App\Http\Controllers\Api\QuestionTypeController::class, 'show']);
     Route::put('/question-types/{questionType}', [\App\Http\Controllers\Api\QuestionTypeController::class, 'update']);
     Route::delete('/question-types/{questionType}', [\App\Http\Controllers\Api\QuestionTypeController::class, 'destroy']);
+
+    // Lessons API endpoints
+    Route::get('/lessons', [\App\Http\Controllers\Api\LessonController::class, 'index']);
+    Route::post('/lessons', [\App\Http\Controllers\Api\LessonController::class, 'store']);
+    Route::get('/lessons/{lesson}', [\App\Http\Controllers\Api\LessonController::class, 'show']);
+    Route::put('/lessons/{lesson}', [\App\Http\Controllers\Api\LessonController::class, 'update']);
+    Route::delete('/lessons/{lesson}', [\App\Http\Controllers\Api\LessonController::class, 'destroy']);
 });
 
 // CORS preflight handler (OPTIONS)

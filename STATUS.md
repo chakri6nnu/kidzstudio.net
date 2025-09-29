@@ -10,8 +10,8 @@
 | Questions (Library) | Done            | N/A         | Done        | N/A         | N/A         | Filters + pagination via /api/questions |
 | Import Questions    | Done            | N/A         | Done        | N/A         | N/A         | POST /api/questions/import wired        |
 | Comprehensions      | Done            | Done        | Done        | Done        | Done        | CRUD wired to /api/comprehensions       |
-| Question Types      | Done            | Done        | Done        | Done        | Done        | CRUD wired to /api/question-types        |
-| Lesson Bank         | Not started     | Not started | Not started | Not started | Not started |                                         |
+| Question Types      | Done            | Done        | Done        | Done        | Done        | CRUD wired to /api/question-types       |
+| Lesson Bank         | Done            | Done        | Done        | Done        | Done        | CRUD wired to /api/lessons              |
 | Video Bank          | Not started     | Not started | Not started | Not started | Not started |                                         |
 | Users               | Not started     | Not started | Not started | Not started | Not started |                                         |
 | User Groups         | Not started     | Not started | Not started | Not started | Not started |                                         |

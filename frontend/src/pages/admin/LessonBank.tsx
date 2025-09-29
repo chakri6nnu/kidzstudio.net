@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,8 @@ import { SideDrawer } from "@/components/ui/side-drawer";
 import { ConfirmDrawer } from "@/components/ui/confirm-drawer";
 import { FiltersPanel } from "@/components/ui/filters-panel";
 import { DataTable } from "@/components/ui/data-table";
+import { getLessonsApi, createLessonApi, updateLessonApi, deleteLessonApi, type Lesson as ApiLesson } from "@/lib/utils";
+import { toast } from "sonner";
 import {
   Plus,
   Edit,
@@ -39,64 +41,40 @@ interface Lesson {
 }
 
 export default function LessonBank() {
-  const [lessons, setLessons] = useState<Lesson[]>([
-    {
-      id: 1,
-      title: "Introduction to Algebra",
-      category: "Mathematics",
-      subCategory: "Algebra",
-      difficulty: "Beginner",
-      duration: "45 min",
-      type: "Interactive",
-      status: "Published",
-      views: 1248,
-      createdAt: "2024-01-15",
-      description: "Basic concepts of algebraic expressions and equations",
-      content: "This lesson covers fundamental algebraic concepts...",
-    },
-    {
-      id: 2,
-      title: "Photosynthesis Process",
-      category: "Biology",
-      subCategory: "Plant Biology",
-      difficulty: "Intermediate",
-      duration: "30 min",
-      type: "Video",
-      status: "Draft",
-      views: 567,
-      createdAt: "2024-01-14",
-      description: "Understanding how plants convert light energy to chemical energy",
-      content: "Photosynthesis is a complex biological process...",
-    },
-    {
-      id: 3,
-      title: "World War II History",
-      category: "History",
-      subCategory: "Modern History",
-      difficulty: "Advanced",
-      duration: "60 min",
-      type: "Text",
-      status: "Published",
-      views: 892,
-      createdAt: "2024-01-13",
-      description: "Comprehensive overview of World War II events and consequences",
-      content: "World War II was a global conflict that lasted from 1939 to 1945...",
-    },
-    {
-      id: 4,
-      title: "English Grammar Basics",
-      category: "English",
-      subCategory: "Grammar",
-      difficulty: "Beginner",
-      duration: "25 min",
-      type: "Interactive",
-      status: "Published",
-      views: 1456,
-      createdAt: "2024-01-12",
-      description: "Essential grammar rules and sentence structure",
-      content: "Understanding grammar is fundamental to effective communication...",
-    },
-  ]);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [meta, setMeta] = useState<any>({});
+
+  const load = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const res = await getLessonsApi();
+      const mapped: Lesson[] = res.data.map((l: ApiLesson) => ({
+        id: l.id,
+        title: l.title,
+        category: '-',
+        subCategory: '-',
+        difficulty: '-',
+        duration: '-',
+        type: 'Text',
+        status: l.is_active ? 'Published' : 'Draft',
+        views: 0,
+        createdAt: new Date(l.created_at).toISOString().split('T')[0],
+        description: l.description,
+        content: l.content,
+      }));
+      setLessons(mapped);
+      setMeta(res.meta);
+    } catch (e: any) {
+      setError(e?.message || 'Failed to load lessons');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDeleteDrawerOpen, setIsDeleteDrawerOpen] = useState(false);
@@ -122,35 +100,39 @@ export default function LessonBank() {
     setIsDeleteDrawerOpen(true);
   };
 
-  const handleConfirmDelete = () => {
-    if (selectedLesson) {
-      setLessons(prev => prev.filter(l => l.id !== selectedLesson.id));
+  const handleConfirmDelete = async () => {
+    if (!selectedLesson) return;
+    try {
+      await deleteLessonApi(selectedLesson.id);
+      await load();
       setSelectedLesson(null);
+      setIsDeleteDrawerOpen(false);
+      toast.success('Lesson deleted');
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to delete');
     }
   };
 
-  const handleSave = (formData: FormData) => {
+  const handleSave = async (formData: FormData) => {
     const lessonData = {
-      id: selectedLesson?.id || Date.now(),
-      title: formData.get("title") as string,
-      category: formData.get("category") as string,
-      subCategory: formData.get("subCategory") as string,
-      difficulty: formData.get("difficulty") as string,
-      duration: formData.get("duration") as string,
-      type: formData.get("type") as string,
-      status: formData.get("status") as string,
-      description: formData.get("description") as string,
-      content: formData.get("content") as string,
-      views: selectedLesson?.views || 0,
-      createdAt: selectedLesson?.createdAt || new Date().toISOString().split('T')[0],
+      title: String(formData.get('title') || ''),
+      description: String(formData.get('description') || ''),
+      content: String(formData.get('content') || ''),
+      is_active: (formData.get('status') || 'Draft') === 'Published',
     };
-
-    if (selectedLesson) {
-      setLessons(prev => prev.map(l => l.id === selectedLesson.id ? lessonData : l));
-    } else {
-      setLessons(prev => [...prev, lessonData]);
+    try {
+      if (selectedLesson) {
+        await updateLessonApi(selectedLesson.id, lessonData);
+        toast.success('Lesson updated');
+      } else {
+        await createLessonApi(lessonData);
+        toast.success('Lesson created');
+      }
+      setIsDrawerOpen(false);
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message || 'Save failed');
     }
-    setIsDrawerOpen(false);
   };
 
   const getDifficultyColor = (difficulty: string) => {

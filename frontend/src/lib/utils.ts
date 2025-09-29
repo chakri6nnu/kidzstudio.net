@@ -400,19 +400,66 @@ export async function getAdminQuestionTypesApi(
   return apiFetch(`/question-types${qs ? `?${qs}` : ""}`);
 }
 
-export async function createAdminQuestionTypeApi(payload: Partial<AdminQuestionType>): Promise<{ message: string; data: AdminQuestionType }> {
-  return apiFetch(`/question-types`, { method: 'POST', body: JSON.stringify(payload) });
+export async function createAdminQuestionTypeApi(
+  payload: Partial<AdminQuestionType>
+): Promise<{ message: string; data: AdminQuestionType }> {
+  return apiFetch(`/question-types`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 export async function updateAdminQuestionTypeApi(
   id: number,
   payload: Partial<AdminQuestionType>
 ): Promise<{ message: string; data: AdminQuestionType }> {
-  return apiFetch(`/question-types/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+  return apiFetch(`/question-types/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
 }
 
-export async function deleteAdminQuestionTypeApi(id: number): Promise<{ message: string }> {
-  return apiFetch(`/question-types/${id}`, { method: 'DELETE' });
+export async function deleteAdminQuestionTypeApi(
+  id: number
+): Promise<{ message: string }> {
+  return apiFetch(`/question-types/${id}`, { method: "DELETE" });
+}
+
+// Lessons API
+export type Lesson = {
+  id: number;
+  title: string;
+  description?: string;
+  content?: string;
+  difficulty_level_id?: number;
+  skill_id?: number;
+  topic_id?: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export async function getLessonsApi(
+  filters: { search?: string; per_page?: number } = {}
+): Promise<{ data: Lesson[]; meta: any }> {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== "") params.append(k, String(v));
+  });
+  const qs = params.toString();
+  return apiFetch(`/lessons${qs ? `?${qs}` : ""}`);
+}
+
+export async function createLessonApi(payload: Partial<Lesson>): Promise<{ message: string; data: Lesson }> {
+  return apiFetch(`/lessons`, { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export async function updateLessonApi(id: number, payload: Partial<Lesson>): Promise<{ message: string; data: Lesson }> {
+  return apiFetch(`/lessons/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+}
+
+export async function deleteLessonApi(id: number): Promise<{ message: string }> {
+  return apiFetch(`/lessons/${id}`, { method: 'DELETE' });
 }
 
 export async function removeSectionQuestion(
