@@ -1,0 +1,154 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* QwikTest Design System - Professional Exam Management Platform */
+
+@layer base {
+  :root {
+    /* Core Colors */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    /* Card System */
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    /* Popover System */
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    /* Primary Brand - Professional Blue */
+    --primary: 213 94% 68%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 213 94% 58%;
+    --primary-glow: 213 94% 78%;
+
+    /* Secondary - Complement */
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    /* Muted System */
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    /* Accent - Success Green */
+    --accent: 142 71% 45%;
+    --accent-foreground: 0 0% 100%;
+    --accent-glow: 142 71% 65%;
+
+    /* Status Colors */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Form Elements */
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 213 94% 68%;
+
+    /* Layout */
+    --radius: 0.75rem;
+
+    /* Sidebar - Dark Theme */
+    --sidebar-background: 222.2 84% 4.9%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 213 94% 68%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-ring: 213 94% 68%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(213 94% 68%), hsl(213 94% 78%));
+    --gradient-success: linear-gradient(135deg, hsl(142 71% 45%), hsl(142 71% 65%));
+    --gradient-hero: linear-gradient(135deg, hsl(213 94% 68%) 0%, hsl(142 71% 45%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(210 40% 98%) 100%);
+
+    /* Shadows */
+    --shadow-primary: 0 10px 25px -5px hsl(213 94% 68% / 0.25);
+    --shadow-success: 0 10px 25px -5px hsl(142 71% 45% / 0.25);
+    --shadow-card: 0 4px 6px -1px hsl(222.2 84% 4.9% / 0.1);
+    --shadow-elegant: 0 20px 25px -5px hsl(222.2 84% 4.9% / 0.1);
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  .dark {
+    /* Dark theme inspired by the reference - sleek dark UI with yellow accents */
+    --background: 220 13% 9%;
+    --foreground: 220 9% 92%;
+
+    --card: 220 13% 11%;
+    --card-foreground: 220 9% 92%;
+
+    --popover: 220 13% 11%;
+    --popover-foreground: 220 9% 92%;
+
+    /* Yellow accent primary - matches reference UI */
+    --primary: 48 96% 65%;
+    --primary-foreground: 220 13% 9%;
+    --primary-hover: 48 96% 55%;
+    --primary-glow: 48 96% 75%;
+
+    --secondary: 220 13% 15%;
+    --secondary-foreground: 220 9% 92%;
+
+    --muted: 220 13% 15%;
+    --muted-foreground: 220 9% 60%;
+
+    --accent: 48 96% 65%;
+    --accent-foreground: 220 13% 9%;
+    --accent-glow: 48 96% 75%;
+
+    /* Status colors for dark theme */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 50%;
+    --destructive-foreground: 220 9% 92%;
+
+    --border: 220 13% 18%;
+    --input: 220 13% 18%;
+    --ring: 48 96% 65%;
+
+    /* Enhanced sidebar for dark theme */
+    --sidebar-background: 220 13% 7%;
+    --sidebar-foreground: 220 9% 92%;
+    --sidebar-primary: 48 96% 65%;
+    --sidebar-primary-foreground: 220 13% 7%;
+    --sidebar-accent: 220 13% 13%;
+    --sidebar-accent-foreground: 220 9% 92%;
+    --sidebar-border: 220 13% 15%;
+    --sidebar-ring: 48 96% 65%;
+
+    /* Dark theme gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(48 96% 65%), hsl(48 96% 75%));
+    --gradient-success: linear-gradient(135deg, hsl(142 71% 45%), hsl(142 71% 65%));
+    --gradient-hero: linear-gradient(135deg, hsl(48 96% 65%) 0%, hsl(142 71% 45%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(220 13% 11%) 0%, hsl(220 13% 13%) 100%);
+
+    /* Enhanced shadows for dark theme */
+    --shadow-primary: 0 10px 25px -5px hsl(48 96% 65% / 0.3);
+    --shadow-success: 0 10px 25px -5px hsl(142 71% 45% / 0.25);
+    --shadow-card: 0 4px 6px -1px hsl(220 13% 7% / 0.5);
+    --shadow-elegant: 0 20px 25px -5px hsl(220 13% 7% / 0.6);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}

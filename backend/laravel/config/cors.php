@@ -19,16 +19,20 @@ return [
 
     'allowed_methods' => ['*'],
 
+    // Temporarily allow all origins to verify CORS behavior. You can switch back to env-based list later.
     'allowed_origins' => ['*'],
 
     'allowed_origins_patterns' => [],
 
+    // Allow common headers incl. Authorization for Bearer tokens
     'allowed_headers' => ['*'],
 
-    'exposed_headers' => [],
+    // Optionally expose Authorization so clients can read it if ever returned
+    'exposed_headers' => ['Authorization'],
 
     'max_age' => 0,
 
+    // Keep false for token (Bearer) auth. Set to true only if using cookie auth.
     'supports_credentials' => false,
 
 ];
