@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +22,14 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
+import {
+  getSectionsApi,
+  createSectionApi,
+  updateSectionApi,
+  deleteSectionApi,
+  type Section as ApiSection,
+} from "@/lib/utils";
+import { toast } from "sonner";
 
 interface Section {
   id: number;
@@ -35,65 +43,55 @@ interface Section {
 }
 
 export default function Sections() {
-  const [sections, setSections] = useState<Section[]>([
-    {
-      id: 1,
-      name: "Quantitative Aptitude",
-      code: "QA",
-      description: "Mathematical and numerical reasoning",
-      category: "Mathematics",
-      isActive: true,
-      questions: 1248,
-      createdAt: "2024-01-15",
-    },
-    {
-      id: 2,
-      name: "Verbal Ability",
-      code: "VA",
-      description: "Language comprehension and verbal skills",
-      category: "English",
-      isActive: true,
-      questions: 967,
-      createdAt: "2024-01-14",
-    },
-    {
-      id: 3,
-      name: "Logical Reasoning",
-      code: "LR",
-      description: "Logic and analytical thinking",
-      category: "Reasoning",
-      isActive: true,
-      questions: 834,
-      createdAt: "2024-01-13",
-    },
-    {
-      id: 4,
-      name: "Data Interpretation",
-      code: "DI",
-      description: "Data analysis and interpretation skills",
-      category: "Mathematics",
-      isActive: false,
-      questions: 456,
-      createdAt: "2024-01-12",
-    },
-    {
-      id: 5,
-      name: "General Knowledge",
-      code: "GK",
-      description: "Current affairs and general awareness",
-      category: "General Studies",
-      isActive: true,
-      questions: 1567,
-      createdAt: "2024-01-11",
-    },
-  ]);
+  const [sections, setSections] = useState<Section[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [meta, setMeta] = useState<any>(null);
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDeleteDrawerOpen, setIsDeleteDrawerOpen] = useState(false);
   const [selectedSection, setSelectedSection] = useState<Section | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+
+  // Load sections from API
+  const loadSections = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const filters: { search?: string; status?: string; type?: string; per_page?: number } = {
+        search: searchTerm || undefined,
+        status: statusFilter !== "all" ? statusFilter : undefined,
+        type: typeFilter !== "all" ? typeFilter : undefined,
+      };
+      const response = await getSectionsApi(filters);
+      
+      // Map API response to UI format
+      const mappedSections: Section[] = response.data.map((s: ApiSection) => ({
+        id: s.id,
+        name: s.name,
+        code: s.name.substring(0, 2).toUpperCase(), // Generate code from name
+        description: s.description || "",
+        category: s.type,
+        isActive: s.is_active,
+        questions: s.questions_count || 0,
+        createdAt: new Date(s.created_at).toLocaleDateString(),
+      }));
+      
+      setSections(mappedSections);
+      setMeta(response.meta);
+    } catch (err: any) {
+      setError(err?.message || "Failed to load sections");
+      toast.error("Failed to load sections");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadSections();
+  }, [searchTerm, statusFilter, typeFilter]);
 
   const handleAdd = () => {
     setSelectedSection(null);
@@ -110,37 +108,58 @@ export default function Sections() {
     setIsDeleteDrawerOpen(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (selectedSection) {
-      setSections(prev => prev.filter(s => s.id !== selectedSection.id));
+      try {
+        await deleteSectionApi(selectedSection.id);
+        setSections(prev => prev.filter(s => s.id !== selectedSection.id));
+        setSelectedSection(null);
+        toast.success("Section deleted successfully!");
+      } catch (err: any) {
+        toast.error(err?.message || "Failed to delete section");
+      }
+    }
+  };
+
+  const handleSave = async (formData: FormData) => {
+    try {
+      const sectionData = {
+        name: formData.get("name") as string,
+        description: formData.get("description") as string,
+        type: formData.get("type") as string,
+        is_active: formData.get("isActive") === "on",
+        sort_order: parseInt(formData.get("sortOrder") as string) || 0,
+      };
+
+      if (selectedSection) {
+        await updateSectionApi(selectedSection.id, sectionData);
+        toast.success("Section updated successfully!");
+      } else {
+        await createSectionApi(sectionData);
+        toast.success("Section created successfully!");
+      }
+      
+      setIsDrawerOpen(false);
       setSelectedSection(null);
+      loadSections(); // Refresh the list
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to save section");
     }
   };
 
-  const handleSave = (formData: FormData) => {
-    const sectionData = {
-      id: selectedSection?.id || Date.now(),
-      name: formData.get("name") as string,
-      code: formData.get("code") as string,
-      description: formData.get("description") as string,
-      category: formData.get("category") as string,
-      isActive: formData.get("isActive") === "on",
-      questions: selectedSection?.questions || 0,
-      createdAt: selectedSection?.createdAt || new Date().toISOString().split('T')[0],
-    };
-
-    if (selectedSection) {
-      setSections(prev => prev.map(s => s.id === selectedSection.id ? sectionData : s));
-    } else {
-      setSections(prev => [...prev, sectionData]);
+  const handleToggleStatus = async (id: number) => {
+    try {
+      const section = sections.find(s => s.id === id);
+      if (section) {
+        await updateSectionApi(id, { is_active: !section.isActive });
+        setSections(prev => prev.map(s => 
+          s.id === id ? { ...s, isActive: !s.isActive } : s
+        ));
+        toast.success("Section status updated successfully!");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update section status");
     }
-    setIsDrawerOpen(false);
-  };
-
-  const handleToggleStatus = (id: number) => {
-    setSections(prev => prev.map(section => 
-      section.id === id ? { ...section, isActive: !section.isActive } : section
-    ));
   };
 
   const getStatusColor = (isActive: boolean) => {
@@ -325,40 +344,45 @@ export default function Sections() {
             label: "Status",
             value: statusFilter,
             options: [
-              { label: "All Statuses", value: "" },
+              { label: "All Statuses", value: "all" },
               { label: "Active", value: "active" },
               { label: "Inactive", value: "inactive" },
             ],
           },
           {
-            id: "category",
-            label: "Category",
-            value: categoryFilter,
+            id: "type",
+            label: "Type",
+            value: typeFilter,
             options: [
-              { label: "All Categories", value: "" },
-              ...uniqueCategories.map(cat => ({ label: cat, value: cat })),
+              { label: "All Types", value: "all" },
+              { label: "Multiple Choice", value: "multiple_choice" },
+              { label: "Essay", value: "essay" },
+              { label: "Fill Blank", value: "fill_blank" },
+              { label: "True/False", value: "true_false" },
             ],
           },
         ]}
         onFilterChange={(filterId, value) => {
           if (filterId === "status") setStatusFilter(value);
-          if (filterId === "category") setCategoryFilter(value);
+          if (filterId === "type") setTypeFilter(value);
         }}
         onClearFilters={() => {
           setSearchTerm("");
-          setStatusFilter("");
-          setCategoryFilter("");
+          setStatusFilter("all");
+          setTypeFilter("all");
         }}
         onExport={() => console.log("Export sections")}
       />
 
       {/* Data Table */}
       <DataTable
-        data={filteredSections}
+        data={sections}
         columns={columns}
         actions={actions}
         emptyMessage="No sections found. Create your first section to organize content."
         onAdd={handleAdd}
+        loading={loading}
+        error={error}
       />
 
       {/* Add/Edit Drawer */}

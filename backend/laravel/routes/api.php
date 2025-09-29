@@ -130,6 +130,27 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/sub-categories/{subCategory}', [\App\Http\Controllers\Api\SubCategoryController::class, 'show']);
     Route::put('/sub-categories/{subCategory}', [\App\Http\Controllers\Api\SubCategoryController::class, 'update']);
     Route::delete('/sub-categories/{subCategory}', [\App\Http\Controllers\Api\SubCategoryController::class, 'destroy']);
+
+    // Tags API endpoints
+    Route::get('/tags', [\App\Http\Controllers\Api\TagController::class, 'index']);
+    Route::post('/tags', [\App\Http\Controllers\Api\TagController::class, 'store']);
+    Route::get('/tags/{tag}', [\App\Http\Controllers\Api\TagController::class, 'show']);
+    Route::put('/tags/{tag}', [\App\Http\Controllers\Api\TagController::class, 'update']);
+    Route::delete('/tags/{tag}', [\App\Http\Controllers\Api\TagController::class, 'destroy']);
+
+    // Sections API endpoints
+    Route::get('/sections', [\App\Http\Controllers\Api\SectionController::class, 'index']);
+    Route::post('/sections', [\App\Http\Controllers\Api\SectionController::class, 'store']);
+    Route::get('/sections/{section}', [\App\Http\Controllers\Api\SectionController::class, 'show']);
+    Route::put('/sections/{section}', [\App\Http\Controllers\Api\SectionController::class, 'update']);
+    Route::delete('/sections/{section}', [\App\Http\Controllers\Api\SectionController::class, 'destroy']);
+
+    // Skills API endpoints
+    Route::get('/skills', [\App\Http\Controllers\Api\SkillController::class, 'index']);
+    Route::post('/skills', [\App\Http\Controllers\Api\SkillController::class, 'store']);
+    Route::get('/skills/{skill}', [\App\Http\Controllers\Api\SkillController::class, 'show']);
+    Route::put('/skills/{skill}', [\App\Http\Controllers\Api\SkillController::class, 'update']);
+    Route::delete('/skills/{skill}', [\App\Http\Controllers\Api\SkillController::class, 'destroy']);
 });
 
 // CORS preflight handler (OPTIONS)

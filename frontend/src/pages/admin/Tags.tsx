@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,13 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  getTagsApi,
+  createTagApi,
+  updateTagApi,
+  deleteTagApi,
+  type Tag as ApiTag,
+} from "@/lib/utils";
 
 interface TagItem {
   id: string;
@@ -39,84 +46,54 @@ interface TagItem {
 }
 
 export default function Tags() {
-  const [tags, setTags] = useState<TagItem[]>([
-    {
-      id: "1",
-      name: "Beginner",
-      description: "Basic level content suitable for newcomers",
-      color: "#10B981",
-      isActive: true,
-      usageCount: 1248,
-      questions: 892,
-      courses: 45,
-      createdAt: "2024-01-15",
-      updatedAt: "2024-01-20",
-    },
-    {
-      id: "2",
-      name: "Advanced",
-      description: "Expert level content for experienced learners",
-      color: "#EF4444",
-      isActive: true,
-      usageCount: 567,
-      questions: 423,
-      courses: 28,
-      createdAt: "2024-01-14",
-      updatedAt: "2024-01-19",
-    },
-    {
-      id: "3",
-      name: "Practice",
-      description: "Practice questions and hands-on exercises",
-      color: "#3B82F6",
-      isActive: true,
-      usageCount: 892,
-      questions: 756,
-      courses: 32,
-      createdAt: "2024-01-13",
-      updatedAt: "2024-01-18",
-    },
-    {
-      id: "4",
-      name: "Theory",
-      description: "Theoretical concepts and principles",
-      color: "#8B5CF6",
-      isActive: false,
-      usageCount: 234,
-      questions: 198,
-      courses: 15,
-      createdAt: "2024-01-12",
-      updatedAt: "2024-01-17",
-    },
-    {
-      id: "5",
-      name: "Quick Review",
-      description: "Fast revision materials and summaries",
-      color: "#F59E0B",
-      isActive: true,
-      usageCount: 445,
-      questions: 334,
-      courses: 22,
-      createdAt: "2024-01-11",
-      updatedAt: "2024-01-16",
-    },
-    {
-      id: "6",
-      name: "Comprehensive",
-      description: "Detailed study materials and deep dives",
-      color: "#06B6D4",
-      isActive: true,
-      usageCount: 678,
-      questions: 567,
-      courses: 38,
-      createdAt: "2024-01-10",
-      updatedAt: "2024-01-15",
-    },
-  ]);
+  const [tags, setTags] = useState<TagItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [meta, setMeta] = useState<any>(null);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedColor, setSelectedColor] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
+
+  // Load tags from API
+  const loadTags = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const filters: { search?: string; status?: string; color?: string; per_page?: number } = {
+        search: searchTerm || undefined,
+        status: selectedStatus !== "all" ? selectedStatus : undefined,
+        color: selectedColor !== "all" ? selectedColor : undefined,
+      };
+      const response = await getTagsApi(filters);
+      
+      // Map API response to UI format
+      const mappedTags: TagItem[] = response.data.map((t: ApiTag) => ({
+        id: t.id.toString(),
+        name: t.name,
+        description: t.description || "",
+        color: t.color || "#3B82F6",
+        isActive: t.is_active,
+        usageCount: (t.questions_count || 0) + (t.exams_count || 0),
+        questions: t.questions_count || 0,
+        courses: t.exams_count || 0,
+        createdAt: new Date(t.created_at).toLocaleDateString(),
+        updatedAt: new Date(t.updated_at).toLocaleDateString(),
+      }));
+      
+      setTags(mappedTags);
+      setMeta(response.meta);
+    } catch (err: any) {
+      setError(err?.message || "Failed to load tags");
+      toast.error("Failed to load tags");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadTags();
+  }, [searchTerm, selectedStatus, selectedColor]);
   
   // Drawer states
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
@@ -148,17 +125,6 @@ export default function Tags() {
     { name: "Teal", value: "#14B8A6" },
   ];
 
-  // Filter and search logic
-  const filteredTags = tags.filter(tag => {
-    const matchesSearch = tag.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         tag.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesColor = selectedColor === "all" || tag.color === selectedColor;
-    const matchesStatus = selectedStatus === "all" || 
-                         (selectedStatus === "active" && tag.isActive) ||
-                         (selectedStatus === "inactive" && !tag.isActive);
-    
-    return matchesSearch && matchesColor && matchesStatus;
-  });
 
   // Filter options
   const filters = [
@@ -238,35 +204,22 @@ export default function Tags() {
       return;
     }
 
-    // Check if name already exists
-    if (tags.some(tag => tag.name.toLowerCase() === formData.name.toLowerCase())) {
-      toast.error("Tag name already exists");
-      return;
-    }
-
     setIsSubmitting(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const newTag: TagItem = {
-        id: Date.now().toString(),
+      const tagData = {
         name: formData.name,
         description: formData.description,
         color: formData.color,
-        isActive: formData.isActive,
-        usageCount: 0,
-        questions: 0,
-        courses: 0,
-        createdAt: new Date().toISOString().split('T')[0],
-        updatedAt: new Date().toISOString().split('T')[0],
+        is_active: formData.isActive,
       };
 
-      setTags(prev => [newTag, ...prev]);
+      await createTagApi(tagData);
       setIsAddDrawerOpen(false);
       resetForm();
       toast.success("Tag created successfully!");
-    } catch (error) {
-      toast.error("Failed to create tag");
+      loadTags(); // Refresh the list
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to create tag");
     } finally {
       setIsSubmitting(false);
     }
@@ -278,38 +231,23 @@ export default function Tags() {
       return;
     }
 
-    // Check if name already exists (excluding current tag)
-    if (tags.some(tag => 
-      tag.id !== selectedTag.id && 
-      tag.name.toLowerCase() === formData.name.toLowerCase()
-    )) {
-      toast.error("Tag name already exists");
-      return;
-    }
-
     setIsSubmitting(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const tagData = {
+        name: formData.name,
+        description: formData.description,
+        color: formData.color,
+        is_active: formData.isActive,
+      };
 
-      setTags(prev => prev.map(tag => 
-        tag.id === selectedTag.id 
-          ? {
-              ...tag,
-              name: formData.name,
-              description: formData.description,
-              color: formData.color,
-              isActive: formData.isActive,
-              updatedAt: new Date().toISOString().split('T')[0],
-            }
-          : tag
-      ));
-
+      await updateTagApi(parseInt(selectedTag.id), tagData);
       setIsEditDrawerOpen(false);
       setSelectedTag(null);
       resetForm();
       toast.success("Tag updated successfully!");
-    } catch (error) {
-      toast.error("Failed to update tag");
+      loadTags(); // Refresh the list
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update tag");
     } finally {
       setIsSubmitting(false);
     }
@@ -319,14 +257,13 @@ export default function Tags() {
     if (!selectedTag) return;
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setTags(prev => prev.filter(tag => tag.id !== selectedTag.id));
+      await deleteTagApi(parseInt(selectedTag.id));
       setIsDeleteDrawerOpen(false);
       setSelectedTag(null);
       toast.success("Tag deleted successfully!");
-    } catch (error) {
-      toast.error("Failed to delete tag");
+      loadTags(); // Refresh the list
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to delete tag");
     }
   };
 
@@ -526,11 +463,13 @@ export default function Tags() {
 
         <CardContent>
           <DataTable
-            data={filteredTags}
+            data={tags}
             columns={columns}
             actions={actions}
             emptyMessage="No tags found"
             onAdd={handleAdd}
+            loading={loading}
+            error={error}
           />
         </CardContent>
       </Card>

@@ -1,11 +1,23 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { SideDrawer } from "@/components/ui/side-drawer";
 import { ConfirmDrawer } from "@/components/ui/confirm-drawer";
 import { FiltersPanel } from "@/components/ui/filters-panel";
@@ -51,7 +63,9 @@ export default function Categories() {
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDeleteDrawerOpen, setIsDeleteDrawerOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
+    null
+  );
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -61,27 +75,34 @@ export default function Categories() {
     try {
       setLoading(true);
       setError("");
-      const filters: { search?: string; status?: string; type?: string; per_page?: number } = {
+      const filters: {
+        search?: string;
+        status?: string;
+        type?: string;
+        per_page?: number;
+      } = {
         search: searchTerm || undefined,
         status: statusFilter !== "all" ? statusFilter : undefined,
         type: typeFilter !== "all" ? typeFilter : undefined,
       };
       const response = await getCategoriesApi(filters);
-      
+
       // Map API response to UI format
-      const mappedCategories: Category[] = response.data.map((c: ApiCategory) => ({
-        id: c.id,
-        name: c.name,
-        description: c.description || "",
-        subcategories: c.sub_categories_count || 0,
-        questions: c.questions_count || 0,
-        exams: c.exams_count || 0,
-        color: c.color || "#3B82F6",
-        status: c.is_active ? "Active" : "Inactive",
-        created: new Date(c.created_at).toLocaleDateString(),
-        parent: null, // Categories don't have parents in this structure
-      }));
-      
+      const mappedCategories: Category[] = response.data.map(
+        (c: ApiCategory) => ({
+          id: c.id,
+          name: c.name,
+          description: c.description || "",
+          subcategories: c.sub_categories_count || 0,
+          questions: c.questions_count || 0,
+          exams: c.exams_count || 0,
+          color: c.color || "#3B82F6",
+          status: c.is_active ? "Active" : "Inactive",
+          created: new Date(c.created_at).toLocaleDateString(),
+          parent: null, // Categories don't have parents in this structure
+        })
+      );
+
       setCategories(mappedCategories);
       setMeta(response.meta);
     } catch (err: any) {
@@ -115,7 +136,9 @@ export default function Categories() {
     if (selectedCategory) {
       try {
         await deleteCategoryApi(selectedCategory.id);
-        setCategories(prev => prev.filter(c => c.id !== selectedCategory.id));
+        setCategories((prev) =>
+          prev.filter((c) => c.id !== selectedCategory.id)
+        );
         setSelectedCategory(null);
         toast.success("Category deleted successfully!");
       } catch (err: any) {
@@ -141,7 +164,7 @@ export default function Categories() {
         await createCategoryApi(categoryData);
         toast.success("Category created successfully!");
       }
-      
+
       setIsDrawerOpen(false);
       setSelectedCategory(null);
       loadCategories(); // Refresh the list
@@ -163,8 +186,8 @@ export default function Categories() {
     }
   };
 
-  const parentCategories = categories.filter(cat => !cat.parent);
-  const childCategories = categories.filter(cat => cat.parent);
+  const parentCategories = categories.filter((cat) => !cat.parent);
+  const childCategories = categories.filter((cat) => cat.parent);
 
   const columns = [
     {
@@ -173,14 +196,16 @@ export default function Categories() {
       sortable: true,
       render: (category: Category) => (
         <div className="flex items-center space-x-3">
-          <div 
+          <div
             className="w-4 h-4 rounded-full"
             style={{ backgroundColor: category.color }}
           />
           <div className="flex items-center space-x-2">
             {category.parent && (
               <>
-                <span className="text-muted-foreground text-sm">{category.parent}</span>
+                <span className="text-muted-foreground text-sm">
+                  {category.parent}
+                </span>
                 <ChevronRight className="h-3 w-3 text-muted-foreground" />
               </>
             )}
@@ -280,7 +305,10 @@ export default function Categories() {
             Organize content with hierarchical categories and subcategories
           </p>
         </div>
-        <Button onClick={handleAdd} className="bg-gradient-primary hover:bg-primary-hover shadow-primary">
+        <Button
+          onClick={handleAdd}
+          className="bg-gradient-primary hover:bg-primary-hover shadow-primary"
+        >
           <Plus className="mr-2 h-4 w-4" />
           Create Category
         </Button>
@@ -290,7 +318,9 @@ export default function Categories() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="bg-gradient-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Categories</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Categories
+            </CardTitle>
             <Folder className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
@@ -312,7 +342,9 @@ export default function Categories() {
 
         <Card className="bg-gradient-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Questions</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Questions
+            </CardTitle>
             <Hash className="h-4 w-4 text-accent" />
           </CardHeader>
           <CardContent>
@@ -392,13 +424,20 @@ export default function Categories() {
         open={isDrawerOpen}
         onOpenChange={setIsDrawerOpen}
         title={selectedCategory ? "Edit Category" : "Create New Category"}
-        description={selectedCategory ? "Update the category details" : "Add a new category to organize your content"}
+        description={
+          selectedCategory
+            ? "Update the category details"
+            : "Add a new category to organize your content"
+        }
       >
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          const formData = new FormData(e.target as HTMLFormElement);
-          handleSave(formData);
-        }} className="space-y-6">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target as HTMLFormElement);
+            handleSave(formData);
+          }}
+          className="space-y-6"
+        >
           <div className="space-y-4">
             <div>
               <Label htmlFor="name">Category Name</Label>
@@ -424,7 +463,10 @@ export default function Categories() {
 
             <div>
               <Label htmlFor="type">Category Type</Label>
-              <Select name="type" defaultValue={selectedCategory?.type || "academic"}>
+              <Select
+                name="type"
+                defaultValue={selectedCategory?.type || "academic"}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select category type" />
                 </SelectTrigger>
@@ -449,7 +491,10 @@ export default function Categories() {
 
             <div>
               <Label htmlFor="status">Status</Label>
-              <Select name="status" defaultValue={selectedCategory?.status || "Active"}>
+              <Select
+                name="status"
+                defaultValue={selectedCategory?.status || "Active"}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -463,7 +508,11 @@ export default function Categories() {
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => setIsDrawerOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDrawerOpen(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" className="bg-gradient-primary">

@@ -1,11 +1,23 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { SideDrawer } from "@/components/ui/side-drawer";
 import { ConfirmDrawer } from "@/components/ui/confirm-drawer";
 import { FiltersPanel } from "@/components/ui/filters-panel";
@@ -53,7 +65,8 @@ export default function SubCategories() {
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDeleteDrawerOpen, setIsDeleteDrawerOpen] = useState(false);
-  const [selectedSubCategory, setSelectedSubCategory] = useState<SubCategory | null>(null);
+  const [selectedSubCategory, setSelectedSubCategory] =
+    useState<SubCategory | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -63,27 +76,34 @@ export default function SubCategories() {
     try {
       setLoading(true);
       setError("");
-      const filters: { search?: string; status?: string; category_id?: string; per_page?: number } = {
+      const filters: {
+        search?: string;
+        status?: string;
+        category_id?: string;
+        per_page?: number;
+      } = {
         search: searchTerm || undefined,
         status: statusFilter !== "all" ? statusFilter : undefined,
         category_id: categoryFilter !== "all" ? categoryFilter : undefined,
       };
       const response = await getSubCategoriesApi(filters);
-      
+
       // Map API response to UI format
-      const mappedSubCategories: SubCategory[] = response.data.map((sc: ApiSubCategory) => ({
-        id: sc.id.toString(),
-        code: `SUB${sc.id.toString().padStart(4, '0')}`,
-        name: sc.name,
-        category: sc.category.name,
-        type: sc.category.type,
-        status: sc.is_active ? "Active" : "Inactive",
-        description: sc.description || "",
-        created: new Date(sc.created_at).toLocaleDateString(),
-        questions: sc.questions_count || 0,
-        exams: sc.exams_count || 0,
-      }));
-      
+      const mappedSubCategories: SubCategory[] = response.data.map(
+        (sc: ApiSubCategory) => ({
+          id: sc.id.toString(),
+          code: `SUB${sc.id.toString().padStart(4, "0")}`,
+          name: sc.name,
+          category: sc.category.name,
+          type: sc.category.type,
+          status: sc.is_active ? "Active" : "Inactive",
+          description: sc.description || "",
+          created: new Date(sc.created_at).toLocaleDateString(),
+          questions: sc.questions_count || 0,
+          exams: sc.exams_count || 0,
+        })
+      );
+
       setSubCategories(mappedSubCategories);
       setMeta(response.meta);
     } catch (err: any) {
@@ -127,7 +147,9 @@ export default function SubCategories() {
     if (selectedSubCategory) {
       try {
         await deleteSubCategoryApi(parseInt(selectedSubCategory.id));
-        setSubCategories(prev => prev.filter(sc => sc.id !== selectedSubCategory.id));
+        setSubCategories((prev) =>
+          prev.filter((sc) => sc.id !== selectedSubCategory.id)
+        );
         setSelectedSubCategory(null);
         toast.success("Sub-category deleted successfully!");
       } catch (err: any) {
@@ -146,13 +168,16 @@ export default function SubCategories() {
       };
 
       if (selectedSubCategory) {
-        await updateSubCategoryApi(parseInt(selectedSubCategory.id), subCategoryData);
+        await updateSubCategoryApi(
+          parseInt(selectedSubCategory.id),
+          subCategoryData
+        );
         toast.success("Sub-category updated successfully!");
       } else {
         await createSubCategoryApi(subCategoryData);
         toast.success("Sub-category created successfully!");
       }
-      
+
       setIsDrawerOpen(false);
       setSelectedSubCategory(null);
       loadSubCategories(); // Refresh the list
@@ -174,7 +199,10 @@ export default function SubCategories() {
     }
   };
 
-  const uniqueCategories = categories.map(cat => ({ label: cat.name, value: cat.id.toString() }));
+  const uniqueCategories = categories.map((cat) => ({
+    label: cat.name,
+    value: cat.id.toString(),
+  }));
 
   const columns = [
     {
@@ -182,7 +210,10 @@ export default function SubCategories() {
       header: "Code",
       sortable: true,
       render: (subCategory: SubCategory) => (
-        <Badge variant="secondary" className="bg-primary text-primary-foreground">
+        <Badge
+          variant="secondary"
+          className="bg-primary text-primary-foreground"
+        >
           {subCategory.code}
         </Badge>
       ),
@@ -241,7 +272,10 @@ export default function SubCategories() {
       header: "Status",
       sortable: true,
       render: (subCategory: SubCategory) => (
-        <Badge variant="secondary" className={getStatusColor(subCategory.status)}>
+        <Badge
+          variant="secondary"
+          className={getStatusColor(subCategory.status)}
+        >
           {subCategory.status}
         </Badge>
       ),
@@ -279,7 +313,10 @@ export default function SubCategories() {
             Manage subcategories and organize content hierarchically
           </p>
         </div>
-        <Button onClick={handleAdd} className="bg-gradient-primary hover:bg-primary-hover shadow-primary">
+        <Button
+          onClick={handleAdd}
+          className="bg-gradient-primary hover:bg-primary-hover shadow-primary"
+        >
           <Plus className="mr-2 h-4 w-4" />
           New Sub Category
         </Button>
@@ -289,7 +326,9 @@ export default function SubCategories() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="bg-gradient-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Sub Categories</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Sub Categories
+            </CardTitle>
             <FolderTree className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
@@ -300,7 +339,9 @@ export default function SubCategories() {
 
         <Card className="bg-gradient-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Parent Categories</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Parent Categories
+            </CardTitle>
             <Folder className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
@@ -311,7 +352,9 @@ export default function SubCategories() {
 
         <Card className="bg-gradient-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Questions</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Questions
+            </CardTitle>
             <Hash className="h-4 w-4 text-accent" />
           </CardHeader>
           <CardContent>
@@ -388,14 +431,23 @@ export default function SubCategories() {
       <SideDrawer
         open={isDrawerOpen}
         onOpenChange={setIsDrawerOpen}
-        title={selectedSubCategory ? "Edit Sub Category" : "Create New Sub Category"}
-        description={selectedSubCategory ? "Update the subcategory details" : "Add a new subcategory to organize content"}
+        title={
+          selectedSubCategory ? "Edit Sub Category" : "Create New Sub Category"
+        }
+        description={
+          selectedSubCategory
+            ? "Update the subcategory details"
+            : "Add a new subcategory to organize content"
+        }
       >
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          const formData = new FormData(e.target as HTMLFormElement);
-          handleSave(formData);
-        }} className="space-y-6">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target as HTMLFormElement);
+            handleSave(formData);
+          }}
+          className="space-y-6"
+        >
           <div className="space-y-4">
             <div>
               <Label htmlFor="name">Sub Category Name</Label>
@@ -407,7 +459,6 @@ export default function SubCategories() {
                 required
               />
             </div>
-
 
             <div>
               <Label htmlFor="description">Description</Label>
@@ -422,12 +473,15 @@ export default function SubCategories() {
 
             <div>
               <Label htmlFor="category">Parent Category</Label>
-              <Select name="category" defaultValue={selectedSubCategory?.category || ""}>
+              <Select
+                name="category"
+                defaultValue={selectedSubCategory?.category || ""}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select parent category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {uniqueCategories.map(category => (
+                  {uniqueCategories.map((category) => (
                     <SelectItem key={category.value} value={category.value}>
                       {category.label}
                     </SelectItem>
@@ -436,10 +490,12 @@ export default function SubCategories() {
               </Select>
             </div>
 
-
             <div>
               <Label htmlFor="status">Status</Label>
-              <Select name="status" defaultValue={selectedSubCategory?.status || "Active"}>
+              <Select
+                name="status"
+                defaultValue={selectedSubCategory?.status || "Active"}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -453,11 +509,17 @@ export default function SubCategories() {
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => setIsDrawerOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDrawerOpen(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" className="bg-gradient-primary">
-              {selectedSubCategory ? "Update Sub Category" : "Create Sub Category"}
+              {selectedSubCategory
+                ? "Update Sub Category"
+                : "Create Sub Category"}
             </Button>
           </div>
         </form>

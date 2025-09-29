@@ -684,7 +684,7 @@ export interface Category {
   id: number;
   name: string;
   description?: string;
-  type: 'academic' | 'general' | 'skill';
+  type: "academic" | "general" | "skill";
   is_active: boolean;
   color?: string;
   icon?: string;
@@ -695,13 +695,21 @@ export interface Category {
   updated_at: string;
 }
 
-export const getCategoriesApi = async (filters?: { search?: string; status?: string; type?: string; per_page?: number }) => {
+export const getCategoriesApi = async (filters?: {
+  search?: string;
+  status?: string;
+  type?: string;
+  per_page?: number;
+}) => {
   const queryParams = new URLSearchParams();
-  if (filters?.search) queryParams.append('search', filters.search);
-  if (filters?.status && filters.status !== 'all') queryParams.append('status', filters.status);
-  if (filters?.type && filters.type !== 'all') queryParams.append('type', filters.type);
-  if (filters?.per_page) queryParams.append('per_page', filters.per_page.toString());
-  
+  if (filters?.search) queryParams.append("search", filters.search);
+  if (filters?.status && filters.status !== "all")
+    queryParams.append("status", filters.status);
+  if (filters?.type && filters.type !== "all")
+    queryParams.append("type", filters.type);
+  if (filters?.per_page)
+    queryParams.append("per_page", filters.per_page.toString());
+
   const response = await apiFetch(`/categories?${queryParams.toString()}`);
   return response;
 };
@@ -712,16 +720,19 @@ export const getCategoryApi = async (id: number) => {
 };
 
 export const createCategoryApi = async (data: Partial<Category>) => {
-  const response = await apiFetch('/categories', {
-    method: 'POST',
+  const response = await apiFetch("/categories", {
+    method: "POST",
     body: JSON.stringify(data),
   });
   return response;
 };
 
-export const updateCategoryApi = async (id: number, data: Partial<Category>) => {
+export const updateCategoryApi = async (
+  id: number,
+  data: Partial<Category>
+) => {
   const response = await apiFetch(`/categories/${id}`, {
-    method: 'PUT',
+    method: "PUT",
     body: JSON.stringify(data),
   });
   return response;
@@ -729,7 +740,7 @@ export const updateCategoryApi = async (id: number, data: Partial<Category>) => 
 
 export const deleteCategoryApi = async (id: number) => {
   const response = await apiFetch(`/categories/${id}`, {
-    method: 'DELETE',
+    method: "DELETE",
   });
   return response;
 };
@@ -750,13 +761,21 @@ export interface SubCategory {
   updated_at: string;
 }
 
-export const getSubCategoriesApi = async (filters?: { search?: string; status?: string; category_id?: string; per_page?: number }) => {
+export const getSubCategoriesApi = async (filters?: {
+  search?: string;
+  status?: string;
+  category_id?: string;
+  per_page?: number;
+}) => {
   const queryParams = new URLSearchParams();
-  if (filters?.search) queryParams.append('search', filters.search);
-  if (filters?.status && filters.status !== 'all') queryParams.append('status', filters.status);
-  if (filters?.category_id && filters.category_id !== 'all') queryParams.append('category_id', filters.category_id);
-  if (filters?.per_page) queryParams.append('per_page', filters.per_page.toString());
-  
+  if (filters?.search) queryParams.append("search", filters.search);
+  if (filters?.status && filters.status !== "all")
+    queryParams.append("status", filters.status);
+  if (filters?.category_id && filters.category_id !== "all")
+    queryParams.append("category_id", filters.category_id);
+  if (filters?.per_page)
+    queryParams.append("per_page", filters.per_page.toString());
+
   const response = await apiFetch(`/sub-categories?${queryParams.toString()}`);
   return response;
 };
@@ -767,16 +786,19 @@ export const getSubCategoryApi = async (id: number) => {
 };
 
 export const createSubCategoryApi = async (data: Partial<SubCategory>) => {
-  const response = await apiFetch('/sub-categories', {
-    method: 'POST',
+  const response = await apiFetch("/sub-categories", {
+    method: "POST",
     body: JSON.stringify(data),
   });
   return response;
 };
 
-export const updateSubCategoryApi = async (id: number, data: Partial<SubCategory>) => {
+export const updateSubCategoryApi = async (
+  id: number,
+  data: Partial<SubCategory>
+) => {
   const response = await apiFetch(`/sub-categories/${id}`, {
-    method: 'PUT',
+    method: "PUT",
     body: JSON.stringify(data),
   });
   return response;
@@ -784,7 +806,194 @@ export const updateSubCategoryApi = async (id: number, data: Partial<SubCategory
 
 export const deleteSubCategoryApi = async (id: number) => {
   const response = await apiFetch(`/sub-categories/${id}`, {
-    method: 'DELETE',
+    method: "DELETE",
+  });
+  return response;
+};
+
+// Tags API functions
+export interface Tag {
+  id: number;
+  name: string;
+  description?: string;
+  color?: string;
+  is_active: boolean;
+  questions_count: number;
+  exams_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export const getTagsApi = async (filters?: {
+  search?: string;
+  status?: string;
+  color?: string;
+  per_page?: number;
+}) => {
+  const queryParams = new URLSearchParams();
+  if (filters?.search) queryParams.append("search", filters.search);
+  if (filters?.status && filters.status !== "all")
+    queryParams.append("status", filters.status);
+  if (filters?.color && filters.color !== "all")
+    queryParams.append("color", filters.color);
+  if (filters?.per_page)
+    queryParams.append("per_page", filters.per_page.toString());
+
+  const response = await apiFetch(`/tags?${queryParams.toString()}`);
+  return response;
+};
+
+export const getTagApi = async (id: number) => {
+  const response = await apiFetch(`/tags/${id}`);
+  return response;
+};
+
+export const createTagApi = async (data: Partial<Tag>) => {
+  const response = await apiFetch("/tags", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  return response;
+};
+
+export const updateTagApi = async (id: number, data: Partial<Tag>) => {
+  const response = await apiFetch(`/tags/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+  return response;
+};
+
+export const deleteTagApi = async (id: number) => {
+  const response = await apiFetch(`/tags/${id}`, {
+    method: "DELETE",
+  });
+  return response;
+};
+
+// Sections API functions
+export interface Section {
+  id: number;
+  name: string;
+  description?: string;
+  type: "multiple_choice" | "essay" | "fill_blank" | "true_false";
+  is_active: boolean;
+  sort_order?: number;
+  questions_count: number;
+  exams_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export const getSectionsApi = async (filters?: {
+  search?: string;
+  status?: string;
+  type?: string;
+  per_page?: number;
+}) => {
+  const queryParams = new URLSearchParams();
+  if (filters?.search) queryParams.append("search", filters.search);
+  if (filters?.status && filters.status !== "all")
+    queryParams.append("status", filters.status);
+  if (filters?.type && filters.type !== "all")
+    queryParams.append("type", filters.type);
+  if (filters?.per_page)
+    queryParams.append("per_page", filters.per_page.toString());
+
+  const response = await apiFetch(`/sections?${queryParams.toString()}`);
+  return response;
+};
+
+export const getSectionApi = async (id: number) => {
+  const response = await apiFetch(`/sections/${id}`);
+  return response;
+};
+
+export const createSectionApi = async (data: Partial<Section>) => {
+  const response = await apiFetch("/sections", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  return response;
+};
+
+export const updateSectionApi = async (id: number, data: Partial<Section>) => {
+  const response = await apiFetch(`/sections/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+  return response;
+};
+
+export const deleteSectionApi = async (id: number) => {
+  const response = await apiFetch(`/sections/${id}`, {
+    method: "DELETE",
+  });
+  return response;
+};
+
+// Skills API functions
+export interface Skill {
+  id: number;
+  name: string;
+  description?: string;
+  level: "beginner" | "intermediate" | "advanced" | "expert";
+  category_id: number;
+  category: Category;
+  is_active: boolean;
+  sort_order?: number;
+  questions_count: number;
+  exams_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export const getSkillsApi = async (filters?: {
+  search?: string;
+  status?: string;
+  level?: string;
+  category_id?: string;
+  per_page?: number;
+}) => {
+  const queryParams = new URLSearchParams();
+  if (filters?.search) queryParams.append("search", filters.search);
+  if (filters?.status && filters.status !== "all")
+    queryParams.append("status", filters.status);
+  if (filters?.level && filters.level !== "all")
+    queryParams.append("level", filters.level);
+  if (filters?.category_id && filters.category_id !== "all")
+    queryParams.append("category_id", filters.category_id);
+  if (filters?.per_page)
+    queryParams.append("per_page", filters.per_page.toString());
+
+  const response = await apiFetch(`/skills?${queryParams.toString()}`);
+  return response;
+};
+
+export const getSkillApi = async (id: number) => {
+  const response = await apiFetch(`/skills/${id}`);
+  return response;
+};
+
+export const createSkillApi = async (data: Partial<Skill>) => {
+  const response = await apiFetch("/skills", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  return response;
+};
+
+export const updateSkillApi = async (id: number, data: Partial<Skill>) => {
+  const response = await apiFetch(`/skills/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+  return response;
+};
+
+export const deleteSkillApi = async (id: number) => {
+  const response = await apiFetch(`/skills/${id}`, {
+    method: "DELETE",
   });
   return response;
 };

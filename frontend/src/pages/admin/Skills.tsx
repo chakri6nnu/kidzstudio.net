@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,15 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  getSkillsApi,
+  createSkillApi,
+  updateSkillApi,
+  deleteSkillApi,
+  getCategoriesApi,
+  type Skill as ApiSkill,
+  type Category as ApiCategory,
+} from "@/lib/utils";
 
 interface Skill {
   id: string;
@@ -41,83 +50,69 @@ interface Skill {
 }
 
 export default function Skills() {
-  const [skills, setSkills] = useState<Skill[]>([
-    {
-      id: "1",
-      name: "Problem Solving",
-      code: "PS",
-      description: "Analytical and critical thinking abilities to solve complex problems effectively",
-      category: "Cognitive",
-      level: "Advanced",
-      isActive: true,
-      questions: 1248,
-      lessons: 45,
-      students: 892,
-      createdAt: "2024-01-15",
-      updatedAt: "2024-01-20",
-    },
-    {
-      id: "2",
-      name: "Mathematical Reasoning",
-      code: "MR",
-      description: "Numerical and logical mathematical skills for quantitative analysis",
-      category: "Mathematics",
-      level: "Intermediate",
-      isActive: true,
-      questions: 967,
-      lessons: 38,
-      students: 756,
-      createdAt: "2024-01-14",
-      updatedAt: "2024-01-19",
-    },
-    {
-      id: "3",
-      name: "Reading Comprehension",
-      code: "RC",
-      description: "Text understanding and interpretation skills for effective communication",
-      category: "Language",
-      level: "Beginner",
-      isActive: true,
-      questions: 834,
-      lessons: 52,
-      students: 1234,
-      createdAt: "2024-01-13",
-      updatedAt: "2024-01-18",
-    },
-    {
-      id: "4",
-      name: "Data Analysis",
-      code: "DA",
-      description: "Statistical and data interpretation skills for informed decision making",
-      category: "Analytics",
-      level: "Advanced",
-      isActive: false,
-      questions: 456,
-      lessons: 29,
-      students: 423,
-      createdAt: "2024-01-12",
-      updatedAt: "2024-01-17",
-    },
-    {
-      id: "5",
-      name: "Critical Thinking",
-      code: "CT",
-      description: "Objective analysis and evaluation skills for better reasoning",
-      category: "Cognitive",
-      level: "Intermediate",
-      isActive: true,
-      questions: 723,
-      lessons: 41,
-      students: 678,
-      createdAt: "2024-01-11",
-      updatedAt: "2024-01-16",
-    },
-  ]);
+  const [skills, setSkills] = useState<Skill[]>([]);
+  const [categories, setCategories] = useState<ApiCategory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [meta, setMeta] = useState<any>(null);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedLevel, setSelectedLevel] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
+
+  // Load skills and categories from API
+  const loadSkills = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const filters: { search?: string; status?: string; level?: string; category_id?: string; per_page?: number } = {
+        search: searchTerm || undefined,
+        status: selectedStatus !== "all" ? selectedStatus : undefined,
+        level: selectedLevel !== "all" ? selectedLevel : undefined,
+        category_id: selectedCategory !== "all" ? selectedCategory : undefined,
+      };
+      const response = await getSkillsApi(filters);
+      
+      // Map API response to UI format
+      const mappedSkills: Skill[] = response.data.map((s: ApiSkill) => ({
+        id: s.id.toString(),
+        name: s.name,
+        code: s.name.substring(0, 2).toUpperCase(), // Generate code from name
+        description: s.description || "",
+        category: s.category.name,
+        level: s.level.charAt(0).toUpperCase() + s.level.slice(1) as Skill["level"],
+        isActive: s.is_active,
+        questions: s.questions_count || 0,
+        lessons: 0, // Not available in API
+        students: 0, // Not available in API
+        createdAt: new Date(s.created_at).toLocaleDateString(),
+        updatedAt: new Date(s.updated_at).toLocaleDateString(),
+      }));
+      
+      setSkills(mappedSkills);
+      setMeta(response.meta);
+    } catch (err: any) {
+      setError(err?.message || "Failed to load skills");
+      toast.error("Failed to load skills");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadCategories = async () => {
+    try {
+      const response = await getCategoriesApi({});
+      setCategories(response.data);
+    } catch (err: any) {
+      console.error("Failed to load categories:", err);
+    }
+  };
+
+  useEffect(() => {
+    loadSkills();
+    loadCategories();
+  }, [searchTerm, selectedStatus, selectedLevel, selectedCategory]);
   
   // Drawer states
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
@@ -137,19 +132,6 @@ export default function Skills() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Filter and search logic
-  const filteredSkills = skills.filter(skill => {
-    const matchesSearch = skill.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         skill.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         skill.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === "all" || skill.category === selectedCategory;
-    const matchesLevel = selectedLevel === "all" || skill.level === selectedLevel;
-    const matchesStatus = selectedStatus === "all" || 
-                         (selectedStatus === "active" && skill.isActive) ||
-                         (selectedStatus === "inactive" && !skill.isActive);
-    
-    return matchesSearch && matchesCategory && matchesLevel && matchesStatus;
-  });
 
   // Filter options
   const filters = [
@@ -161,12 +143,7 @@ export default function Skills() {
       onChange: (value: string) => setSelectedCategory(value),
       options: [
         { value: "all", label: "All Categories" },
-        { value: "Cognitive", label: "Cognitive" },
-        { value: "Mathematics", label: "Mathematics" },
-        { value: "Language", label: "Language" },
-        { value: "Analytics", label: "Analytics" },
-        { value: "Science", label: "Science" },
-        { value: "Technology", label: "Technology" }
+        ...categories.map(cat => ({ value: cat.id.toString(), label: cat.name }))
       ]
     },
     {
@@ -280,87 +257,57 @@ export default function Skills() {
   };
 
   const handleAddSubmit = async () => {
-    if (!formData.name || !formData.code || !formData.category) {
+    if (!formData.name || !formData.category) {
       toast.error("Please fill in all required fields");
-      return;
-    }
-
-    // Check if code already exists
-    if (skills.some(skill => skill.code.toLowerCase() === formData.code.toLowerCase())) {
-      toast.error("Skill code already exists");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const newSkill: Skill = {
-        id: Date.now().toString(),
+      const skillData = {
         name: formData.name,
-        code: formData.code.toUpperCase(),
         description: formData.description,
-        category: formData.category,
-        level: formData.level,
-        isActive: formData.isActive,
-        questions: 0,
-        lessons: 0,
-        students: 0,
-        createdAt: new Date().toISOString().split('T')[0],
-        updatedAt: new Date().toISOString().split('T')[0],
+        level: formData.level.toLowerCase(),
+        category_id: parseInt(formData.category),
+        is_active: formData.isActive,
       };
 
-      setSkills(prev => [newSkill, ...prev]);
+      await createSkillApi(skillData);
       setIsAddDrawerOpen(false);
       resetForm();
       toast.success("Skill created successfully!");
-    } catch (error) {
-      toast.error("Failed to create skill");
+      loadSkills(); // Refresh the list
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to create skill");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleEditSubmit = async () => {
-    if (!selectedSkill || !formData.name || !formData.code || !formData.category) {
+    if (!selectedSkill || !formData.name || !formData.category) {
       toast.error("Please fill in all required fields");
-      return;
-    }
-
-    // Check if code already exists (excluding current skill)
-    if (skills.some(skill => 
-      skill.id !== selectedSkill.id && 
-      skill.code.toLowerCase() === formData.code.toLowerCase()
-    )) {
-      toast.error("Skill code already exists");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const skillData = {
+        name: formData.name,
+        description: formData.description,
+        level: formData.level.toLowerCase(),
+        category_id: parseInt(formData.category),
+        is_active: formData.isActive,
+      };
 
-      setSkills(prev => prev.map(skill => 
-        skill.id === selectedSkill.id 
-          ? {
-              ...skill,
-              name: formData.name,
-              code: formData.code.toUpperCase(),
-              description: formData.description,
-              category: formData.category,
-              level: formData.level,
-              isActive: formData.isActive,
-              updatedAt: new Date().toISOString().split('T')[0],
-            }
-          : skill
-      ));
-
+      await updateSkillApi(parseInt(selectedSkill.id), skillData);
       setIsEditDrawerOpen(false);
       setSelectedSkill(null);
       resetForm();
       toast.success("Skill updated successfully!");
-    } catch (error) {
-      toast.error("Failed to update skill");
+      loadSkills(); // Refresh the list
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update skill");
     } finally {
       setIsSubmitting(false);
     }
@@ -370,14 +317,13 @@ export default function Skills() {
     if (!selectedSkill) return;
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setSkills(prev => prev.filter(skill => skill.id !== selectedSkill.id));
+      await deleteSkillApi(parseInt(selectedSkill.id));
       setIsDeleteDrawerOpen(false);
       setSelectedSkill(null);
       toast.success("Skill deleted successfully!");
-    } catch (error) {
-      toast.error("Failed to delete skill");
+      loadSkills(); // Refresh the list
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to delete skill");
     }
   };
 
@@ -582,11 +528,13 @@ export default function Skills() {
 
         <CardContent>
           <DataTable
-            data={filteredSkills}
+            data={skills}
             columns={columns}
             actions={actions}
             emptyMessage="No skills found"
             onAdd={handleAdd}
+            loading={loading}
+            error={error}
           />
         </CardContent>
       </Card>

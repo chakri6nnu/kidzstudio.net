@@ -18,9 +18,9 @@
 | Import Users        | Done            | N/A         | Done        | N/A         | N/A         | POST /api/users/import wired            |
 | Categories          | Done            | Done        | Done        | Done        | Done        | CRUD wired to /api/categories           |
 | Sub Categories      | Done            | Done        | Done        | Done        | Done        | CRUD wired to /api/sub-categories       |
-| Tags                | Not started     | Not started | Not started | Not started | Not started |                                         |
-| Sections            | Not started     | Not started | Not started | Not started | Not started |                                         |
-| Skills              | Not started     | Not started | Not started | Not started | Not started |                                         |
+| Tags                | Done            | Done        | Done        | Done        | Done        | CRUD wired to /api/tags                 |
+| Sections            | Done            | Done        | Done        | Done        | Done        | CRUD wired to /api/sections             |
+| Skills              | Done            | Done        | Done        | Done        | Done        | CRUD wired to /api/skills               |
 | Topics              | Not started     | Not started | Not started | Not started | Not started |                                         |
 | Plans               | Not started     | Not started | Not started | Not started | Not started |                                         |
 | Subscriptions       | Not started     | Not started | Not started | Not started | Not started |                                         |
