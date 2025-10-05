@@ -13,7 +13,7 @@ class ComprehensionController extends Controller
     public function index(Request $request, ComprehensionFilters $filters): JsonResponse
     {
         $q = ComprehensionPassage::filter($filters)->orderByDesc('id');
-        $p = $q->paginate($request->integer('per_page', 10));
+		$p = $q->paginate((int) $request->get('per_page', 10));
         return response()->json([
             'data' => $p->items(),
             'meta' => [

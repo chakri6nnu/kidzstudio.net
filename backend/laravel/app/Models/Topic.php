@@ -65,6 +65,11 @@ class Topic extends Model
     |--------------------------------------------------------------------------
     */
 
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
+
     public function skill()
     {
         return $this->belongsTo(Skill::class);

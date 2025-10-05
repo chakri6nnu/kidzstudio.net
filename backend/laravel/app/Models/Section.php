@@ -97,6 +97,11 @@ class Section extends Model
         return $this->hasMany(ExamSection::class);
     }
 
+    public function exams()
+    {
+        return $this->belongsToMany(Exam::class, 'exam_sections', 'section_id', 'exam_id');
+    }
+
     /*
     |--------------------------------------------------------------------------
     | SCOPES

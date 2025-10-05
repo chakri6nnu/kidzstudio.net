@@ -1,6 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { api } from "@/lib/api";
+import { toast } from "sonner";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -52,82 +60,50 @@ export default function PracticeSets() {
   const [selectedSkill, setSelectedSkill] = useState("all");
   const [selectedDifficulty, setSelectedDifficulty] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
+  const [practiceSets, setPracticeSets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [meta, setMeta] = useState<any>({});
 
-  const practiceSets = [
-    {
-      id: 1,
-      title: "JavaScript Fundamentals Practice",
-      description: "Master the basics of JavaScript programming",
-      skill: "JavaScript",
-      difficulty: "Beginner",
-      questions: 25,
-      estimatedTime: "45 mins",
-      completions: 234,
-      averageScore: 78,
-      status: "Published",
-      lessons: 8,
-      videos: 3,
-      adaptiveMode: true,
-      created: "2024-01-15",
-    },
-    {
-      id: 2,
-      title: "React Components Deep Dive",
-      description: "Advanced practice with React components and hooks",
-      skill: "React",
-      difficulty: "Advanced",
-      questions: 35,
-      estimatedTime: "60 mins",
-      completions: 156,
-      averageScore: 85,
-      status: "Published",
-      lessons: 12,
-      videos: 5,
-      adaptiveMode: true,
-      created: "2024-01-14",
-    },
-    {
-      id: 3,
-      title: "CSS Layout Mastery",
-      description: "Practice modern CSS layout techniques",
-      skill: "CSS",
-      difficulty: "Intermediate",
-      questions: 20,
-      estimatedTime: "40 mins",
-      completions: 189,
-      averageScore: 72,
-      status: "Draft",
-      lessons: 6,
-      videos: 4,
-      adaptiveMode: false,
-      created: "2024-01-13",
-    },
-    {
-      id: 4,
-      title: "Database Query Optimization",
-      description: "Advanced SQL optimization techniques",
-      skill: "Database",
-      difficulty: "Advanced",
-      questions: 30,
-      estimatedTime: "75 mins",
-      completions: 67,
-      averageScore: 88,
-      status: "Published",
-      lessons: 10,
-      videos: 6,
-      adaptiveMode: true,
-      created: "2024-01-12",
-    },
-  ];
+  useEffect(() => {
+    loadPracticeSets();
+  }, [searchTerm, selectedSkill, selectedDifficulty, selectedStatus]);
 
-  const filteredSets = practiceSets.filter(set => {
-    const matchesSearch = set.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         set.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         set.skill.toLowerCase().includes(searchTerm.toLowerCase());
+  const loadPracticeSets = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const response = await api.practiceSets.getAll({
+        search: searchTerm || undefined,
+        status: selectedStatus !== "all" ? selectedStatus : undefined,
+        page: 1,
+        limit: 50,
+      });
+      setPracticeSets(response.data);
+      setMeta({
+        total: response.total,
+        current_page: response.current_page,
+        last_page: response.last_page,
+      });
+    } catch (err: any) {
+      setError(err?.message || "Failed to load practice sets");
+      toast.error("Failed to load practice sets");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredSets = practiceSets.filter((set) => {
+    const matchesSearch =
+      set.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      set.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      set.skill?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesSkill = selectedSkill === "all" || set.skill === selectedSkill;
-    const matchesDifficulty = selectedDifficulty === "all" || set.difficulty === selectedDifficulty;
-    const matchesStatus = selectedStatus === "all" || set.status === selectedStatus;
-    
+    const matchesDifficulty =
+      selectedDifficulty === "all" || set.difficulty === selectedDifficulty;
+    const matchesStatus =
+      selectedStatus === "all" || set.status === selectedStatus;
+
     return matchesSearch && matchesSkill && matchesDifficulty && matchesStatus;
   });
 
@@ -162,30 +138,30 @@ export default function PracticeSets() {
         { value: "JavaScript", label: "JavaScript" },
         { value: "React", label: "React" },
         { value: "CSS", label: "CSS" },
-        { value: "Database", label: "Database" }
-      ]
+        { value: "Database", label: "Database" },
+      ],
     },
     {
-      id: "difficulty", 
+      id: "difficulty",
       label: "Difficulty",
       value: selectedDifficulty,
       options: [
         { value: "all", label: "All Levels" },
         { value: "Beginner", label: "Beginner" },
         { value: "Intermediate", label: "Intermediate" },
-        { value: "Advanced", label: "Advanced" }
-      ]
+        { value: "Advanced", label: "Advanced" },
+      ],
     },
     {
       id: "status",
-      label: "Status", 
+      label: "Status",
       value: selectedStatus,
       options: [
         { value: "all", label: "All Status" },
         { value: "Published", label: "Published" },
-        { value: "Draft", label: "Draft" }
-      ]
-    }
+        { value: "Draft", label: "Draft" },
+      ],
+    },
   ];
 
   const getStatusColor = (status: string) => {
@@ -234,7 +210,9 @@ export default function PracticeSets() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="bg-gradient-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Practice Sets</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Practice Sets
+            </CardTitle>
             <Brain className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
@@ -245,7 +223,9 @@ export default function PracticeSets() {
 
         <Card className="bg-gradient-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Completions</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Completions
+            </CardTitle>
             <CheckCircle className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
@@ -267,7 +247,9 @@ export default function PracticeSets() {
 
         <Card className="bg-gradient-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Learners</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Active Learners
+            </CardTitle>
             <Users className="h-4 w-4 text-warning" />
           </CardHeader>
           <CardContent>
@@ -297,6 +279,7 @@ export default function PracticeSets() {
                 <TableRow>
                   <TableHead>Practice Set</TableHead>
                   <TableHead>Skill</TableHead>
+                  <TableHead>Sub Category</TableHead>
                   <TableHead>Difficulty</TableHead>
                   <TableHead>Content</TableHead>
                   <TableHead>Performance</TableHead>
@@ -320,8 +303,11 @@ export default function PracticeSets() {
                       <Badge variant="outline">{set.skill}</Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge 
-                        variant="outline" 
+                      <Badge variant="outline">{set.subCategory || "-"}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
                         className={getDifficultyColor(set.difficulty)}
                       >
                         {set.difficulty}
@@ -362,7 +348,10 @@ export default function PracticeSets() {
                     <TableCell>
                       <div className="flex flex-col space-y-1">
                         {set.adaptiveMode && (
-                          <Badge variant="outline" className="bg-primary/10 text-primary text-xs">
+                          <Badge
+                            variant="outline"
+                            className="bg-primary/10 text-primary text-xs"
+                          >
                             <Zap className="mr-1 h-3 w-3" />
                             Adaptive
                           </Badge>
@@ -370,8 +359,8 @@ export default function PracticeSets() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge 
-                        variant="secondary" 
+                      <Badge
+                        variant="secondary"
                         className={getStatusColor(set.status)}
                       >
                         {set.status}
@@ -385,23 +374,60 @@ export default function PracticeSets() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              navigate(`/admin/practice-sets/${set.id}/edit`)
+                            }
+                          >
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              navigate(`/admin/practice-sets/${set.id}/edit`)
+                            }
+                          >
                             <Edit className="mr-2 h-4 w-4" />
                             Edit Practice Set
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              toast.success(
+                                `Preview not yet implemented for #${set.id}`
+                              )
+                            }
+                          >
                             <Play className="mr-2 h-4 w-4" />
                             Preview Practice
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              toast.success(
+                                `Analytics not yet implemented for #${set.id}`
+                              )
+                            }
+                          >
                             <TrendingUp className="mr-2 h-4 w-4" />
                             View Analytics
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={async () => {
+                              if (
+                                !window.confirm(
+                                  "Delete this practice set? This action cannot be undone."
+                                )
+                              )
+                                return;
+                              try {
+                                await api.practiceSets.delete(String(set.id));
+                                toast.success("Practice set deleted");
+                                await loadPracticeSets();
+                              } catch (e: any) {
+                                toast.error(e?.message || "Failed to delete");
+                              }
+                            }}
+                          >
                             <Trash2 className="mr-2 h-4 w-4" />
                             Delete
                           </DropdownMenuItem>

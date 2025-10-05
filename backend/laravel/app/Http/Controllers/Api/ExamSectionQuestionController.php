@@ -22,7 +22,14 @@ class ExamSectionQuestionController extends Controller
     {
         $this->authorizeSection($exam, $section);
         $data = $request->validate([ 'question_ids' => 'required|array', 'question_ids.*' => 'exists:questions,id' ]);
-        $section->questions()->syncWithoutDetaching($data['question_ids']);
+        // Include exam_id on the pivot to satisfy exam_questions schema
+        $attachPayload = collect($data['question_ids'])
+            ->mapWithKeys(function ($questionId) use ($exam) {
+                return [ (int) $questionId => ['exam_id' => $exam->id] ];
+            })
+            ->all();
+
+        $section->questions()->syncWithoutDetaching($attachPayload);
         return response()->json(['message' => 'Questions added']);
     }
 

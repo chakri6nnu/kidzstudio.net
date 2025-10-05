@@ -11,6 +11,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
@@ -86,5 +87,8 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Skill', 'code' => 'skill', 'is_active' => 1],
             ['name' => 'Branch', 'code' => 'branch', 'is_active' => 1],
         ]);
+
+        // Seed 50 quizzes
+        $this->call(QuizSeeder::class);
     }
 }

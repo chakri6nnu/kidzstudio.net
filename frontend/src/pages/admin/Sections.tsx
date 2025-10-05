@@ -7,7 +7,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,88 +18,102 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { SideDrawer } from "@/components/ui/side-drawer";
-import { ConfirmDrawer } from "@/components/ui/confirm-drawer";
-import { FiltersPanel } from "@/components/ui/filters-panel";
-import { DataTable } from "@/components/ui/data-table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import {
   Plus,
+  Search,
+  Filter,
   Edit,
   Trash2,
-  Eye,
-  Grid3X3,
-  Hash,
-  Archive,
+  MoreHorizontal,
+  Loader2,
+  AlertTriangle,
   CheckCircle,
-  XCircle,
+  BookOpen,
+  FileText,
+  Eye,
+  EyeOff,
 } from "lucide-react";
-import {
-  getSectionsApi,
-  createSectionApi,
-  updateSectionApi,
-  deleteSectionApi,
-  type Section as ApiSection,
-} from "@/lib/utils";
 import { toast } from "sonner";
+import { sectionsApi } from "@/lib/api";
 
 interface Section {
   id: number;
   name: string;
   code: string;
-  description: string;
-  category: string;
-  isActive: boolean;
-  questions: number;
-  createdAt: string;
+  slug: string;
+  short_description: string | null;
+  icon_path: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  questions_count: number;
+  exams_count: number;
 }
 
 export default function Sections() {
-  const [sections, setSections] = useState<Section[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [meta, setMeta] = useState<any>(null);
-
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isDeleteDrawerOpen, setIsDeleteDrawerOpen] = useState(false);
-  const [selectedSection, setSelectedSection] = useState<Section | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [sections, setSections] = useState<Section[]>([]);
+  const [meta, setMeta] = useState({
+    current_page: 1,
+    last_page: 1,
+    per_page: 15,
+    total: 0,
+  });
+  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [typeFilter, setTypeFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
 
-  // Load sections from API
+  // Dialog states
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedSection, setSelectedSection] = useState<Section | null>(null);
+
+  // Form states
+  const [formData, setFormData] = useState({
+    name: "",
+    short_description: "",
+    is_active: true,
+  });
+  const [saving, setSaving] = useState(false);
+
   const loadSections = async () => {
     try {
       setLoading(true);
-      setError("");
-      const filters: {
-        search?: string;
-        status?: string;
-        type?: string;
-        per_page?: number;
-      } = {
-        search: searchTerm || undefined,
+      setError(null);
+
+      const response = await sectionsApi.getSections({
+        search: search || undefined,
         status: statusFilter !== "all" ? statusFilter : undefined,
-        type: typeFilter !== "all" ? typeFilter : undefined,
-      };
-      const response = await getSectionsApi(filters);
+        per_page: perPage,
+        page: currentPage,
+      });
 
-      // Map API response to UI format
-      const mappedSections: Section[] = response.data.map((s: ApiSection) => ({
-        id: s.id,
-        name: s.name,
-        code: s.name.substring(0, 2).toUpperCase(), // Generate code from name
-        description: s.description || "",
-        category: s.type,
-        isActive: s.is_active,
-        questions: s.questions_count || 0,
-        createdAt: new Date(s.created_at).toLocaleDateString(),
-      }));
-
-      setSections(mappedSections);
+      setSections(response.data);
       setMeta(response.meta);
-    } catch (err: any) {
-      setError(err?.message || "Failed to load sections");
-      toast.error("Failed to load sections");
+    } catch (err) {
+      console.error("Failed to load sections:", err);
+      setError("Failed to load sections. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -108,436 +121,472 @@ export default function Sections() {
 
   useEffect(() => {
     loadSections();
-  }, [searchTerm, statusFilter, typeFilter]);
+  }, [search, statusFilter, currentPage, perPage]);
 
-  const handleAdd = () => {
-    setSelectedSection(null);
-    setIsDrawerOpen(true);
-  };
-
-  const handleEdit = (section: Section) => {
-    setSelectedSection(section);
-    setIsDrawerOpen(true);
-  };
-
-  const handleDelete = (section: Section) => {
-    setSelectedSection(section);
-    setIsDeleteDrawerOpen(true);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (selectedSection) {
-      try {
-        await deleteSectionApi(selectedSection.id);
-        setSections((prev) => prev.filter((s) => s.id !== selectedSection.id));
-        setSelectedSection(null);
-        toast.success("Section deleted successfully!");
-      } catch (err: any) {
-        toast.error(err?.message || "Failed to delete section");
-      }
-    }
-  };
-
-  const handleSave = async (formData: FormData) => {
+  const handleCreate = async () => {
     try {
-      const sectionData = {
-        name: formData.get("name") as string,
-        description: formData.get("description") as string,
-        type: formData.get("type") as string,
-        is_active: formData.get("isActive") === "on",
-        sort_order: parseInt(formData.get("sortOrder") as string) || 0,
-      };
+      setSaving(true);
+      const response = await sectionsApi.createSection(formData);
 
-      if (selectedSection) {
-        await updateSectionApi(selectedSection.id, sectionData);
-        toast.success("Section updated successfully!");
-      } else {
-        await createSectionApi(sectionData);
+      if (response.data) {
         toast.success("Section created successfully!");
+        setCreateDialogOpen(false);
+        setFormData({ name: "", short_description: "", is_active: true });
+        loadSections();
       }
-
-      setIsDrawerOpen(false);
-      setSelectedSection(null);
-      loadSections(); // Refresh the list
     } catch (err: any) {
-      toast.error(err?.message || "Failed to save section");
+      console.error("Failed to create section:", err);
+      toast.error(err.message || "Failed to create section");
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleToggleStatus = async (id: number) => {
+  const handleEdit = async () => {
+    if (!selectedSection) return;
+
     try {
-      const section = sections.find((s) => s.id === id);
-      if (section) {
-        await updateSectionApi(id, { is_active: !section.isActive });
-        setSections((prev) =>
-          prev.map((s) => (s.id === id ? { ...s, isActive: !s.isActive } : s))
-        );
-        toast.success("Section status updated successfully!");
+      setSaving(true);
+      const response = await sectionsApi.updateSection(
+        selectedSection.id,
+        formData
+      );
+
+      if (response.data) {
+        toast.success("Section updated successfully!");
+        setEditDialogOpen(false);
+        setSelectedSection(null);
+        setFormData({ name: "", short_description: "", is_active: true });
+        loadSections();
       }
     } catch (err: any) {
-      toast.error(err?.message || "Failed to update section status");
+      console.error("Failed to update section:", err);
+      toast.error(err.message || "Failed to update section");
+    } finally {
+      setSaving(false);
     }
   };
 
-  const getStatusColor = (isActive: boolean) => {
-    return isActive
-      ? "bg-success text-success-foreground"
-      : "bg-muted text-muted-foreground";
+  const handleDelete = async () => {
+    if (!selectedSection) return;
+
+    try {
+      setSaving(true);
+      await sectionsApi.deleteSection(selectedSection.id);
+
+      toast.success("Section deleted successfully!");
+      setDeleteDialogOpen(false);
+      setSelectedSection(null);
+      loadSections();
+    } catch (err: any) {
+      console.error("Failed to delete section:", err);
+      toast.error(err.message || "Failed to delete section");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const uniqueCategories = [...new Set(sections.map((s) => s.category))];
+  const openEditDialog = (section: Section) => {
+    setSelectedSection(section);
+    setFormData({
+      name: section.name,
+      short_description: section.short_description || "",
+      is_active: section.is_active,
+    });
+    setEditDialogOpen(true);
+  };
 
-  const filteredSections = sections.filter((section) => {
-    const matchesSearch =
-      section.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      section.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      section.category.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      !statusFilter ||
-      (statusFilter === "active" && section.isActive) ||
-      (statusFilter === "inactive" && !section.isActive);
-    const matchesCategory =
-      !categoryFilter || section.category === categoryFilter;
-    return matchesSearch && matchesStatus && matchesCategory;
-  });
+  const openDeleteDialog = (section: Section) => {
+    setSelectedSection(section);
+    setDeleteDialogOpen(true);
+  };
 
-  const columns = [
-    {
-      key: "name" as keyof Section,
-      header: "Section",
-      sortable: true,
-      render: (section: Section) => (
-        <div>
-          <div className="font-medium">{section.name}</div>
-          <Badge variant="outline" className="text-xs mt-1">
-            {section.code}
-          </Badge>
-        </div>
-      ),
-    },
-    {
-      key: "description" as keyof Section,
-      header: "Description",
-      render: (section: Section) => (
-        <div className="max-w-xs">
-          <p className="text-sm text-muted-foreground line-clamp-2">
-            {section.description}
-          </p>
-        </div>
-      ),
-    },
-    {
-      key: "category" as keyof Section,
-      header: "Category",
-      sortable: true,
-      render: (section: Section) => (
-        <Badge variant="secondary">{section.category}</Badge>
-      ),
-    },
-    {
-      key: "questions" as keyof Section,
-      header: "Questions",
-      sortable: true,
-      render: (section: Section) => (
-        <div className="font-medium">
-          {(section.questions || 0).toLocaleString()}
-        </div>
-      ),
-    },
-    {
-      key: "isActive" as keyof Section,
-      header: "Status",
-      sortable: true,
-      render: (section: Section) => (
+  const resetForm = () => {
+    setFormData({ name: "", short_description: "", is_active: true });
+    setSelectedSection(null);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  if (loading && sections.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex items-center space-x-2">
-          <Badge
-            variant="secondary"
-            className={getStatusColor(section.isActive)}
-          >
-            {section.isActive ? "Active" : "Inactive"}
-          </Badge>
-          <Switch
-            checked={section.isActive}
-            onCheckedChange={() => handleToggleStatus(section.id)}
-          />
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Loading sections...</span>
         </div>
-      ),
-    },
-    {
-      key: "createdAt" as keyof Section,
-      header: "Created",
-      sortable: true,
-      render: (section: Section) => section.createdAt,
-    },
-  ];
-
-  const actions = [
-    {
-      label: "View Details",
-      icon: <Eye className="h-4 w-4" />,
-      onClick: (section: Section) => console.log("View", section),
-    },
-    {
-      label: "Edit",
-      icon: <Edit className="h-4 w-4" />,
-      onClick: handleEdit,
-    },
-    {
-      label: "Delete",
-      icon: <Trash2 className="h-4 w-4" />,
-      onClick: handleDelete,
-      variant: "destructive" as const,
-    },
-  ];
-
-  const activeCount = sections.filter((s) => s.isActive).length;
-  const inactiveCount = sections.filter((s) => !s.isActive).length;
-  const totalQuestions = sections.reduce((sum, s) => sum + s.questions, 0);
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-hero bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold bg-gradient-hero bg-clip-text text-transparent flex items-center">
+            <BookOpen className="mr-3 h-8 w-8" />
             Sections
           </h1>
           <p className="text-muted-foreground mt-2">
-            Organize content into logical sections for better structure
+            Manage question sections and categories
           </p>
         </div>
-        <Button
-          onClick={handleAdd}
-          className="bg-gradient-primary hover:bg-primary-hover shadow-primary"
-        >
+        <Button onClick={() => setCreateDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Add Section
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="bg-gradient-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Sections
-            </CardTitle>
-            <Grid3X3 className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{sections.length}</div>
-            <p className="text-xs text-success">Content organization</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Active Sections
-            </CardTitle>
-            <CheckCircle className="h-4 w-4 text-success" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activeCount}</div>
-            <p className="text-xs text-success">Currently available</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Inactive Sections
-            </CardTitle>
-            <XCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{inactiveCount}</div>
-            <p className="text-xs text-muted-foreground">Not available</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Questions
-            </CardTitle>
-            <Hash className="h-4 w-4 text-accent" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {(totalQuestions || 0).toLocaleString()}
-            </div>
-            <p className="text-xs text-success">Across all sections</p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Error Alert */}
+      {error && (
+        <Alert className="border-destructive bg-destructive/10">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription className="text-destructive">
+            {error}
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Filters */}
-      <FiltersPanel
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        filters={[
-          {
-            id: "status",
-            label: "Status",
-            value: statusFilter,
-            options: [
-              { label: "All Statuses", value: "all" },
-              { label: "Active", value: "active" },
-              { label: "Inactive", value: "inactive" },
-            ],
-          },
-          {
-            id: "type",
-            label: "Type",
-            value: typeFilter,
-            options: [
-              { label: "All Types", value: "all" },
-              { label: "Multiple Choice", value: "multiple_choice" },
-              { label: "Essay", value: "essay" },
-              { label: "Fill Blank", value: "fill_blank" },
-              { label: "True/False", value: "true_false" },
-            ],
-          },
-        ]}
-        onFilterChange={(filterId, value) => {
-          if (filterId === "status") setStatusFilter(value);
-          if (filterId === "type") setTypeFilter(value);
-        }}
-        onClearFilters={() => {
-          setSearchTerm("");
-          setStatusFilter("all");
-          setTypeFilter("all");
-        }}
-        onExport={() => console.log("Export sections")}
-      />
-
-      {/* Data Table */}
-      <DataTable
-        data={sections}
-        columns={columns}
-        actions={actions}
-        emptyMessage="No sections found. Create your first section to organize content."
-        onAdd={handleAdd}
-        loading={loading}
-        error={error}
-      />
-
-      {/* Add/Edit Drawer */}
-      <SideDrawer
-        open={isDrawerOpen}
-        onOpenChange={setIsDrawerOpen}
-        title={selectedSection ? "Edit Section" : "Create New Section"}
-        description={
-          selectedSection
-            ? "Update the section details"
-            : "Add a new section to organize content"
-        }
-      >
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target as HTMLFormElement);
-            handleSave(formData);
-          }}
-          className="space-y-6"
-        >
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="name">Section Name</Label>
-              <Input
-                id="name"
-                name="name"
-                defaultValue={selectedSection?.name}
-                placeholder="Enter section name"
-                required
-              />
+      <Card className="bg-gradient-card">
+        <CardContent className="p-6">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search sections..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
-
-            <div>
-              <Label htmlFor="code">Code</Label>
-              <Input
-                id="code"
-                name="code"
-                defaultValue={selectedSection?.code}
-                placeholder="Enter section code (e.g., QA, VA)"
-                required
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                name="description"
-                defaultValue={selectedSection?.description}
-                placeholder="Describe this section"
-                rows={3}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="category">Category</Label>
-              <Select
-                name="category"
-                defaultValue={selectedSection?.category || ""}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
+            <div className="flex gap-2">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  {uniqueCategories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="Mathematics">Mathematics</SelectItem>
-                  <SelectItem value="English">English</SelectItem>
-                  <SelectItem value="Reasoning">Reasoning</SelectItem>
-                  <SelectItem value="General Studies">
-                    General Studies
-                  </SelectItem>
-                  <SelectItem value="Science">Science</SelectItem>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select
+                value={perPage.toString()}
+                onValueChange={(value) => setPerPage(Number(value))}
+              >
+                <SelectTrigger className="w-[100px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="15">15</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+          </div>
+        </CardContent>
+      </Card>
 
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="isActive"
-                name="isActive"
-                defaultChecked={selectedSection?.isActive ?? true}
-              />
-              <Label htmlFor="isActive">Active (Available for use)</Label>
-            </div>
+      {/* Sections Table */}
+      <Card className="bg-gradient-card">
+        <CardHeader>
+          <CardTitle>Sections ({meta.total})</CardTitle>
+          <CardDescription>
+            Manage question sections and their properties
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Code</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Questions</TableHead>
+                  <TableHead>Exams</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sections.map((section) => (
+                  <TableRow key={section.id}>
+                    <TableCell className="font-medium">
+                      {section.name}
+                    </TableCell>
+                    <TableCell>
+                      <code className="text-xs bg-muted px-2 py-1 rounded">
+                        {section.code}
+                      </code>
+                    </TableCell>
+                    <TableCell className="max-w-xs truncate">
+                      {section.short_description || "-"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={section.is_active ? "default" : "secondary"}
+                      >
+                        {section.is_active ? "Active" : "Inactive"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-1">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <span>{section.questions_count}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-1">
+                        <BookOpen className="h-4 w-4 text-muted-foreground" />
+                        <span>{section.exams_count}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>{formatDate(section.created_at)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditDialog(section)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openDeleteDialog(section)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
 
-          <div className="flex justify-end space-x-2 pt-4">
+          {/* Pagination */}
+          {meta.last_page > 1 && (
+            <div className="flex items-center justify-between mt-4">
+              <div className="text-sm text-muted-foreground">
+                Showing {(meta.current_page - 1) * meta.per_page + 1} to{" "}
+                {Math.min(meta.current_page * meta.per_page, meta.total)} of{" "}
+                {meta.total} results
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(1, prev - 1))
+                  }
+                  disabled={meta.current_page === 1}
+                >
+                  Previous
+                </Button>
+                <span className="text-sm">
+                  Page {meta.current_page} of {meta.last_page}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(meta.last_page, prev + 1))
+                  }
+                  disabled={meta.current_page === meta.last_page}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Create Section Dialog */}
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Section</DialogTitle>
+            <DialogDescription>
+              Add a new question section to organize your content.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="create-name">Name *</Label>
+              <Input
+                id="create-name"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, name: e.target.value }))
+                }
+                placeholder="Enter section name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-description">Description</Label>
+              <Textarea
+                id="create-description"
+                value={formData.short_description}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    short_description: e.target.value,
+                  }))
+                }
+                placeholder="Enter section description"
+                rows={3}
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="create-active"
+                checked={formData.is_active}
+                onCheckedChange={(checked) =>
+                  setFormData((prev) => ({ ...prev, is_active: checked }))
+                }
+              />
+              <Label htmlFor="create-active">Active</Label>
+            </div>
+          </div>
+          <DialogFooter>
             <Button
-              type="button"
               variant="outline"
-              onClick={() => setIsDrawerOpen(false)}
+              onClick={() => setCreateDialogOpen(false)}
             >
               Cancel
             </Button>
-            <Button type="submit" className="bg-gradient-primary">
-              {selectedSection ? "Update Section" : "Create Section"}
+            <Button onClick={handleCreate} disabled={saving || !formData.name}>
+              {saving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Plus className="mr-2 h-4 w-4" />
+              )}
+              Create Section
             </Button>
-          </div>
-        </form>
-      </SideDrawer>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      {/* Delete Confirmation Drawer */}
-      <ConfirmDrawer
-        open={isDeleteDrawerOpen}
-        onOpenChange={setIsDeleteDrawerOpen}
-        title="Delete Section"
-        description="Are you sure you want to delete this section? All associated questions will be affected."
-        itemName={selectedSection?.name}
-        onConfirm={handleConfirmDelete}
-        confirmText="Delete Section"
-        variant="destructive"
-      />
+      {/* Edit Section Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Section</DialogTitle>
+            <DialogDescription>
+              Update the section information.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Name *</Label>
+              <Input
+                id="edit-name"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, name: e.target.value }))
+                }
+                placeholder="Enter section name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Description</Label>
+              <Textarea
+                id="edit-description"
+                value={formData.short_description}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    short_description: e.target.value,
+                  }))
+                }
+                placeholder="Enter section description"
+                rows={3}
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="edit-active"
+                checked={formData.is_active}
+                onCheckedChange={(checked) =>
+                  setFormData((prev) => ({ ...prev, is_active: checked }))
+                }
+              />
+              <Label htmlFor="edit-active">Active</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEdit} disabled={saving || !formData.name}>
+              {saving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Edit className="mr-2 h-4 w-4" />
+              )}
+              Update Section
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Section Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Section</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{selectedSection?.name}"? This
+              action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <Alert className="border-amber-200 bg-amber-50">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-amber-800">
+              This section cannot be deleted if it has associated questions or
+              exams.
+            </AlertDescription>
+          </Alert>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={saving}
+            >
+              {saving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="mr-2 h-4 w-4" />
+              )}
+              Delete Section
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

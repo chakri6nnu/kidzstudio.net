@@ -8,6 +8,7 @@ import { Layout } from "@/components/Layout";
 import { StudentLayout } from "@/components/StudentLayout";
 import { PublicLayout } from "@/components/PublicLayout";
 import AdminRoute from "@/components/AdminRoute";
+import StudentRoute from "@/components/StudentRoute";
 
 // Import all pages
 import LandingPage from "./pages/LandingPage";
@@ -55,10 +56,14 @@ import StudentPerformanceOverview from "./pages/student/analytics/PerformanceOve
 
 // Import settings pages
 import GeneralSettings from "./pages/admin/settings/GeneralSettings";
+import Sections from "./pages/admin/Sections";
+import Skills from "./pages/admin/Skills";
 import LocalizationSettings from "./pages/admin/settings/LocalizationSettings";
 import EmailSettings from "./pages/admin/settings/EmailSettings";
 import PaymentSettings from "./pages/admin/settings/PaymentSettings";
 import ThemeSettings from "./pages/admin/settings/ThemeSettings";
+import MaintenanceSettings from "./pages/admin/settings/MaintenanceSettings";
+import BillingTaxSettings from "./pages/admin/settings/BillingTaxSettings";
 
 // Import CRUD pages
 import QuestionDetails from "./pages/admin/questions/QuestionDetails";
@@ -83,14 +88,13 @@ import QuestionTypes from "./pages/admin/QuestionTypes";
 import LessonBank from "./pages/admin/LessonBank";
 import VideoBank from "./pages/admin/VideoBank";
 import Tags from "./pages/admin/Tags";
-import Sections from "./pages/admin/Sections";
-import Skills from "./pages/admin/Skills";
 import Topics from "./pages/admin/Topics";
 import Pages from "./pages/admin/Pages";
 import MenuBuilder from "./pages/admin/MenuBuilder";
 import CreatePage from "./pages/admin/pages/CreatePage";
 import EditPage from "./pages/admin/pages/EditPage";
 import ListPagesStatus from "./pages/admin/ListPagesStatus";
+import FileManager from "./pages/admin/FileManager";
 
 const queryClient = new QueryClient();
 
@@ -148,12 +152,11 @@ const App = () => (
             <Route
               path="/file-manager"
               element={
-                <Layout>
-                  <div className="p-6">
-                    <h1 className="text-2xl font-bold">File Manager</h1>
-                    <p>File management system coming soon...</p>
-                  </div>
-                </Layout>
+                <AdminRoute>
+                  <Layout>
+                    <FileManager />
+                  </Layout>
+                </AdminRoute>
               }
             />
 
@@ -551,6 +554,16 @@ const App = () => (
               }
             />
             <Route
+              path="/admin/sections"
+              element={
+                <AdminRoute>
+                  <Layout>
+                    <Sections />
+                  </Layout>
+                </AdminRoute>
+              }
+            />
+            <Route
               path="/admin/localization-settings"
               element={
                 <AdminRoute>
@@ -591,6 +604,26 @@ const App = () => (
               }
             />
             <Route
+              path="/admin/maintenance-settings"
+              element={
+                <AdminRoute>
+                  <Layout>
+                    <MaintenanceSettings />
+                  </Layout>
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/billing-tax-settings"
+              element={
+                <AdminRoute>
+                  <Layout>
+                    <BillingTaxSettings />
+                  </Layout>
+                </AdminRoute>
+              }
+            />
+            <Route
               path="/admin/home-settings"
               element={
                 <AdminRoute>
@@ -611,19 +644,6 @@ const App = () => (
                     <div className="p-6">
                       <h1 className="text-2xl font-bold">Billing & Tax</h1>
                       <p>Tax and billing configuration...</p>
-                    </div>
-                  </Layout>
-                </AdminRoute>
-              }
-            />
-            <Route
-              path="/admin/maintenance-settings"
-              element={
-                <AdminRoute>
-                  <Layout>
-                    <div className="p-6">
-                      <h1 className="text-2xl font-bold">Maintenance</h1>
-                      <p>System maintenance options...</p>
                     </div>
                   </Layout>
                 </AdminRoute>
@@ -672,55 +692,99 @@ const App = () => (
               }
             />
 
+            {/* File Manager Route */}
+            <Route
+              path="/admin/file-manager"
+              element={
+                <AdminRoute>
+                  <Layout>
+                    <FileManager />
+                  </Layout>
+                </AdminRoute>
+              }
+            />
+
             {/* Student Routes */}
             <Route
               path="/student/dashboard"
               element={
-                <StudentLayout>
-                  <StudentDashboard />
-                </StudentLayout>
+                <StudentRoute>
+                  <StudentLayout>
+                    <StudentDashboard />
+                  </StudentLayout>
+                </StudentRoute>
               }
             />
             <Route
               path="/student/practice"
               element={
-                <StudentLayout>
-                  <StudentPractice />
-                </StudentLayout>
+                <StudentRoute>
+                  <StudentLayout>
+                    <StudentPractice />
+                  </StudentLayout>
+                </StudentRoute>
               }
             />
             <Route
               path="/student/quizzes"
               element={
-                <StudentLayout>
-                  <StudentQuizzes />
-                </StudentLayout>
+                <StudentRoute>
+                  <StudentLayout>
+                    <StudentQuizzes />
+                  </StudentLayout>
+                </StudentRoute>
               }
             />
-            <Route path="/student/quizzes/:quizId" element={<TakeQuiz />} />
+            <Route
+              path="/student/quizzes/:quizId"
+              element={
+                <StudentRoute>
+                  <TakeQuiz />
+                </StudentRoute>
+              }
+            />
             <Route
               path="/student/quiz-results/:quizId"
-              element={<QuizResults />}
+              element={
+                <StudentRoute>
+                  <QuizResults />
+                </StudentRoute>
+              }
             />
             <Route
               path="/student/exams"
               element={
-                <StudentLayout>
-                  <StudentExams />
-                </StudentLayout>
+                <StudentRoute>
+                  <StudentLayout>
+                    <StudentExams />
+                  </StudentLayout>
+                </StudentRoute>
               }
             />
-            <Route path="/student/exams/:examId" element={<TakeExam />} />
+            <Route
+              path="/student/exams/:examId"
+              element={
+                <StudentRoute>
+                  <TakeExam />
+                </StudentRoute>
+              }
+            />
             <Route
               path="/student/exam-results/:examId"
-              element={<ExamResults />}
+              element={
+                <StudentRoute>
+                  <ExamResults />
+                </StudentRoute>
+              }
             />
             <Route
               path="/student/progress"
               element={
-                <StudentLayout>
-                  <StudentProgress />
-                </StudentLayout>
+                <StudentRoute>
+                  <StudentLayout>
+                    <StudentProgress />
+                  </StudentLayout>
+                </StudentRoute>
               }
             />
 
@@ -728,53 +792,63 @@ const App = () => (
             <Route
               path="/student/analytics/performance-overview"
               element={
-                <StudentLayout>
-                  <StudentPerformanceOverview />
-                </StudentLayout>
+                <StudentRoute>
+                  <StudentLayout>
+                    <StudentPerformanceOverview />
+                  </StudentLayout>
+                </StudentRoute>
               }
             />
             <Route
               path="/student/results"
               element={
-                <StudentLayout>
-                  <div className="p-6">
-                    <h1 className="text-2xl font-bold">Results</h1>
-                    <p>Your exam and quiz results...</p>
-                  </div>
-                </StudentLayout>
+                <StudentRoute>
+                  <StudentLayout>
+                    <div className="p-6">
+                      <h1 className="text-2xl font-bold">Results</h1>
+                      <p>Your exam and quiz results...</p>
+                    </div>
+                  </StudentLayout>
+                </StudentRoute>
               }
             />
             <Route
               path="/student/schedule"
               element={
-                <StudentLayout>
-                  <div className="p-6">
-                    <h1 className="text-2xl font-bold">Schedule</h1>
-                    <p>Your exam and quiz schedule...</p>
-                  </div>
-                </StudentLayout>
+                <StudentRoute>
+                  <StudentLayout>
+                    <div className="p-6">
+                      <h1 className="text-2xl font-bold">Schedule</h1>
+                      <p>Your exam and quiz schedule...</p>
+                    </div>
+                  </StudentLayout>
+                </StudentRoute>
               }
             />
             <Route
               path="/student/settings"
               element={
-                <StudentLayout>
-                  <div className="p-6">
-                    <h1 className="text-2xl font-bold">Settings</h1>
-                    <p>Account settings and preferences...</p>
-                  </div>
-                </StudentLayout>
+                <StudentRoute>
+                  <StudentLayout>
+                    <div className="p-6">
+                      <h1 className="text-2xl font-bold">Settings</h1>
+                      <p>Account settings and preferences...</p>
+                    </div>
+                  </StudentLayout>
+                </StudentRoute>
               }
             />
             <Route
               path="/student/profile"
               element={
-                <StudentLayout>
-                  <div className="p-6">
-                    <h1 className="text-2xl font-bold">My Profile</h1>
-                    <p>View and edit your profile...</p>
-                  </div>
-                </StudentLayout>
+                <StudentRoute>
+                  <StudentLayout>
+                    <div className="p-6">
+                      <h1 className="text-2xl font-bold">My Profile</h1>
+                      <p>View and edit your profile...</p>
+                    </div>
+                  </StudentLayout>
+                </StudentRoute>
               }
             />
 

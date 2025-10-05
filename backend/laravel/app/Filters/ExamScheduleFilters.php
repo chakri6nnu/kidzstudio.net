@@ -21,4 +21,31 @@ class ExamScheduleFilters extends QueryFilter
     {
         return $this->builder->where('status', $query);
     }
+
+    function schedule_type($query)
+    {
+        return $this->builder->where('schedule_type', $query);
+    }
+
+    function date_from($query)
+    {
+        if($query) {
+            return $this->builder->where(function($q) use ($query) {
+                $q->whereDate('start_date', '>=', $query)
+                  ->orWhereDate('end_date', '>=', $query);
+            });
+        }
+        return null;
+    }
+
+    function date_to($query)
+    {
+        if($query) {
+            return $this->builder->where(function($q) use ($query) {
+                $q->whereDate('end_date', '<=', $query)
+                  ->orWhereDate('start_date', '<=', $query);
+            });
+        }
+        return null;
+    }
 }

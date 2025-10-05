@@ -7,6 +7,7 @@ use App\Models\Skill;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
 class SkillController extends Controller
 {
@@ -21,7 +22,7 @@ class SkillController extends Controller
         if ($request->has('search') && $request->search) {
             $query->where(function ($q) use ($request) {
                 $q->where('name', 'like', '%' . $request->search . '%')
-                  ->orWhere('description', 'like', '%' . $request->search . '%');
+                  ->orWhere('short_description', 'like', '%' . $request->search . '%');
             });
         }
 
@@ -30,22 +31,23 @@ class SkillController extends Controller
             $query->where('is_active', $request->status === 'active');
         }
 
-        // Level filter
-        if ($request->has('level') && $request->level !== 'all') {
-            $query->where('level', $request->level);
-        }
-
-        // Category filter
-        if ($request->has('category_id') && $request->category_id !== 'all') {
-            $query->where('category_id', $request->category_id);
+        // Section filter
+        if ($request->has('section_id') && $request->section_id !== 'all') {
+            $query->where('section_id', $request->section_id);
         }
 
         // Pagination
         $perPage = $request->get('per_page', 15);
-        $skills = $query->with(['category'])
-                        ->withCount(['questions', 'exams'])
+        $skills = $query->with(['section'])
+                        ->withCount(['questions'])
                         ->orderBy('created_at', 'desc')
                         ->paginate($perPage);
+
+        // Add exams_count manually for each skill
+        $skills->getCollection()->transform(function ($skill) {
+            $skill->exams_count = 0; // Set default value
+            return $skill;
+        });
 
         return response()->json([
             'data' => $skills->items(),
@@ -65,11 +67,9 @@ class SkillController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|unique:skills,name',
-            'description' => 'nullable|string|max:1000',
-            'level' => 'required|string|in:beginner,intermediate,advanced,expert',
-            'category_id' => 'required|integer|exists:categories,id',
+            'short_description' => 'nullable|string|max:255',
+            'section_id' => 'required|integer|exists:sections,id',
             'is_active' => 'boolean',
-            'sort_order' => 'nullable|integer|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -80,8 +80,9 @@ class SkillController extends Controller
         }
 
         $skill = Skill::create($request->all());
-        $skill->load(['category']);
-        $skill->loadCount(['questions', 'exams']);
+        $skill->load(['section']);
+        $skill->loadCount(['questions']);
+        $skill->exams_count = 0; // Set default value
 
         return response()->json([
             'message' => 'Skill created successfully',
@@ -94,8 +95,9 @@ class SkillController extends Controller
      */
     public function show(Skill $skill): JsonResponse
     {
-        $skill->load(['category']);
-        $skill->loadCount(['questions', 'exams']);
+        $skill->load(['section']);
+        $skill->loadCount(['questions']);
+        $skill->exams_count = 0; // Set default value
         
         return response()->json([
             'data' => $skill,
@@ -109,11 +111,9 @@ class SkillController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|unique:skills,name,' . $skill->id,
-            'description' => 'nullable|string|max:1000',
-            'level' => 'required|string|in:beginner,intermediate,advanced,expert',
-            'category_id' => 'required|integer|exists:categories,id',
+            'short_description' => 'nullable|string|max:255',
+            'section_id' => 'required|integer|exists:sections,id',
             'is_active' => 'boolean',
-            'sort_order' => 'nullable|integer|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -124,8 +124,9 @@ class SkillController extends Controller
         }
 
         $skill->update($request->all());
-        $skill->load(['category']);
-        $skill->loadCount(['questions', 'exams']);
+        $skill->load(['section']);
+        $skill->loadCount(['questions']);
+        $skill->exams_count = 0; // Set default value
 
         return response()->json([
             'message' => 'Skill updated successfully',
@@ -145,7 +146,11 @@ class SkillController extends Controller
             ], 422);
         }
 
-        if ($skill->exams()->count() > 0) {
+        $hasExams = \App\Models\Exam::whereHas('questions', function ($q) use ($skill) {
+            $q->where('skill_id', $skill->id);
+        })->exists();
+
+        if ($hasExams) {
             return response()->json([
                 'message' => 'Cannot delete skill with exams',
             ], 422);

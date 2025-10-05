@@ -1,10 +1,16 @@
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -12,37 +18,68 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { 
-  CreditCard, 
-  Save, 
-  RotateCcw, 
-  DollarSign, 
-  Building, 
-  Eye, 
-  EyeOff,
+import {
+  CreditCard,
+  DollarSign,
+  Settings,
+  Save,
+  RotateCcw,
+  Loader2,
+  AlertCircle,
   CheckCircle,
-  AlertTriangle
+  Shield,
+  Building2,
+  Zap,
 } from "lucide-react";
+import { toast } from "sonner";
+import { paymentApi } from "@/lib/api";
 
 export default function PaymentSettings() {
-  const [formData, setFormData] = useState({
-    // Main Payment Settings
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState<string | null>(null);
+  const [saved, setSaved] = useState<string | null>(null);
+
+  // General payment settings
+  const [paymentData, setPaymentData] = useState({
     default_payment_processor: "stripe",
     default_currency: "USD",
     currency_symbol: "$",
     currency_symbol_position: "before",
-    
-    // Gateway Toggles
-    enable_bank: true,
-    enable_paypal: true,
-    enable_stripe: true,
+    enable_bank: false,
+    enable_paypal: false,
+    enable_stripe: false,
     enable_razorpay: false,
-    
-    // Bank Transfer Settings
+  });
+
+  // Stripe settings
+  const [stripeData, setStripeData] = useState({
+    api_key: "",
+    secret_key: "",
+    webhook_url: "",
+    webhook_secret: "",
+  });
+
+  // Razorpay settings
+  const [razorpayData, setRazorpayData] = useState({
+    key_id: "",
+    key_secret: "",
+    webhook_url: "",
+    webhook_secret: "",
+  });
+
+  // PayPal settings
+  const [paypalData, setPaypalData] = useState({
+    client_id: "",
+    secret: "",
+    webhook_url: "",
+  });
+
+  // Bank settings
+  const [bankData, setBankData] = useState({
     bank_name: "",
     account_owner: "",
     account_number: "",
@@ -50,106 +87,151 @@ export default function PaymentSettings() {
     routing_number: "",
     bic_swift: "",
     other_details: "",
-    
-    // Razorpay Settings
-    razorpay_key_id: "",
-    razorpay_key_secret: "",
-    razorpay_webhook_secret: "",
-    
-    // PayPal Settings
-    paypal_client_id: "",
-    paypal_secret: "",
-    
-    // Stripe Settings
-    stripe_api_key: "",
-    stripe_secret_key: "",
-    stripe_webhook_secret: "",
   });
 
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [showSecrets, setShowSecrets] = useState({
-    razorpay_secret: false,
-    razorpay_webhook: false,
-    paypal_secret: false,
-    stripe_secret: false,
-    stripe_webhook: false,
-  });
+  // Available options
+  const [currencies, setCurrencies] = useState<
+    Array<{ code: string; name: string; symbol: string }>
+  >([]);
+  const [paymentProcessors, setPaymentProcessors] = useState<
+    Array<{ value: string; label: string }>
+  >([]);
 
-  const currencies = [
-    { code: "USD", name: "US Dollar", symbol: "$" },
-    { code: "EUR", name: "Euro", symbol: "€" },
-    { code: "GBP", name: "British Pound", symbol: "£" },
-    { code: "INR", name: "Indian Rupee", symbol: "₹" },
-    { code: "CAD", name: "Canadian Dollar", symbol: "C$" },
-    { code: "AUD", name: "Australian Dollar", symbol: "A$" },
-  ];
+  // Load payment settings
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await paymentApi.getSettings();
 
-  const processors = [
-    { id: "stripe", name: "Stripe", popular: true },
-    { id: "paypal", name: "PayPal", popular: true },
-    { id: "razorpay", name: "Razorpay", popular: false },
-    { id: "bank", name: "Bank Transfer", popular: false },
-  ];
+        setPaymentData(response.payment);
+        setStripeData(response.stripe);
+        setRazorpayData(response.razorpay);
+        setPaypalData(response.paypal);
+        setBankData(response.bank);
+        setCurrencies(response.currencies);
+        setPaymentProcessors(response.payment_processors);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to load payment settings"
+        );
+        toast.error("Failed to load payment settings");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const handleSave = async () => {
-    setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    }, 1000);
+    loadSettings();
+  }, []);
+
+  const handleGeneralSave = async () => {
+    setSaving("general");
+    try {
+      await paymentApi.updateGeneral(paymentData);
+      setSaved("general");
+      toast.success("Payment settings updated successfully!");
+      setTimeout(() => setSaved(null), 3000);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to update payment settings"
+      );
+    } finally {
+      setSaving(null);
+    }
   };
 
-  const handleReset = () => {
-    setFormData({
+  const handleStripeSave = async () => {
+    setSaving("stripe");
+    try {
+      await paymentApi.updateStripe(stripeData);
+      setSaved("stripe");
+      toast.success("Stripe settings updated successfully!");
+      setTimeout(() => setSaved(null), 3000);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to update Stripe settings"
+      );
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const handleRazorpaySave = async () => {
+    setSaving("razorpay");
+    try {
+      await paymentApi.updateRazorpay(razorpayData);
+      setSaved("razorpay");
+      toast.success("Razorpay settings updated successfully!");
+      setTimeout(() => setSaved(null), 3000);
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Failed to update Razorpay settings"
+      );
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const handlePayPalSave = async () => {
+    setSaving("paypal");
+    try {
+      await paymentApi.updatePayPal(paypalData);
+      setSaved("paypal");
+      toast.success("PayPal settings updated successfully!");
+      setTimeout(() => setSaved(null), 3000);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to update PayPal settings"
+      );
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const handleBankSave = async () => {
+    setSaving("bank");
+    try {
+      await paymentApi.updateBank(bankData);
+      setSaved("bank");
+      toast.success("Bank settings updated successfully!");
+      setTimeout(() => setSaved(null), 3000);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to update Bank settings"
+      );
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const handleGeneralReset = () => {
+    setPaymentData({
       default_payment_processor: "stripe",
       default_currency: "USD",
       currency_symbol: "$",
       currency_symbol_position: "before",
-      enable_bank: true,
-      enable_paypal: true,
-      enable_stripe: true,
+      enable_bank: false,
+      enable_paypal: false,
+      enable_stripe: false,
       enable_razorpay: false,
-      bank_name: "",
-      account_owner: "",
-      account_number: "",
-      iban: "",
-      routing_number: "",
-      bic_swift: "",
-      other_details: "",
-      razorpay_key_id: "",
-      razorpay_key_secret: "",
-      razorpay_webhook_secret: "",
-      paypal_client_id: "",
-      paypal_secret: "",
-      stripe_api_key: "",
-      stripe_secret_key: "",
-      stripe_webhook_secret: "",
     });
   };
 
-  const toggleSecretVisibility = (field: string) => {
-    setShowSecrets(prev => ({ ...prev, [field]: !prev[field] }));
-  };
-
-  const getGatewayStatus = (gateway: string) => {
-    switch (gateway) {
-      case 'stripe':
-        return formData.enable_stripe && formData.stripe_api_key && formData.stripe_secret_key;
-      case 'paypal':
-        return formData.enable_paypal && formData.paypal_client_id && formData.paypal_secret;
-      case 'razorpay':
-        return formData.enable_razorpay && formData.razorpay_key_id && formData.razorpay_key_secret;
-      case 'bank':
-        return formData.enable_bank && formData.bank_name && formData.account_number;
-      default:
-        return false;
-    }
-  };
+  if (loading) {
+    return (
+      <div className="p-6 space-y-6 max-w-7xl">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 space-y-6 max-w-6xl">
+    <div className="p-6 space-y-6 max-w-7xl">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -158,617 +240,662 @@ export default function PaymentSettings() {
             Payment Settings
           </h1>
           <p className="text-muted-foreground mt-2">
-            Configure payment gateways and billing preferences
+            Configure payment gateways and processing settings
           </p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" onClick={handleReset}>
-            <RotateCcw className="mr-2 h-4 w-4" />
-            Reset
-          </Button>
-          <Button onClick={handleSave} disabled={saving} className="bg-gradient-primary">
-            <Save className="mr-2 h-4 w-4" />
-            {saving ? "Saving..." : "Save Settings"}
-          </Button>
         </div>
       </div>
 
-      {saved && (
-        <Alert className="border-success bg-success/10">
-          <AlertDescription className="text-success">
-            Payment settings saved successfully!
+      {error && (
+        <Alert className="border-destructive bg-destructive/10">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="text-destructive">
+            {error}
           </AlertDescription>
         </Alert>
       )}
 
-      <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="stripe">Stripe</TabsTrigger>
-          <TabsTrigger value="paypal">PayPal</TabsTrigger>
-          <TabsTrigger value="razorpay">Razorpay</TabsTrigger>
-          <TabsTrigger value="bank">Bank Transfer</TabsTrigger>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-        </TabsList>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* General Payment Settings */}
+        <Card className="bg-gradient-card">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Settings className="mr-2 h-5 w-5" />
+              General Settings
+            </CardTitle>
+            <CardDescription>
+              Configure default payment processor and currency settings
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="default_payment_processor">
+                Default Payment Processor
+              </Label>
+              <Select
+                value={paymentData.default_payment_processor}
+                onValueChange={(value) =>
+                  setPaymentData((prev) => ({
+                    ...prev,
+                    default_payment_processor: value,
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select processor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {paymentProcessors.map((processor) => (
+                    <SelectItem key={processor.value} value={processor.value}>
+                      {processor.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        <TabsContent value="general" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Currency Settings */}
-            <Card className="bg-gradient-card">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <DollarSign className="mr-2 h-5 w-5" />
-                  Currency Settings
-                </CardTitle>
-                <CardDescription>
-                  Configure your default currency and display preferences
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="default_currency">Default Currency *</Label>
-                  <Select 
-                    value={formData.default_currency} 
-                    onValueChange={(value) => {
-                      const currency = currencies.find(c => c.code === value);
-                      setFormData(prev => ({ 
-                        ...prev, 
-                        default_currency: value,
-                        currency_symbol: currency?.symbol || "$"
-                      }));
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {currencies.map(currency => (
-                        <SelectItem key={currency.code} value={currency.code}>
-                          {currency.symbol} {currency.code} - {currency.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="default_currency">Default Currency</Label>
+                <Select
+                  value={paymentData.default_currency}
+                  onValueChange={(value) =>
+                    setPaymentData((prev) => ({
+                      ...prev,
+                      default_currency: value,
+                      currency_symbol:
+                        currencies.find((c) => c.code === value)?.symbol || "$",
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {currencies.map((currency) => (
+                      <SelectItem key={currency.code} value={currency.code}>
+                        {currency.code} - {currency.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="currency_symbol">Currency Symbol *</Label>
-                  <Input
-                    id="currency_symbol"
-                    value={formData.currency_symbol}
-                    onChange={(e) => setFormData(prev => ({ ...prev, currency_symbol: e.target.value }))}
-                    placeholder="$"
-                    maxLength={10}
-                    required
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="currency_symbol">Currency Symbol</Label>
+                <Input
+                  id="currency_symbol"
+                  value={paymentData.currency_symbol}
+                  onChange={(e) =>
+                    setPaymentData((prev) => ({
+                      ...prev,
+                      currency_symbol: e.target.value,
+                    }))
+                  }
+                  placeholder="e.g., $"
+                />
+              </div>
+            </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="currency_symbol_position">Symbol Position</Label>
-                  <Select 
-                    value={formData.currency_symbol_position} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, currency_symbol_position: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="before">Before Amount ($100)</SelectItem>
-                      <SelectItem value="after">After Amount (100$)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+            <div className="space-y-2">
+              <Label htmlFor="currency_symbol_position">Symbol Position</Label>
+              <Select
+                value={paymentData.currency_symbol_position}
+                onValueChange={(value) =>
+                  setPaymentData((prev) => ({
+                    ...prev,
+                    currency_symbol_position: value,
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select position" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="before">Before amount ($100)</SelectItem>
+                  <SelectItem value="after">After amount (100$)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-                <div className="bg-muted/50 p-3 rounded-lg">
-                  <p className="text-sm font-medium">Preview:</p>
-                  <p className="text-lg">
-                    {formData.currency_symbol_position === 'before' 
-                      ? `${formData.currency_symbol}99.99`
-                      : `99.99${formData.currency_symbol}`
-                    }
+            <Separator />
+
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium">Enable Payment Methods</h4>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label htmlFor="enable_stripe">Stripe</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Credit card payments via Stripe
                   </p>
                 </div>
-              </CardContent>
-            </Card>
+                <Switch
+                  id="enable_stripe"
+                  checked={paymentData.enable_stripe}
+                  onCheckedChange={(checked) =>
+                    setPaymentData((prev) => ({
+                      ...prev,
+                      enable_stripe: checked,
+                    }))
+                  }
+                />
+              </div>
 
-            {/* Payment Processor Settings */}
-            <Card className="bg-gradient-card">
-              <CardHeader>
-                <CardTitle>Payment Processors</CardTitle>
-                <CardDescription>
-                  Select default processor and enable/disable gateways
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="default_processor">Default Processor *</Label>
-                  <Select 
-                    value={formData.default_payment_processor} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, default_payment_processor: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {processors.map(processor => (
-                        <SelectItem key={processor.id} value={processor.id}>
-                          <div className="flex items-center space-x-2">
-                            <span>{processor.name}</span>
-                            {processor.popular && (
-                              <Badge variant="secondary" className="text-xs">Popular</Badge>
-                            )}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label htmlFor="enable_razorpay">Razorpay</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Payment gateway for India
+                  </p>
                 </div>
+                <Switch
+                  id="enable_razorpay"
+                  checked={paymentData.enable_razorpay}
+                  onCheckedChange={(checked) =>
+                    setPaymentData((prev) => ({
+                      ...prev,
+                      enable_razorpay: checked,
+                    }))
+                  }
+                />
+              </div>
 
-                <Separator />
-
-                <div className="space-y-4">
-                  <Label>Enabled Gateways</Label>
-                  
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <Label htmlFor="enable_stripe">Stripe</Label>
-                        {getGatewayStatus('stripe') && (
-                          <CheckCircle className="h-4 w-4 text-success" />
-                        )}
-                      </div>
-                      <Switch
-                        id="enable_stripe"
-                        checked={formData.enable_stripe}
-                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, enable_stripe: checked }))}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <Label htmlFor="enable_paypal">PayPal</Label>
-                        {getGatewayStatus('paypal') && (
-                          <CheckCircle className="h-4 w-4 text-success" />
-                        )}
-                      </div>
-                      <Switch
-                        id="enable_paypal"
-                        checked={formData.enable_paypal}
-                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, enable_paypal: checked }))}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <Label htmlFor="enable_razorpay">Razorpay</Label>
-                        {getGatewayStatus('razorpay') && (
-                          <CheckCircle className="h-4 w-4 text-success" />
-                        )}
-                      </div>
-                      <Switch
-                        id="enable_razorpay"
-                        checked={formData.enable_razorpay}
-                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, enable_razorpay: checked }))}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <Label htmlFor="enable_bank">Bank Transfer</Label>
-                        {getGatewayStatus('bank') && (
-                          <CheckCircle className="h-4 w-4 text-success" />
-                        )}
-                      </div>
-                      <Switch
-                        id="enable_bank"
-                        checked={formData.enable_bank}
-                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, enable_bank: checked }))}
-                      />
-                    </div>
-                  </div>
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label htmlFor="enable_paypal">PayPal</Label>
+                  <p className="text-sm text-muted-foreground">
+                    PayPal payment integration
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
+                <Switch
+                  id="enable_paypal"
+                  checked={paymentData.enable_paypal}
+                  onCheckedChange={(checked) =>
+                    setPaymentData((prev) => ({
+                      ...prev,
+                      enable_paypal: checked,
+                    }))
+                  }
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label htmlFor="enable_bank">Bank Transfer</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Manual bank transfer payments
+                  </p>
+                </div>
+                <Switch
+                  id="enable_bank"
+                  checked={paymentData.enable_bank}
+                  onCheckedChange={(checked) =>
+                    setPaymentData((prev) => ({
+                      ...prev,
+                      enable_bank: checked,
+                    }))
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end space-x-2">
+              <Button variant="outline" onClick={handleGeneralReset}>
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Reset
+              </Button>
+              <Button
+                onClick={handleGeneralSave}
+                disabled={saving === "general"}
+                className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 text-primary-foreground h-10 px-4 py-2 bg-gradient-primary hover:bg-primary-hover shadow-primary"
+              >
+                {saving === "general" ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="mr-2 h-4 w-4" />
+                )}
+                Save General Settings
+              </Button>
+            </div>
+
+            {saved === "general" && (
+              <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
+                <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                <AlertDescription className="text-green-800 dark:text-green-200">
+                  General settings saved successfully!
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Stripe Settings */}
+        <Card className="bg-gradient-card">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Zap className="mr-2 h-5 w-5" />
+              Stripe Settings
+            </CardTitle>
+            <CardDescription>
+              Configure Stripe payment gateway credentials
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="stripe_api_key">API Key</Label>
+              <Input
+                id="stripe_api_key"
+                type="password"
+                value={stripeData.api_key}
+                onChange={(e) =>
+                  setStripeData((prev) => ({
+                    ...prev,
+                    api_key: e.target.value,
+                  }))
+                }
+                placeholder="pk_test_..."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="stripe_secret_key">Secret Key</Label>
+              <Input
+                id="stripe_secret_key"
+                type="password"
+                value={stripeData.secret_key}
+                onChange={(e) =>
+                  setStripeData((prev) => ({
+                    ...prev,
+                    secret_key: e.target.value,
+                  }))
+                }
+                placeholder="sk_test_..."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="stripe_webhook_url">Webhook URL</Label>
+              <Input
+                id="stripe_webhook_url"
+                value={stripeData.webhook_url}
+                onChange={(e) =>
+                  setStripeData((prev) => ({
+                    ...prev,
+                    webhook_url: e.target.value,
+                  }))
+                }
+                placeholder="https://yourdomain.com/webhook/stripe"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="stripe_webhook_secret">Webhook Secret</Label>
+              <Input
+                id="stripe_webhook_secret"
+                type="password"
+                value={stripeData.webhook_secret}
+                onChange={(e) =>
+                  setStripeData((prev) => ({
+                    ...prev,
+                    webhook_secret: e.target.value,
+                  }))
+                }
+                placeholder="whsec_..."
+              />
+            </div>
+
+            <Button
+              onClick={handleStripeSave}
+              disabled={saving === "stripe"}
+              className="w-full inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 text-primary-foreground h-10 px-4 py-2 bg-gradient-primary hover:bg-primary-hover shadow-primary"
+            >
+              {saving === "stripe" ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              Save Stripe Settings
+            </Button>
+
+            {saved === "stripe" && (
+              <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
+                <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                <AlertDescription className="text-green-800 dark:text-green-200">
+                  Stripe settings saved successfully!
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Razorpay Settings */}
+        <Card className="bg-gradient-card">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Shield className="mr-2 h-5 w-5" />
+              Razorpay Settings
+            </CardTitle>
+            <CardDescription>
+              Configure Razorpay payment gateway credentials
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="razorpay_key_id">Key ID</Label>
+              <Input
+                id="razorpay_key_id"
+                value={razorpayData.key_id}
+                onChange={(e) =>
+                  setRazorpayData((prev) => ({
+                    ...prev,
+                    key_id: e.target.value,
+                  }))
+                }
+                placeholder="rzp_test_..."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="razorpay_key_secret">Key Secret</Label>
+              <Input
+                id="razorpay_key_secret"
+                type="password"
+                value={razorpayData.key_secret}
+                onChange={(e) =>
+                  setRazorpayData((prev) => ({
+                    ...prev,
+                    key_secret: e.target.value,
+                  }))
+                }
+                placeholder="Enter key secret"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="razorpay_webhook_url">Webhook URL</Label>
+              <Input
+                id="razorpay_webhook_url"
+                value={razorpayData.webhook_url}
+                onChange={(e) =>
+                  setRazorpayData((prev) => ({
+                    ...prev,
+                    webhook_url: e.target.value,
+                  }))
+                }
+                placeholder="https://yourdomain.com/webhook/razorpay"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="razorpay_webhook_secret">Webhook Secret</Label>
+              <Input
+                id="razorpay_webhook_secret"
+                type="password"
+                value={razorpayData.webhook_secret}
+                onChange={(e) =>
+                  setRazorpayData((prev) => ({
+                    ...prev,
+                    webhook_secret: e.target.value,
+                  }))
+                }
+                placeholder="Enter webhook secret"
+              />
+            </div>
+
+            <Button
+              onClick={handleRazorpaySave}
+              disabled={saving === "razorpay"}
+              className="w-full inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 text-primary-foreground h-10 px-4 py-2 bg-gradient-primary hover:bg-primary-hover shadow-primary"
+            >
+              {saving === "razorpay" ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              Save Razorpay Settings
+            </Button>
+
+            {saved === "razorpay" && (
+              <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
+                <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                <AlertDescription className="text-green-800 dark:text-green-200">
+                  Razorpay settings saved successfully!
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* PayPal Settings */}
+        <Card className="bg-gradient-card">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <DollarSign className="mr-2 h-5 w-5" />
+              PayPal Settings
+            </CardTitle>
+            <CardDescription>
+              Configure PayPal payment gateway credentials
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="paypal_client_id">Client ID</Label>
+              <Input
+                id="paypal_client_id"
+                value={paypalData.client_id}
+                onChange={(e) =>
+                  setPaypalData((prev) => ({
+                    ...prev,
+                    client_id: e.target.value,
+                  }))
+                }
+                placeholder="Enter PayPal Client ID"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="paypal_secret">Secret</Label>
+              <Input
+                id="paypal_secret"
+                type="password"
+                value={paypalData.secret}
+                onChange={(e) =>
+                  setPaypalData((prev) => ({
+                    ...prev,
+                    secret: e.target.value,
+                  }))
+                }
+                placeholder="Enter PayPal Secret"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="paypal_webhook_url">Webhook URL</Label>
+              <Input
+                id="paypal_webhook_url"
+                value={paypalData.webhook_url}
+                onChange={(e) =>
+                  setPaypalData((prev) => ({
+                    ...prev,
+                    webhook_url: e.target.value,
+                  }))
+                }
+                placeholder="https://yourdomain.com/webhook/paypal"
+              />
+            </div>
+
+            <Button
+              onClick={handlePayPalSave}
+              disabled={saving === "paypal"}
+              className="w-full inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 text-primary-foreground h-10 px-4 py-2 bg-gradient-primary hover:bg-primary-hover shadow-primary"
+            >
+              {saving === "paypal" ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              Save PayPal Settings
+            </Button>
+
+            {saved === "paypal" && (
+              <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
+                <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                <AlertDescription className="text-green-800 dark:text-green-200">
+                  PayPal settings saved successfully!
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Bank Transfer Settings */}
+      <Card className="bg-gradient-card">
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Building2 className="mr-2 h-5 w-5" />
+            Bank Transfer Settings
+          </CardTitle>
+          <CardDescription>
+            Configure bank account details for manual transfers
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="bank_name">Bank Name</Label>
+              <Input
+                id="bank_name"
+                value={bankData.bank_name}
+                onChange={(e) =>
+                  setBankData((prev) => ({
+                    ...prev,
+                    bank_name: e.target.value,
+                  }))
+                }
+                placeholder="e.g., Chase Bank"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="account_owner">Account Owner</Label>
+              <Input
+                id="account_owner"
+                value={bankData.account_owner}
+                onChange={(e) =>
+                  setBankData((prev) => ({
+                    ...prev,
+                    account_owner: e.target.value,
+                  }))
+                }
+                placeholder="Account holder name"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="account_number">Account Number</Label>
+              <Input
+                id="account_number"
+                value={bankData.account_number}
+                onChange={(e) =>
+                  setBankData((prev) => ({
+                    ...prev,
+                    account_number: e.target.value,
+                  }))
+                }
+                placeholder="Account number"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="iban">IBAN</Label>
+              <Input
+                id="iban"
+                value={bankData.iban}
+                onChange={(e) =>
+                  setBankData((prev) => ({
+                    ...prev,
+                    iban: e.target.value,
+                  }))
+                }
+                placeholder="International Bank Account Number"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="routing_number">Routing Number</Label>
+              <Input
+                id="routing_number"
+                value={bankData.routing_number}
+                onChange={(e) =>
+                  setBankData((prev) => ({
+                    ...prev,
+                    routing_number: e.target.value,
+                  }))
+                }
+                placeholder="Bank routing number"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="bic_swift">BIC/SWIFT Code</Label>
+              <Input
+                id="bic_swift"
+                value={bankData.bic_swift}
+                onChange={(e) =>
+                  setBankData((prev) => ({
+                    ...prev,
+                    bic_swift: e.target.value,
+                  }))
+                }
+                placeholder="Bank identifier code"
+              />
+            </div>
           </div>
-        </TabsContent>
 
-        <TabsContent value="stripe" className="space-y-6">
-          <Card className="bg-gradient-card">
-            <CardHeader>
-              <CardTitle>Stripe Configuration</CardTitle>
-              <CardDescription>
-                Configure your Stripe payment gateway settings
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between mb-4">
-                <Label>Stripe Gateway</Label>
-                <Switch
-                  checked={formData.enable_stripe}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, enable_stripe: checked }))}
-                />
-              </div>
-
-              {formData.enable_stripe && (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="stripe_api_key">Publishable Key *</Label>
-                    <Input
-                      id="stripe_api_key"
-                      value={formData.stripe_api_key}
-                      onChange={(e) => setFormData(prev => ({ ...prev, stripe_api_key: e.target.value }))}
-                      placeholder="pk_test_..."
-                      maxLength={5000}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="stripe_secret_key">Secret Key *</Label>
-                    <div className="relative">
-                      <Input
-                        id="stripe_secret_key"
-                        type={showSecrets.stripe_secret ? "text" : "password"}
-                        value={formData.stripe_secret_key}
-                        onChange={(e) => setFormData(prev => ({ ...prev, stripe_secret_key: e.target.value }))}
-                        placeholder="sk_test_..."
-                        maxLength={5000}
-                        required
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3"
-                        onClick={() => toggleSecretVisibility('stripe_secret')}
-                      >
-                        {showSecrets.stripe_secret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="stripe_webhook_secret">Webhook Secret</Label>
-                    <div className="relative">
-                      <Input
-                        id="stripe_webhook_secret"
-                        type={showSecrets.stripe_webhook ? "text" : "password"}
-                        value={formData.stripe_webhook_secret}
-                        onChange={(e) => setFormData(prev => ({ ...prev, stripe_webhook_secret: e.target.value }))}
-                        placeholder="whsec_..."
-                        maxLength={5000}
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3"
-                        onClick={() => toggleSecretVisibility('stripe_webhook')}
-                      >
-                        {showSecrets.stripe_webhook ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
-
-                  <Alert>
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>
-                      Keep your secret keys secure and never share them publicly. Use test keys for development.
-                    </AlertDescription>
-                  </Alert>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="paypal" className="space-y-6">
-          <Card className="bg-gradient-card">
-            <CardHeader>
-              <CardTitle>PayPal Configuration</CardTitle>
-              <CardDescription>
-                Configure your PayPal payment gateway settings
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between mb-4">
-                <Label>PayPal Gateway</Label>
-                <Switch
-                  checked={formData.enable_paypal}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, enable_paypal: checked }))}
-                />
-              </div>
-
-              {formData.enable_paypal && (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="paypal_client_id">Client ID *</Label>
-                    <Input
-                      id="paypal_client_id"
-                      value={formData.paypal_client_id}
-                      onChange={(e) => setFormData(prev => ({ ...prev, paypal_client_id: e.target.value }))}
-                      placeholder="PayPal Client ID"
-                      maxLength={5000}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="paypal_secret">Client Secret *</Label>
-                    <div className="relative">
-                      <Input
-                        id="paypal_secret"
-                        type={showSecrets.paypal_secret ? "text" : "password"}
-                        value={formData.paypal_secret}
-                        onChange={(e) => setFormData(prev => ({ ...prev, paypal_secret: e.target.value }))}
-                        placeholder="PayPal Client Secret"
-                        maxLength={5000}
-                        required
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3"
-                        onClick={() => toggleSecretVisibility('paypal_secret')}
-                      >
-                        {showSecrets.paypal_secret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="razorpay" className="space-y-6">
-          <Card className="bg-gradient-card">
-            <CardHeader>
-              <CardTitle>Razorpay Configuration</CardTitle>
-              <CardDescription>
-                Configure your Razorpay payment gateway settings
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between mb-4">
-                <Label>Razorpay Gateway</Label>
-                <Switch
-                  checked={formData.enable_razorpay}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, enable_razorpay: checked }))}
-                />
-              </div>
-
-              {formData.enable_razorpay && (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="razorpay_key_id">Key ID *</Label>
-                    <Input
-                      id="razorpay_key_id"
-                      value={formData.razorpay_key_id}
-                      onChange={(e) => setFormData(prev => ({ ...prev, razorpay_key_id: e.target.value }))}
-                      placeholder="rzp_test_..."
-                      maxLength={1000}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="razorpay_key_secret">Key Secret *</Label>
-                    <div className="relative">
-                      <Input
-                        id="razorpay_key_secret"
-                        type={showSecrets.razorpay_secret ? "text" : "password"}
-                        value={formData.razorpay_key_secret}
-                        onChange={(e) => setFormData(prev => ({ ...prev, razorpay_key_secret: e.target.value }))}
-                        placeholder="Razorpay Key Secret"
-                        maxLength={1000}
-                        required
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3"
-                        onClick={() => toggleSecretVisibility('razorpay_secret')}
-                      >
-                        {showSecrets.razorpay_secret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="razorpay_webhook_secret">Webhook Secret *</Label>
-                    <div className="relative">
-                      <Input
-                        id="razorpay_webhook_secret"
-                        type={showSecrets.razorpay_webhook ? "text" : "password"}
-                        value={formData.razorpay_webhook_secret}
-                        onChange={(e) => setFormData(prev => ({ ...prev, razorpay_webhook_secret: e.target.value }))}
-                        placeholder="Webhook Secret"
-                        maxLength={1000}
-                        required
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3"
-                        onClick={() => toggleSecretVisibility('razorpay_webhook')}
-                      >
-                        {showSecrets.razorpay_webhook ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="bank" className="space-y-6">
-          <Card className="bg-gradient-card">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Building className="mr-2 h-5 w-5" />
-                Bank Transfer Configuration
-              </CardTitle>
-              <CardDescription>
-                Configure bank transfer details for manual payments
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between mb-4">
-                <Label>Bank Transfer</Label>
-                <Switch
-                  checked={formData.enable_bank}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, enable_bank: checked }))}
-                />
-              </div>
-
-              {formData.enable_bank && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="bank_name">Bank Name *</Label>
-                    <Input
-                      id="bank_name"
-                      value={formData.bank_name}
-                      onChange={(e) => setFormData(prev => ({ ...prev, bank_name: e.target.value }))}
-                      placeholder="Enter bank name"
-                      maxLength={255}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="account_owner">Account Owner *</Label>
-                    <Input
-                      id="account_owner"
-                      value={formData.account_owner}
-                      onChange={(e) => setFormData(prev => ({ ...prev, account_owner: e.target.value }))}
-                      placeholder="Account holder name"
-                      maxLength={255}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="account_number">Account Number *</Label>
-                    <Input
-                      id="account_number"
-                      value={formData.account_number}
-                      onChange={(e) => setFormData(prev => ({ ...prev, account_number: e.target.value }))}
-                      placeholder="Account number"
-                      maxLength={255}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="iban">IBAN *</Label>
-                    <Input
-                      id="iban"
-                      value={formData.iban}
-                      onChange={(e) => setFormData(prev => ({ ...prev, iban: e.target.value }))}
-                      placeholder="International Bank Account Number"
-                      maxLength={255}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="routing_number">Routing Number *</Label>
-                    <Input
-                      id="routing_number"
-                      value={formData.routing_number}
-                      onChange={(e) => setFormData(prev => ({ ...prev, routing_number: e.target.value }))}
-                      placeholder="Routing/Sort code"
-                      maxLength={255}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="bic_swift">BIC/SWIFT Code *</Label>
-                    <Input
-                      id="bic_swift"
-                      value={formData.bic_swift}
-                      onChange={(e) => setFormData(prev => ({ ...prev, bic_swift: e.target.value }))}
-                      placeholder="BIC/SWIFT code"
-                      maxLength={255}
-                      required
-                    />
-                  </div>
-
-                  <div className="lg:col-span-2 space-y-2">
-                    <Label htmlFor="other_details">Additional Details *</Label>
-                    <Textarea
-                      id="other_details"
-                      value={formData.other_details}
-                      onChange={(e) => setFormData(prev => ({ ...prev, other_details: e.target.value }))}
-                      placeholder="Any additional instructions for bank transfers..."
-                      className="min-h-[100px]"
-                      maxLength={1000}
-                      required
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      {formData.other_details.length}/1000 characters
-                    </p>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {processors.map(processor => (
-              <Card key={processor.id} className="bg-gradient-card">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center">
-                      {processor.name}
-                      {processor.popular && (
-                        <Badge variant="secondary" className="ml-2">Popular</Badge>
-                      )}
-                    </CardTitle>
-                    <div className="flex items-center space-x-2">
-                      {getGatewayStatus(processor.id) ? (
-                        <Badge className="bg-success text-success-foreground">
-                          <CheckCircle className="mr-1 h-3 w-3" />
-                          Configured
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-muted-foreground">
-                          <AlertTriangle className="mr-1 h-3 w-3" />
-                          Not Configured
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Status:</span>
-                      <span className={formData[`enable_${processor.id}` as keyof typeof formData] ? 'text-success' : 'text-muted-foreground'}>
-                        {formData[`enable_${processor.id}` as keyof typeof formData] ? 'Enabled' : 'Disabled'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Default:</span>
-                      <span className={formData.default_payment_processor === processor.id ? 'text-primary' : 'text-muted-foreground'}>
-                        {formData.default_payment_processor === processor.id ? 'Yes' : 'No'}
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="space-y-2">
+            <Label htmlFor="other_details">Other Details</Label>
+            <Textarea
+              id="other_details"
+              value={bankData.other_details}
+              onChange={(e) =>
+                setBankData((prev) => ({
+                  ...prev,
+                  other_details: e.target.value,
+                }))
+              }
+              placeholder="Additional bank transfer instructions or details"
+              rows={3}
+            />
           </div>
-        </TabsContent>
-      </Tabs>
+
+          <div className="flex items-center justify-end">
+            <Button
+              onClick={handleBankSave}
+              disabled={saving === "bank"}
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 text-primary-foreground h-10 px-4 py-2 bg-gradient-primary hover:bg-primary-hover shadow-primary"
+            >
+              {saving === "bank" ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              Save Bank Settings
+            </Button>
+          </div>
+
+          {saved === "bank" && (
+            <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
+              <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <AlertDescription className="text-green-800 dark:text-green-200">
+                Bank settings saved successfully!
+              </AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

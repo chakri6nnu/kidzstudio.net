@@ -36,13 +36,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-import {
-  getTagsApi,
-  createTagApi,
-  updateTagApi,
-  deleteTagApi,
-  type Tag as ApiTag,
-} from "@/lib/utils";
+import { api } from "@/lib/api";
 
 interface TagItem {
   id: string;
@@ -72,20 +66,10 @@ export default function Tags() {
     try {
       setLoading(true);
       setError("");
-      const filters: {
-        search?: string;
-        status?: string;
-        color?: string;
-        per_page?: number;
-      } = {
-        search: searchTerm || undefined,
-        status: selectedStatus !== "all" ? selectedStatus : undefined,
-        color: selectedColor !== "all" ? selectedColor : undefined,
-      };
-      const response = await getTagsApi(filters);
+      const response = await api.tags.getAll();
 
       // Map API response to UI format
-      const mappedTags: TagItem[] = response.data.map((t: ApiTag) => ({
+      const mappedTags: TagItem[] = response.map((t: any) => ({
         id: t.id.toString(),
         name: t.name,
         description: t.description || "",
@@ -99,7 +83,6 @@ export default function Tags() {
       }));
 
       setTags(mappedTags);
-      setMeta(response.meta);
     } catch (err: any) {
       setError(err?.message || "Failed to load tags");
       toast.error("Failed to load tags");
@@ -232,7 +215,7 @@ export default function Tags() {
         is_active: formData.isActive,
       };
 
-      await createTagApi(tagData);
+      await api.tags.create(tagData);
       setIsAddDrawerOpen(false);
       resetForm();
       toast.success("Tag created successfully!");
@@ -259,7 +242,7 @@ export default function Tags() {
         is_active: formData.isActive,
       };
 
-      await updateTagApi(parseInt(selectedTag.id), tagData);
+      await api.tags.update(selectedTag.id, tagData);
       setIsEditDrawerOpen(false);
       setSelectedTag(null);
       resetForm();
@@ -276,7 +259,7 @@ export default function Tags() {
     if (!selectedTag) return;
 
     try {
-      await deleteTagApi(parseInt(selectedTag.id));
+      await api.tags.delete(selectedTag.id);
       setIsDeleteDrawerOpen(false);
       setSelectedTag(null);
       toast.success("Tag deleted successfully!");

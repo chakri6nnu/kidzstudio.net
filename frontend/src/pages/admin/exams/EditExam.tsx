@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Breadcrumb,
@@ -30,6 +30,7 @@ import {
 export default function EditExam() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState("details");
   const [examData, setExamData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -41,20 +42,44 @@ export default function EditExam() {
   const [examTypes, setExamTypes] = useState<
     Array<{ id: string; name: string }>
   >([]);
+
+  // Set active tab from URL parameter
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (
+      tab &&
+      ["details", "settings", "sections", "questions", "schedules"].includes(
+        tab
+      )
+    ) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
   useEffect(() => {
     const loadLookups = async () => {
       try {
+        console.log("Loading exam types and sub categories...");
         const [types, cats] = await Promise.all([
           getExamTypesApi(),
           getSubCategoriesApi(),
         ]);
+
+        console.log("Exam types loaded:", types);
+        console.log("Sub categories loaded:", cats);
+
         setExamTypes(
           types.data.map((t) => ({ id: String(t.id), name: t.name }))
         );
         setCategories(
           cats.data.map((c) => ({ id: String(c.id), name: c.name }))
         );
-      } catch {}
+
+        console.log("Lookups loaded successfully");
+      } catch (error) {
+        console.error("Error loading lookups:", error);
+        toast.error("Failed to load exam types and categories");
+      }
     };
     loadLookups();
   }, []);
@@ -71,9 +96,8 @@ export default function EditExam() {
           details: {
             title: e.title,
             sub_category_id: String(e.sub_category_id),
-            exam_type: String(e.exam_type_id),
+            exam_type_id: String(e.exam_type_id),
             is_paid: !!e.is_paid,
-            price: e.price || 0,
             can_redeem: !!e.can_redeem,
             points_required: e.points_required || 0,
             description: e.description || "",
@@ -104,9 +128,8 @@ export default function EditExam() {
       title: data.title,
       description: data.description || undefined,
       sub_category_id: Number(data.sub_category_id),
-      exam_type_id: Number(data.exam_type),
+      exam_type_id: Number(data.exam_type_id),
       is_paid: !!data.is_paid,
-      price: data.is_paid ? Number(data.price || 0) : 0,
       can_redeem: !!data.can_redeem,
       points_required: data.can_redeem ? Number(data.points_required || 0) : 0,
       is_private: !!data.is_private,
@@ -208,7 +231,11 @@ export default function EditExam() {
       label: "Questions",
       number: "4",
       component: (
-        <ExamQuestionsTab examData={examData} onSave={handleQuestionsSubmit} />
+        <ExamQuestionsTab
+          examId={id}
+          examData={examData}
+          onSave={handleQuestionsSubmit}
+        />
       ),
     },
     {

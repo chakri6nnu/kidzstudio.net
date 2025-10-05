@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -20,24 +20,26 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { 
-  Menu, 
-  Home, 
-  BookOpen, 
-  Users, 
-  Settings, 
-  BarChart3, 
+import {
+  Menu,
+  Home,
+  BookOpen,
+  Users,
+  Settings,
+  BarChart3,
   Globe,
   ChevronDown,
-  X
+  X,
+  LogOut,
+  User,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getAuthToken, getAuthUser, logoutApi } from "@/lib/utils";
 
 interface MenuItem {
   id: string;
   title: string;
   url: string;
-  type: 'internal' | 'external' | 'category';
+  type: "internal" | "external" | "category";
   parent: string | null;
   order: number;
   icon: string;
@@ -56,7 +58,7 @@ const getIcon = (iconName: string) => {
     Settings,
     BarChart3,
     Globe,
-    Menu
+    Menu,
   };
   return icons[iconName] || Home;
 };
@@ -74,10 +76,10 @@ const menuItems: MenuItem[] = [
     visible: true,
     status: "Active",
     target: "_self",
-    created: "Sep 15, 2025"
+    created: "Sep 15, 2025",
   },
   {
-    id: "menu_002", 
+    id: "menu_002",
     title: "Courses",
     url: "/courses",
     type: "category",
@@ -85,7 +87,7 @@ const menuItems: MenuItem[] = [
     order: 2,
     icon: "BookOpen",
     visible: true,
-    status: "Active", 
+    status: "Active",
     target: "_self",
     created: "Sep 16, 2025",
     children: [
@@ -99,13 +101,13 @@ const menuItems: MenuItem[] = [
         icon: "BarChart3",
         visible: true,
         status: "Active",
-        target: "_self", 
-        created: "Sep 16, 2025"
+        target: "_self",
+        created: "Sep 16, 2025",
       },
       {
         id: "menu_004",
         title: "Science",
-        url: "/courses/science", 
+        url: "/courses/science",
         type: "internal",
         parent: "menu_002",
         order: 2,
@@ -113,14 +115,14 @@ const menuItems: MenuItem[] = [
         visible: true,
         status: "Active",
         target: "_self",
-        created: "Sep 16, 2025"
-      }
-    ]
+        created: "Sep 16, 2025",
+      },
+    ],
   },
   {
     id: "menu_005",
     title: "Pricing",
-    url: "/pricing", 
+    url: "/pricing",
     type: "internal",
     parent: null,
     order: 3,
@@ -128,7 +130,7 @@ const menuItems: MenuItem[] = [
     visible: true,
     status: "Active",
     target: "_self",
-    created: "Sep 17, 2025"
+    created: "Sep 17, 2025",
   },
   {
     id: "menu_006",
@@ -141,7 +143,7 @@ const menuItems: MenuItem[] = [
     visible: true,
     status: "Active",
     target: "_self",
-    created: "Sep 17, 2025"
+    created: "Sep 17, 2025",
   },
   {
     id: "menu_007",
@@ -154,29 +156,73 @@ const menuItems: MenuItem[] = [
     visible: true,
     status: "Active",
     target: "_self",
-    created: "Sep 18, 2025"
-  }
+    created: "Sep 18, 2025",
+  },
 ];
 
 export function Navigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const location = useLocation();
+  const navigate = useNavigate();
+
+  // Check authentication state on component mount and when location changes
+  useEffect(() => {
+    const token = getAuthToken();
+    const userData = getAuthUser();
+
+    if (token && userData) {
+      setIsAuthenticated(true);
+      setUser(userData);
+    } else {
+      setIsAuthenticated(false);
+      setUser(null);
+    }
+  }, [location]);
+
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      await logoutApi();
+      setIsAuthenticated(false);
+      setUser(null);
+      navigate("/", { replace: true });
+    } catch (error) {
+      console.error("Logout failed:", error);
+      // Still clear local state even if API call fails
+      setIsAuthenticated(false);
+      setUser(null);
+      navigate("/", { replace: true });
+    }
+  };
+
+  // Get dashboard URL based on user role
+  const getDashboardUrl = () => {
+    if (!user?.roles) return "/";
+    const roles = user.roles.map((r: string) => r.toLowerCase());
+    if (roles.includes("admin")) return "/admin";
+    if (roles.includes("student")) return "/student/dashboard";
+    return "/";
+  };
 
   // Filter visible and active menu items
-  const visibleMenuItems = menuItems.filter(item => item.visible && item.status === "Active");
-  
+  const visibleMenuItems = menuItems.filter(
+    (item) => item.visible && item.status === "Active"
+  );
+
   // Build hierarchical menu structure
   const buildMenuHierarchy = (items: MenuItem[]): MenuItem[] => {
     const itemMap = new Map<string, MenuItem>();
     const rootItems: MenuItem[] = [];
 
     // First pass: create a map of all items
-    items.forEach(item => {
+    items.forEach((item) => {
       itemMap.set(item.id, { ...item, children: [] });
     });
 
     // Second pass: build hierarchy
-    items.forEach(item => {
+    items.forEach((item) => {
       if (item.parent) {
         const parent = itemMap.get(item.parent);
         if (parent) {
@@ -215,11 +261,15 @@ export function Navigation() {
                       to={child.url}
                       className={cn(
                         "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-                        isActive(child.url) ? "bg-accent text-accent-foreground" : ""
+                        isActive(child.url)
+                          ? "bg-accent text-accent-foreground"
+                          : ""
                       )}
                     >
                       <div className="flex items-center text-sm font-medium leading-none">
-                        {React.createElement(getIcon(child.icon), { className: "mr-2 h-4 w-4" })}
+                        {React.createElement(getIcon(child.icon), {
+                          className: "mr-2 h-4 w-4",
+                        })}
                         {child.title}
                       </div>
                     </Link>
@@ -279,11 +329,15 @@ export function Navigation() {
                 target={child.target}
                 className={cn(
                   "flex items-center py-2 px-4 rounded-lg text-sm transition-colors hover:bg-accent/50 hover:text-accent-foreground",
-                  isActive(child.url) ? "bg-accent/50 text-accent-foreground" : "text-muted-foreground"
+                  isActive(child.url)
+                    ? "bg-accent/50 text-accent-foreground"
+                    : "text-muted-foreground"
                 )}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                {React.createElement(getIcon(child.icon), { className: "mr-3 h-4 w-4" })}
+                {React.createElement(getIcon(child.icon), {
+                  className: "mr-3 h-4 w-4",
+                })}
                 {child.title}
               </Link>
             ))}
@@ -317,12 +371,36 @@ export function Navigation() {
 
         {/* Action Buttons */}
         <div className="flex items-center space-x-4">
-          <Button variant="ghost" asChild className="hidden md:inline-flex">
-            <Link to="/student/dashboard">Student Portal</Link>
-          </Button>
-          <Button asChild className="bg-gradient-primary hover:bg-primary-hover">
-            <Link to="/admin">Admin Dashboard</Link>
-          </Button>
+          {isAuthenticated ? (
+            <>
+              <Button variant="ghost" asChild className="hidden md:inline-flex">
+                <Link to={getDashboardUrl()}>
+                  <User className="mr-2 h-4 w-4" />
+                  Dashboard
+                </Link>
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleLogout}
+                className="hidden md:inline-flex"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" asChild className="hidden md:inline-flex">
+                <Link to="/auth/login">Login</Link>
+              </Button>
+              <Button
+                asChild
+                className="bg-gradient-primary hover:bg-primary-hover"
+              >
+                <Link to="/auth/signup">Sign Up</Link>
+              </Button>
+            </>
+          )}
 
           {/* Mobile Menu Button */}
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -347,17 +425,58 @@ export function Navigation() {
               <div className="mt-6 space-y-4">
                 {menuHierarchy.map((item) => renderMobileMenuItem(item))}
                 <div className="border-t pt-4 space-y-2">
-                  <Button variant="ghost" asChild className="w-full justify-start">
-                    <Link to="/student/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
-                      <Users className="mr-3 h-5 w-5" />
-                      Student Portal
-                    </Link>
-                  </Button>
-                  <Button asChild className="w-full bg-gradient-primary">
-                    <Link to="/admin" onClick={() => setIsMobileMenuOpen(false)}>
-                      Admin Dashboard
-                    </Link>
-                  </Button>
+                  {isAuthenticated ? (
+                    <>
+                      <Button
+                        variant="ghost"
+                        asChild
+                        className="w-full justify-start"
+                      >
+                        <Link
+                          to={getDashboardUrl()}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          <User className="mr-3 h-5 w-5" />
+                          Dashboard
+                        </Link>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          handleLogout();
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="w-full"
+                      >
+                        <LogOut className="mr-3 h-5 w-5" />
+                        Logout
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        variant="ghost"
+                        asChild
+                        className="w-full justify-start"
+                      >
+                        <Link
+                          to="/auth/login"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          <Users className="mr-3 h-5 w-5" />
+                          Login
+                        </Link>
+                      </Button>
+                      <Button asChild className="w-full bg-gradient-primary">
+                        <Link
+                          to="/auth/signup"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          Sign Up
+                        </Link>
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             </SheetContent>

@@ -5,10 +5,30 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 const practiceSetDetailsSchema = z.object({
   title: z.string().min(1, "Title is required").max(200),
@@ -25,11 +45,16 @@ type PracticeSetDetailsData = z.infer<typeof practiceSetDetailsSchema>;
 interface PracticeSetDetailsTabProps {
   practiceSetData?: any;
   onSave: (data: PracticeSetDetailsData) => void;
-  categories: Array<{ id: string; name: string; }>;
-  skills: Array<{ id: string; name: string; }>;
+  categories: Array<{ id: string; name: string }>;
+  skills: Array<{ id: string; name: string }>;
 }
 
-export default function PracticeSetDetailsTab({ practiceSetData, onSave, categories, skills }: PracticeSetDetailsTabProps) {
+export default function PracticeSetDetailsTab({
+  practiceSetData,
+  onSave,
+  categories,
+  skills,
+}: PracticeSetDetailsTabProps) {
   const [saving, setSaving] = useState(false);
 
   const form = useForm<PracticeSetDetailsData>({
@@ -42,7 +67,7 @@ export default function PracticeSetDetailsTab({ practiceSetData, onSave, categor
       price: practiceSetData?.price || 0,
       description: practiceSetData?.description || "",
       is_active: practiceSetData?.is_active || true,
-    }
+    },
   });
 
   const isPaid = form.watch("is_paid");
@@ -66,7 +91,10 @@ export default function PracticeSetDetailsTab({ practiceSetData, onSave, categor
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-6"
+          >
             {/* Title */}
             <FormField
               control={form.control}
@@ -75,10 +103,7 @@ export default function PracticeSetDetailsTab({ practiceSetData, onSave, categor
                 <FormItem>
                   <FormLabel>Title</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="Enter practice set title" 
-                      {...field} 
-                    />
+                    <Input placeholder="Enter practice set title" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -93,7 +118,10 @@ export default function PracticeSetDetailsTab({ practiceSetData, onSave, categor
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Sub Category *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select category" />
@@ -118,7 +146,10 @@ export default function PracticeSetDetailsTab({ practiceSetData, onSave, categor
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Skill</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select skill" />
@@ -146,9 +177,12 @@ export default function PracticeSetDetailsTab({ practiceSetData, onSave, categor
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                     <div className="space-y-0.5">
-                      <FormLabel className="text-base font-medium">Free</FormLabel>
+                      <FormLabel className="text-base font-medium">
+                        Free
+                      </FormLabel>
                       <FormDescription>
-                        Paid (Accessible to only paid users). Free (Anyone can access).
+                        Paid (Accessible to only paid users). Free (Anyone can
+                        access).
                       </FormDescription>
                     </div>
                     <FormControl>
@@ -175,7 +209,9 @@ export default function PracticeSetDetailsTab({ practiceSetData, onSave, categor
                           step="0.01"
                           placeholder="0.00"
                           {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                          onChange={(e) =>
+                            field.onChange(parseFloat(e.target.value))
+                          }
                         />
                       </FormControl>
                       <FormMessage />
@@ -196,16 +232,61 @@ export default function PracticeSetDetailsTab({ practiceSetData, onSave, categor
                     <div className="space-y-2">
                       {/* Rich Text Editor Toolbar */}
                       <div className="flex items-center space-x-1 p-2 border rounded-t-md bg-muted/30">
-                        <button type="button" className="p-1 hover:bg-muted rounded text-sm font-bold">B</button>
-                        <button type="button" className="p-1 hover:bg-muted rounded text-sm italic">I</button>
-                        <button type="button" className="p-1 hover:bg-muted rounded text-sm underline">U</button>
+                        <button
+                          type="button"
+                          className="p-1 hover:bg-muted rounded text-sm font-bold"
+                        >
+                          B
+                        </button>
+                        <button
+                          type="button"
+                          className="p-1 hover:bg-muted rounded text-sm italic"
+                        >
+                          I
+                        </button>
+                        <button
+                          type="button"
+                          className="p-1 hover:bg-muted rounded text-sm underline"
+                        >
+                          U
+                        </button>
                         <div className="w-px h-4 bg-border mx-1"></div>
-                        <button type="button" className="p-1 hover:bg-muted rounded text-sm">•</button>
-                        <button type="button" className="p-1 hover:bg-muted rounded text-sm">1.</button>
-                        <button type="button" className="p-1 hover:bg-muted rounded text-sm">⚓</button>
-                        <button type="button" className="p-1 hover:bg-muted rounded text-sm">🖼️</button>
-                        <button type="button" className="p-1 hover:bg-muted rounded text-sm">📊</button>
-                        <button type="button" className="p-1 hover:bg-muted rounded text-sm">📹</button>
+                        <button
+                          type="button"
+                          className="p-1 hover:bg-muted rounded text-sm"
+                        >
+                          •
+                        </button>
+                        <button
+                          type="button"
+                          className="p-1 hover:bg-muted rounded text-sm"
+                        >
+                          1.
+                        </button>
+                        <button
+                          type="button"
+                          className="p-1 hover:bg-muted rounded text-sm"
+                        >
+                          ⚓
+                        </button>
+                        <button
+                          type="button"
+                          className="p-1 hover:bg-muted rounded text-sm"
+                        >
+                          🖼️
+                        </button>
+                        <button
+                          type="button"
+                          className="p-1 hover:bg-muted rounded text-sm"
+                        >
+                          📊
+                        </button>
+                        <button
+                          type="button"
+                          className="p-1 hover:bg-muted rounded text-sm"
+                        >
+                          📹
+                        </button>
                       </div>
                       <Textarea
                         placeholder="Enter practice set description..."
@@ -226,7 +307,9 @@ export default function PracticeSetDetailsTab({ practiceSetData, onSave, categor
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                   <div className="space-y-0.5">
-                    <FormLabel className="text-base font-medium">Status - Published</FormLabel>
+                    <FormLabel className="text-base font-medium">{`Status - ${
+                      field.value ? "Published" : "Draft"
+                    }`}</FormLabel>
                     <FormDescription>
                       Published (Shown Everywhere). Draft (Not Shown).
                     </FormDescription>
@@ -243,8 +326,8 @@ export default function PracticeSetDetailsTab({ practiceSetData, onSave, categor
 
             {/* Submit Button */}
             <div className="flex justify-end pt-6">
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={saving}
                 className="bg-success hover:bg-success/90 text-white px-8"
               >

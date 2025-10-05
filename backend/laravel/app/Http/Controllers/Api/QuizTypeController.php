@@ -15,7 +15,7 @@ class QuizTypeController extends Controller
         if ($s = $request->get('search')) {
             $q->where('name', 'like', "%$s%")->orWhere('code', 'like', "%$s%");
         }
-        $items = $q->paginate($request->integer('per_page', 10));
+		$items = $q->paginate((int) $request->get('per_page', 10));
         return response()->json([
             'data' => $items->items(),
             'meta' => [

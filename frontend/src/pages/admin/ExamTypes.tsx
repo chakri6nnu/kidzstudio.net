@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import {
+  getExamTypesFullApi,
+  createExamTypeApi,
+  updateExamTypeApi,
+  deleteExamTypeApi,
+  type ExamType as ApiExamType,
+} from "@/lib/utils";
 
 const examTypeSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -26,48 +33,38 @@ const examTypeSchema = z.object({
 type ExamTypeFormData = z.infer<typeof examTypeSchema>;
 
 export default function ExamTypes() {
-  const [examTypes, setExamTypes] = useState([
-    {
-      id: "1",
-      code: "etp_31jZqdbpnvB",
-      name: "Daily Challenge Question",
-      status: "Active",
-      color: "#3B82F6"
-    },
-    {
-      id: "2", 
-      code: "etp_38Sj7pvKZQ1",
-      name: "10-Minute Speed Test",
-      status: "Active",
-      color: "#10B981"
-    },
-    {  
-      id: "3",
-      code: "etp_384baeqZevF",
-      name: "Creative Writing Showcase",
-      status: "Active",
-      color: "#8B5CF6"
-    },
-    {
-      id: "4",
-      code: "etp_93yhUIBtFWn",
-      name: "Memory & Vocabulary Test", 
-      status: "Active",
-      color: "#F59E0B"
-    },
-    {
-      id: "5",
-      code: "etp_XMdMhvXdzcXe",
-      name: "Speed Round",
-      status: "Active",
-      color: "#EF4444"
-    }
-  ]);
+  const [examTypes, setExamTypes] = useState<ApiExamType[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingExamType, setEditingExamType] = useState<any>(null);
+  const [editingExamType, setEditingExamType] = useState<ApiExamType | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Load exam types from API
+  const loadExamTypes = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const response = await getExamTypesFullApi({
+        search: searchTerm || undefined,
+        status: statusFilter !== "all" ? statusFilter : undefined,
+        per_page: 50,
+      });
+      setExamTypes(response.data);
+    } catch (e: any) {
+      setError(e?.message || "Failed to load exam types");
+      toast.error("Failed to load exam types");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadExamTypes();
+  }, [searchTerm, statusFilter]);
 
   const form = useForm<ExamTypeFormData>({
     resolver: zodResolver(examTypeSchema),

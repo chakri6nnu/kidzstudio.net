@@ -18,7 +18,11 @@ import QuizSchedulesTab from "@/components/quiz/QuizSchedulesTab";
 import { toast } from "sonner";
 import { ArrowLeft, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { createQuizApi, getSubCategoriesApi } from "@/lib/utils";
+import {
+  createQuizApi,
+  getSubCategoriesApi,
+  getQuizTypesApi,
+} from "@/lib/utils";
 
 export default function CreateQuiz() {
   const navigate = useNavigate();
@@ -44,8 +48,7 @@ export default function CreateQuiz() {
         setCategories(
           cats.data.map((c) => ({ id: String(c.id), name: c.name }))
         );
-        // Using exam types as quiz types placeholder unless separate endpoint exists
-        const types = await (await import("@/lib/utils")).getExamTypesApi();
+        const types = await getQuizTypesApi();
         setQuizTypes(
           types.data.map((t) => ({ id: String(t.id), name: t.name }))
         );

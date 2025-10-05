@@ -13,7 +13,12 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
-        //
+        \App\Console\Commands\InsertQuizzes::class,
+        \App\Console\Commands\InsertPracticeSets::class,
+        \App\Console\Commands\InsertLessons::class,
+        \App\Console\Commands\InsertVideos::class,
+        \App\Console\Commands\InsertComprehensions::class,
+        \App\Console\Commands\InsertComprehensionQuestions::class,
     ];
 
     /**

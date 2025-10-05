@@ -1,8 +1,27 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Star, Zap, Crown } from "lucide-react";
+import {
+  Check,
+  Star,
+  Zap,
+  Crown,
+  Users,
+  Globe,
+  Mail,
+  Phone,
+  ArrowRight,
+} from "lucide-react";
+import { Navigation } from "@/components/Navigation";
 
 const pricingPlans = [
   {
@@ -20,6 +39,7 @@ const pricingPlans = [
       "Mobile app access",
     ],
     popular: false,
+    cta: "Start Free Trial",
   },
   {
     id: "premium",
@@ -39,6 +59,7 @@ const pricingPlans = [
       "Downloadable worksheets",
     ],
     popular: true,
+    cta: "Get Started",
   },
   {
     id: "intensive",
@@ -59,6 +80,7 @@ const pricingPlans = [
       "Exam day preparation guide",
     ],
     popular: false,
+    cta: "Contact Sales",
   },
 ];
 
@@ -69,18 +91,25 @@ const annualDiscounts = {
 };
 
 export default function Pricing() {
-  const [billingPeriod, setBillingPeriod] = React.useState<"monthly" | "annual">("monthly");
+  const [billingPeriod, setBillingPeriod] = React.useState<
+    "monthly" | "annual"
+  >("monthly");
 
   const handleCheckout = (planId: string) => {
     // This would integrate with your payment provider
-    console.log(`Proceeding to checkout for plan: ${planId}, billing: ${billingPeriod}`);
+    console.log(
+      `Proceeding to checkout for plan: ${planId}, billing: ${billingPeriod}`
+    );
     // For now, we'll just alert - replace with actual checkout logic
-    alert(`Redirecting to checkout for ${planId} plan (${billingPeriod} billing)`);
+    alert(
+      `Redirecting to checkout for ${planId} plan (${billingPeriod} billing)`
+    );
   };
 
   const getPrice = (plan: any) => {
     if (billingPeriod === "annual") {
-      const annualData = annualDiscounts[plan.id as keyof typeof annualDiscounts];
+      const annualData =
+        annualDiscounts[plan.id as keyof typeof annualDiscounts];
       return annualData.discounted;
     }
     return plan.price;
@@ -88,7 +117,8 @@ export default function Pricing() {
 
   const getOriginalPrice = (plan: any) => {
     if (billingPeriod === "annual") {
-      const annualData = annualDiscounts[plan.id as keyof typeof annualDiscounts];
+      const annualData =
+        annualDiscounts[plan.id as keyof typeof annualDiscounts];
       return annualData.original;
     }
     return null;
@@ -96,45 +126,70 @@ export default function Pricing() {
 
   const getSavings = (plan: any) => {
     if (billingPeriod === "annual") {
-      const annualData = annualDiscounts[plan.id as keyof typeof annualDiscounts];
+      const annualData =
+        annualDiscounts[plan.id as keyof typeof annualDiscounts];
       return annualData.savings;
     }
     return null;
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-subtle">
+      <Navigation />
+
       {/* Hero Section */}
       <section className="bg-gradient-hero py-20">
         <div className="container mx-auto px-4 text-center">
+          <Badge
+            className="mb-6 bg-primary/10 text-primary border-primary/20"
+            variant="outline"
+          >
+            🚀 Flexible Pricing Plans
+          </Badge>
           <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
-            Choose Your 11+ Success Plan
+            Choose Your Success Plan
           </h1>
           <p className="text-xl text-white/90 mb-8 max-w-3xl mx-auto">
-            Get your child ready for grammar school entrance exams with our comprehensive practice platform
+            Get ready for educational excellence with our comprehensive practice
+            platform. From question banks to detailed analytics, everything you
+            need in one place.
           </p>
-          
+
           {/* Billing Toggle */}
           <div className="flex items-center justify-center gap-4 mb-12">
-            <span className={`text-lg ${billingPeriod === 'monthly' ? 'text-white' : 'text-white/70'}`}>
+            <span
+              className={`text-lg ${
+                billingPeriod === "monthly" ? "text-white" : "text-white/70"
+              }`}
+            >
               Monthly
             </span>
             <button
-              onClick={() => setBillingPeriod(billingPeriod === 'monthly' ? 'annual' : 'monthly')}
+              onClick={() =>
+                setBillingPeriod(
+                  billingPeriod === "monthly" ? "annual" : "monthly"
+                )
+              }
               className={`relative inline-flex h-8 w-14 items-center justify-center rounded-full transition-colors ${
-                billingPeriod === 'annual' ? 'bg-white' : 'bg-white/30'
+                billingPeriod === "annual" ? "bg-white" : "bg-white/30"
               }`}
             >
               <span
                 className={`inline-block h-6 w-6 transform rounded-full bg-primary transition-transform ${
-                  billingPeriod === 'annual' ? 'translate-x-3' : '-translate-x-3'
+                  billingPeriod === "annual"
+                    ? "translate-x-3"
+                    : "-translate-x-3"
                 }`}
               />
             </button>
-            <span className={`text-lg ${billingPeriod === 'annual' ? 'text-white' : 'text-white/70'}`}>
+            <span
+              className={`text-lg ${
+                billingPeriod === "annual" ? "text-white" : "text-white/70"
+              }`}
+            >
               Annual
             </span>
-            {billingPeriod === 'annual' && (
+            {billingPeriod === "annual" && (
               <Badge variant="secondary" className="ml-2">
                 Save up to 30%
               </Badge>
@@ -152,14 +207,14 @@ export default function Pricing() {
               const price = getPrice(plan);
               const originalPrice = getOriginalPrice(plan);
               const savings = getSavings(plan);
-              
+
               return (
                 <Card
                   key={plan.id}
                   className={`relative ${
                     plan.popular
-                      ? 'border-primary shadow-primary scale-105 bg-gradient-card'
-                      : 'border-border hover:border-primary/50'
+                      ? "border-primary shadow-primary scale-105 bg-gradient-card"
+                      : "border-border hover:border-primary/50"
                   } transition-all duration-300`}
                 >
                   {plan.popular && (
@@ -170,17 +225,21 @@ export default function Pricing() {
                       </Badge>
                     </div>
                   )}
-                  
+
                   <CardHeader className="text-center pb-2">
-                    <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4 ${
-                      plan.popular ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                    }`}>
+                    <div
+                      className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4 ${
+                        plan.popular
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
                       <Icon className="w-8 h-8" />
                     </div>
                     <CardTitle className="text-2xl">{plan.name}</CardTitle>
                     <CardDescription>{plan.description}</CardDescription>
                   </CardHeader>
-                  
+
                   <CardContent className="text-center pb-2">
                     <div className="mb-6">
                       {originalPrice && (
@@ -192,7 +251,7 @@ export default function Pricing() {
                         £{price}
                       </div>
                       <div className="text-muted-foreground">
-                        per {billingPeriod === 'annual' ? 'year' : 'month'}
+                        per {billingPeriod === "annual" ? "year" : "month"}
                       </div>
                       {savings && (
                         <div className="text-success font-semibold mt-2">
@@ -200,29 +259,37 @@ export default function Pricing() {
                         </div>
                       )}
                     </div>
-                    
+
                     <ul className="space-y-3 text-left">
                       {plan.features.map((feature, index) => (
                         <li key={index} className="flex items-start gap-3">
                           <Check className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
-                          <span className="text-sm text-muted-foreground">{feature}</span>
+                          <span className="text-sm text-muted-foreground">
+                            {feature}
+                          </span>
                         </li>
                       ))}
                     </ul>
                   </CardContent>
-                  
+
                   <CardFooter>
                     <Button
-                      onClick={() => handleCheckout(plan.id)}
+                      asChild
                       className={`w-full ${
                         plan.popular
-                          ? 'bg-primary hover:bg-primary-hover shadow-primary'
-                          : 'bg-secondary hover:bg-secondary/80'
+                          ? "bg-primary hover:bg-primary-hover shadow-primary"
+                          : "bg-secondary hover:bg-secondary/80"
                       }`}
                       size="lg"
                     >
-                      {plan.popular && <Zap className="w-4 h-4 mr-2" />}
-                      Start {billingPeriod === 'annual' ? 'Annual' : 'Monthly'} Plan
+                      <Link
+                        to={
+                          plan.id === "intensive" ? "/contact" : "/auth/signup"
+                        }
+                      >
+                        {plan.popular && <Zap className="w-4 h-4 mr-2" />}
+                        {plan.cta}
+                      </Link>
                     </Button>
                   </CardFooter>
                 </Card>
@@ -236,12 +303,21 @@ export default function Pricing() {
       <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Why Choose Our 11+ Practice Platform?</h2>
+            <Badge
+              className="mb-4 bg-accent/10 text-accent border-accent/20"
+              variant="outline"
+            >
+              Features
+            </Badge>
+            <h2 className="text-3xl font-bold mb-4">
+              Why Choose Our Platform?
+            </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Trusted by thousands of families across the UK to help children succeed in grammar school entrance exams
+              Trusted by thousands of educators worldwide to create better
+              learning experiences
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             <div className="text-center">
               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -249,27 +325,30 @@ export default function Pricing() {
               </div>
               <h3 className="text-xl font-semibold mb-2">Proven Results</h3>
               <p className="text-muted-foreground">
-                95% of our students improve their scores within 3 months of practice
+                95% of our users improve their performance within 3 months of
+                practice
               </p>
             </div>
-            
+
             <div className="text-center">
               <div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Star className="w-8 h-8 text-success" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Expert Content</h3>
               <p className="text-muted-foreground">
-                Questions created by qualified teachers and 11+ specialists
+                Questions created by qualified teachers and educational
+                specialists
               </p>
             </div>
-            
+
             <div className="text-center">
               <div className="w-16 h-16 bg-warning/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Crown className="w-8 h-8 text-warning" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">School-Specific</h3>
+              <h3 className="text-xl font-semibold mb-2">Comprehensive</h3>
               <p className="text-muted-foreground">
-                Practice papers tailored to specific grammar schools and regions
+                Complete assessment solution with analytics, reporting, and
+                management tools
               </p>
             </div>
           </div>
@@ -280,29 +359,51 @@ export default function Pricing() {
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Frequently Asked Questions</h2>
+            <Badge
+              className="mb-4 bg-warning/10 text-warning border-warning/20"
+              variant="outline"
+            >
+              FAQ
+            </Badge>
+            <h2 className="text-3xl font-bold mb-4">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Everything you need to know about our platform and pricing
+            </p>
           </div>
-          
+
           <div className="max-w-3xl mx-auto space-y-6">
             {[
               {
                 q: "Can I cancel my subscription anytime?",
-                a: "Yes, you can cancel your subscription at any time. You'll continue to have access until the end of your current billing period."
+                a: "Yes, you can cancel your subscription at any time. You'll continue to have access until the end of your current billing period.",
               },
               {
-                q: "Are the practice questions similar to real 11+ exams?",
-                a: "Absolutely! Our questions are created by qualified teachers and are designed to match the format and difficulty of actual 11+ entrance exams."
+                q: "Are the practice questions similar to real exams?",
+                a: "Absolutely! Our questions are created by qualified teachers and are designed to match the format and difficulty of actual educational assessments.",
               },
               {
                 q: "Is there a free trial available?",
-                a: "Yes, we offer a 7-day free trial for all new users. You can explore our platform and practice questions before committing to a subscription."
+                a: "Yes, we offer a 7-day free trial for all new users. You can explore our platform and practice questions before committing to a subscription.",
               },
               {
-                q: "What subjects are covered in the 11+ practice?",
-                a: "We cover all core 11+ subjects: English, Mathematics, Verbal Reasoning, and Non-Verbal Reasoning, plus additional subjects depending on your target school."
-              }
+                q: "What subjects are covered in the platform?",
+                a: "We cover all core subjects: Mathematics, English, Science, and more. Plus additional subjects depending on your educational needs and target requirements.",
+              },
+              {
+                q: "Do you offer institutional pricing?",
+                a: "Yes, we offer special pricing for schools, universities, and organizations. Contact our sales team for custom pricing options.",
+              },
+              {
+                q: "What payment methods do you accept?",
+                a: "We accept all major credit cards, PayPal, and bank transfers. Enterprise customers can also pay via invoice.",
+              },
             ].map((faq, index) => (
-              <Card key={index}>
+              <Card
+                key={index}
+                className="bg-gradient-card hover:shadow-elegant transition-all duration-300"
+              >
                 <CardHeader>
                   <CardTitle className="text-lg">{faq.q}</CardTitle>
                 </CardHeader>
@@ -319,21 +420,145 @@ export default function Pricing() {
       <section className="py-20 bg-gradient-primary">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold text-white mb-4">
-            Ready to Start Your 11+ Journey?
+            Ready to Transform Your Educational Experience?
           </h2>
           <p className="text-white/90 mb-8 max-w-2xl mx-auto">
-            Join thousands of successful families and give your child the best preparation for grammar school entrance exams.
+            Join thousands of educators who are already using QwikTest to create
+            better learning experiences.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" variant="secondary" onClick={() => handleCheckout('premium')}>
-              Start Free Trial
+            <Button size="lg" variant="secondary" asChild>
+              <Link to="/auth/signup">
+                <Zap className="mr-2 h-5 w-5" />
+                Start Free Trial
+              </Link>
             </Button>
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-primary">
-              View Sample Questions
+            <Button
+              size="lg"
+              variant="outline"
+              asChild
+              className="border-white text-white hover:bg-white hover:text-primary"
+            >
+              <Link to="/contact">
+                <Users className="mr-2 h-5 w-5" />
+                Contact Sales
+              </Link>
             </Button>
           </div>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="bg-muted/30 py-16">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div className="md:col-span-2">
+              <h3 className="text-2xl font-bold mb-4">QwikTest</h3>
+              <p className="text-muted-foreground mb-4">
+                The modern platform for creating, managing, and analyzing
+                educational assessments.
+              </p>
+              <div className="flex space-x-4">
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to="/">
+                    <Globe className="h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to="/contact">
+                    <Mail className="h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to="/contact">
+                    <Phone className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-semibold mb-4">Product</h3>
+              <ul className="space-y-2 text-muted-foreground">
+                <li>
+                  <Link
+                    to="/features"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Features
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/pricing"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Pricing
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/integrations"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Integrations
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/api"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    API
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="font-semibold mb-4">Resources</h3>
+              <ul className="space-y-2 text-muted-foreground">
+                <li>
+                  <Link
+                    to="/docs"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Documentation
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/tutorials"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Tutorials
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/blog"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Blog
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/support"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Support
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="border-t mt-12 pt-8 text-center text-muted-foreground">
+            <p>&copy; 2025 QwikTest. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

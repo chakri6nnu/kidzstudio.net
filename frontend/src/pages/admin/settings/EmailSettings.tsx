@@ -1,5 +1,11 @@
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,20 +19,24 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Mail, 
-  Save, 
-  RotateCcw, 
-  Send, 
-  Server, 
-  Eye, 
-  EyeOff, 
+import {
+  Mail,
+  Save,
+  RotateCcw,
+  Send,
+  Server,
+  Eye,
+  EyeOff,
   CheckCircle,
   AlertTriangle,
-  Loader2
+  Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
+import { emailApi } from "@/lib/api";
 
 export default function EmailSettings() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     host: "smtp.gmail.com",
     port: 587,
@@ -40,31 +50,86 @@ export default function EmailSettings() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<'success' | 'error' | null>(null);
+  const [testResult, setTestResult] = useState<"success" | "error" | null>(
+    null
+  );
   const [showPassword, setShowPassword] = useState(false);
   const [testEmail, setTestEmail] = useState("");
 
-  const encryptionOptions = [
+  const [encryptionOptions, setEncryptionOptions] = useState([
     { value: "tls", label: "TLS (Recommended)" },
     { value: "ssl", label: "SSL" },
     { value: "none", label: "None (Not Recommended)" },
-  ];
+  ]);
+
+  const [portOptions, setPortOptions] = useState([
+    { value: 25, label: "25 (SMTP)" },
+    { value: 587, label: "587 (TLS)" },
+    { value: 465, label: "465 (SSL)" },
+    { value: 2525, label: "2525 (Alternative)" },
+  ]);
+
+  // Load email settings
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await emailApi.getSettings();
+
+        setFormData(response.email);
+        setEncryptionOptions(response.encryption_options);
+        setPortOptions(response.port_options);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to load email settings"
+        );
+        toast.error("Failed to load email settings");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSettings();
+  }, []);
 
   const commonProviders = [
     { name: "Gmail", host: "smtp.gmail.com", port: 587, encryption: "tls" },
-    { name: "Outlook", host: "smtp-mail.outlook.com", port: 587, encryption: "tls" },
-    { name: "Yahoo", host: "smtp.mail.yahoo.com", port: 587, encryption: "tls" },
-    { name: "SendGrid", host: "smtp.sendgrid.net", port: 587, encryption: "tls" },
+    {
+      name: "Outlook",
+      host: "smtp-mail.outlook.com",
+      port: 587,
+      encryption: "tls",
+    },
+    {
+      name: "Yahoo",
+      host: "smtp.mail.yahoo.com",
+      port: 587,
+      encryption: "tls",
+    },
+    {
+      name: "SendGrid",
+      host: "smtp.sendgrid.net",
+      port: 587,
+      encryption: "tls",
+    },
     { name: "Mailgun", host: "smtp.mailgun.org", port: 587, encryption: "tls" },
   ];
 
   const handleSave = async () => {
     setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
+    try {
+      await emailApi.updateSettings(formData);
       setSaved(true);
+      toast.success("Email settings updated successfully!");
       setTimeout(() => setSaved(false), 3000);
-    }, 1000);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to update email settings"
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleReset = () => {
@@ -81,19 +146,30 @@ export default function EmailSettings() {
   };
 
   const handleTestEmail = async () => {
+    if (!testEmail) {
+      toast.error("Please enter a test email address");
+      return;
+    }
+
     setTesting(true);
     setTestResult(null);
-    
-    // Simulate test email
-    setTimeout(() => {
+
+    try {
+      await emailApi.testEmail(testEmail);
+      setTestResult("success");
+      toast.success(`Test email sent successfully to ${testEmail}`);
+    } catch (err) {
+      setTestResult("error");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to send test email"
+      );
+    } finally {
       setTesting(false);
-      // Randomly succeed or fail for demo
-      setTestResult(Math.random() > 0.3 ? 'success' : 'error');
-    }, 2000);
+    }
   };
 
-  const useProvider = (provider: typeof commonProviders[0]) => {
-    setFormData(prev => ({
+  const useProvider = (provider: (typeof commonProviders)[0]) => {
+    setFormData((prev) => ({
       ...prev,
       host: provider.host,
       port: provider.port,
@@ -102,9 +178,25 @@ export default function EmailSettings() {
   };
 
   const isConfigured = () => {
-    return formData.host && formData.port && formData.username && 
-           formData.password && formData.from_address && formData.from_name;
+    return (
+      formData.host &&
+      formData.port &&
+      formData.username &&
+      formData.password &&
+      formData.from_address &&
+      formData.from_name
+    );
   };
+
+  if (loading) {
+    return (
+      <div className="p-6 space-y-6 max-w-4xl">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6 max-w-4xl">
@@ -124,12 +216,25 @@ export default function EmailSettings() {
             <RotateCcw className="mr-2 h-4 w-4" />
             Reset
           </Button>
-          <Button onClick={handleSave} disabled={saving} className="bg-gradient-primary">
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+            className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 text-primary-foreground h-10 px-4 py-2 bg-gradient-primary hover:bg-primary-hover shadow-primary"
+          >
             <Save className="mr-2 h-4 w-4" />
             {saving ? "Saving..." : "Save Settings"}
           </Button>
         </div>
       </div>
+
+      {error && (
+        <Alert className="border-destructive bg-destructive/10">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription className="text-destructive">
+            {error}
+          </AlertDescription>
+        </Alert>
+      )}
 
       {saved && (
         <Alert className="border-success bg-success/10">
@@ -156,7 +261,7 @@ export default function EmailSettings() {
             <div className="space-y-2">
               <Label>Quick Setup</Label>
               <div className="grid grid-cols-2 gap-2">
-                {commonProviders.slice(0, 4).map(provider => (
+                {commonProviders.slice(0, 4).map((provider) => (
                   <Button
                     key={provider.name}
                     variant="outline"
@@ -177,7 +282,9 @@ export default function EmailSettings() {
               <Input
                 id="host"
                 value={formData.host}
-                onChange={(e) => setFormData(prev => ({ ...prev, host: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, host: e.target.value }))
+                }
                 placeholder="smtp.gmail.com"
                 maxLength={250}
                 required
@@ -191,7 +298,12 @@ export default function EmailSettings() {
                   id="port"
                   type="number"
                   value={formData.port}
-                  onChange={(e) => setFormData(prev => ({ ...prev, port: parseInt(e.target.value) }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      port: parseInt(e.target.value),
+                    }))
+                  }
                   placeholder="587"
                   required
                 />
@@ -199,15 +311,17 @@ export default function EmailSettings() {
 
               <div className="space-y-2">
                 <Label htmlFor="encryption">Encryption</Label>
-                <Select 
-                  value={formData.encryption} 
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, encryption: value }))}
+                <Select
+                  value={formData.encryption}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, encryption: value }))
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {encryptionOptions.map(option => (
+                    {encryptionOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
                       </SelectItem>
@@ -222,7 +336,9 @@ export default function EmailSettings() {
               <Input
                 id="username"
                 value={formData.username}
-                onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, username: e.target.value }))
+                }
                 placeholder="your-email@example.com"
                 maxLength={1024}
                 required
@@ -236,7 +352,12 @@ export default function EmailSettings() {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   value={formData.password}
-                  onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      password: e.target.value,
+                    }))
+                  }
                   placeholder="Your SMTP password"
                   maxLength={1024}
                   required
@@ -248,7 +369,11 @@ export default function EmailSettings() {
                   className="absolute right-0 top-0 h-full px-3"
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
@@ -273,7 +398,12 @@ export default function EmailSettings() {
                 id="from_address"
                 type="email"
                 value={formData.from_address}
-                onChange={(e) => setFormData(prev => ({ ...prev, from_address: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    from_address: e.target.value,
+                  }))
+                }
                 placeholder="noreply@yourcompany.com"
                 maxLength={1024}
                 required
@@ -285,7 +415,12 @@ export default function EmailSettings() {
               <Input
                 id="from_name"
                 value={formData.from_name}
-                onChange={(e) => setFormData(prev => ({ ...prev, from_name: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    from_name: e.target.value,
+                  }))
+                }
                 placeholder="KidzStudio"
                 maxLength={1024}
                 required
@@ -315,9 +450,18 @@ export default function EmailSettings() {
               <div className="bg-muted/50 p-4 rounded-lg space-y-2">
                 <p className="text-sm font-medium">Email Preview:</p>
                 <div className="text-sm">
-                  <p><strong>From:</strong> {formData.from_name || "Your App Name"} &lt;{formData.from_address || "your-email@domain.com"}&gt;</p>
-                  <p><strong>Subject:</strong> Welcome to KidzStudio</p>
-                  <p><strong>Server:</strong> {formData.host}:{formData.port} ({formData.encryption?.toUpperCase()})</p>
+                  <p>
+                    <strong>From:</strong>{" "}
+                    {formData.from_name || "Your App Name"} &lt;
+                    {formData.from_address || "your-email@domain.com"}&gt;
+                  </p>
+                  <p>
+                    <strong>Subject:</strong> Welcome to KidzStudio
+                  </p>
+                  <p>
+                    <strong>Server:</strong> {formData.host}:{formData.port} (
+                    {formData.encryption?.toUpperCase()})
+                  </p>
                 </div>
               </div>
             </div>
@@ -348,10 +492,10 @@ export default function EmailSettings() {
                 placeholder="test@example.com"
               />
             </div>
-            <Button 
+            <Button
               onClick={handleTestEmail}
               disabled={!isConfigured() || !testEmail || testing}
-              className="mt-6"
+              className="mt-6 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 text-primary-foreground h-10 px-4 py-2 bg-gradient-primary hover:bg-primary-hover shadow-primary"
             >
               {testing ? (
                 <>
@@ -367,7 +511,7 @@ export default function EmailSettings() {
             </Button>
           </div>
 
-          {testResult === 'success' && (
+          {testResult === "success" && (
             <Alert className="border-success bg-success/10">
               <CheckCircle className="h-4 w-4 text-success" />
               <AlertDescription className="text-success">
@@ -376,11 +520,12 @@ export default function EmailSettings() {
             </Alert>
           )}
 
-          {testResult === 'error' && (
+          {testResult === "error" && (
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
-                Failed to send test email. Please check your SMTP configuration and try again.
+                Failed to send test email. Please check your SMTP configuration
+                and try again.
               </AlertDescription>
             </Alert>
           )}
@@ -389,7 +534,8 @@ export default function EmailSettings() {
             <Alert>
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
-                Please complete all required fields before testing email configuration.
+                Please complete all required fields before testing email
+                configuration.
               </AlertDescription>
             </Alert>
           )}
@@ -406,12 +552,15 @@ export default function EmailSettings() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {commonProviders.map(provider => (
-              <div key={provider.name} className="border rounded-lg p-4 space-y-2">
+            {commonProviders.map((provider) => (
+              <div
+                key={provider.name}
+                className="border rounded-lg p-4 space-y-2"
+              >
                 <div className="flex items-center justify-between">
                   <h4 className="font-medium">{provider.name}</h4>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => useProvider(provider)}
                   >

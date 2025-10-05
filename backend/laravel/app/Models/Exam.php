@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Builder;
-use Spatie\SchemalessAttributes\SchemalessAttributesTrait;
 
 class Exam extends Model
 {
@@ -17,7 +16,6 @@ class Exam extends Model
     use SoftDeletes;
     use Sluggable;
     use SecureDeletes;
-    use SchemalessAttributesTrait;
 
     /*
     |--------------------------------------------------------------------------
@@ -33,12 +31,10 @@ class Exam extends Model
         'is_paid' => 'boolean',
         'is_active' => 'boolean',
         'is_private' => 'boolean',
-        'can_redeem' => 'boolean'
+        'can_redeem' => 'boolean',
+        'settings' => 'array'
     ];
 
-    protected $schemalessAttributes = [
-        'settings',
-    ];
 
     /*
     |--------------------------------------------------------------------------
@@ -117,10 +113,6 @@ class Exam extends Model
         return $filters->apply($query);
     }
 
-    public function scopeWithSettings(): Builder
-    {
-        return $this->settings->modelCast();
-    }
 
     public function scopePublished($query)
     {
@@ -142,6 +134,27 @@ class Exam extends Model
     | ACCESSORS
     |--------------------------------------------------------------------------
     */
+
+    public function getSettingsAttribute($value)
+    {
+        if (empty($value)) {
+            return [];
+        }
+
+        // If it's already an array, return it
+        if (is_array($value)) {
+            return $value;
+        }
+
+        // Try to decode JSON
+        $decoded = json_decode($value, true);
+        if (json_last_error() === JSON_ERROR_NONE) {
+            return $decoded;
+        }
+
+        // If all else fails, return empty array
+        return [];
+    }
 
     /*
     |--------------------------------------------------------------------------

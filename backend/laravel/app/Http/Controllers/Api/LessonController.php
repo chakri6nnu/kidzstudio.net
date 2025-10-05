@@ -15,7 +15,7 @@ class LessonController extends Controller
         $q = Lesson::with(['skill:id,name', 'topic:id,name', 'difficultyLevel:id,name'])
             ->filter($filters)
             ->orderByDesc('id');
-        $p = $q->paginate($request->integer('per_page', 10));
+		$p = $q->paginate((int) $request->get('per_page', 10));
         return response()->json([
             'data' => $p->items(),
             'meta' => [

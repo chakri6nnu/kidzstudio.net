@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
+import {
   Plus,
   Edit,
   Trash2,
@@ -32,14 +32,14 @@ import {
   Shield,
   BookOpen,
   BarChart3,
-  Navigation
+  Navigation,
 } from "lucide-react";
 
 interface MenuItem {
   id: string;
   title: string;
   url: string;
-  type: 'internal' | 'external' | 'category';
+  type: "internal" | "external" | "category";
   parent: string | null;
   order: number;
   icon: string;
@@ -63,10 +63,10 @@ export default function MenuBuilder() {
       visible: true,
       status: "Active",
       target: "_self",
-      created: "Sep 15, 2025"
+      created: "Sep 15, 2025",
     },
     {
-      id: "menu_002", 
+      id: "menu_002",
       title: "Courses",
       url: "/courses",
       type: "category",
@@ -74,9 +74,9 @@ export default function MenuBuilder() {
       order: 2,
       icon: "BookOpen",
       visible: true,
-      status: "Active", 
+      status: "Active",
       target: "_self",
-      created: "Sep 16, 2025"
+      created: "Sep 16, 2025",
     },
     {
       id: "menu_003",
@@ -88,13 +88,13 @@ export default function MenuBuilder() {
       icon: "BarChart3",
       visible: true,
       status: "Active",
-      target: "_self", 
-      created: "Sep 16, 2025"
+      target: "_self",
+      created: "Sep 16, 2025",
     },
     {
       id: "menu_004",
       title: "Science",
-      url: "/courses/science", 
+      url: "/courses/science",
       type: "internal",
       parent: "menu_002",
       order: 2,
@@ -102,20 +102,20 @@ export default function MenuBuilder() {
       visible: true,
       status: "Active",
       target: "_self",
-      created: "Sep 16, 2025"
+      created: "Sep 16, 2025",
     },
     {
       id: "menu_005",
       title: "About Us",
       url: "/about",
-      type: "internal", 
+      type: "internal",
       parent: null,
       order: 3,
       icon: "Users",
       visible: true,
       status: "Active",
       target: "_self",
-      created: "Sep 17, 2025"
+      created: "Sep 17, 2025",
     },
     {
       id: "menu_006",
@@ -128,8 +128,8 @@ export default function MenuBuilder() {
       visible: false,
       status: "Draft",
       target: "_blank",
-      created: "Sep 18, 2025"
-    }
+      created: "Sep 18, 2025",
+    },
   ]);
 
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
@@ -156,7 +156,7 @@ export default function MenuBuilder() {
 
   const handleConfirmDelete = () => {
     if (selectedItem) {
-      setMenuItems(menuItems.filter(item => item.id !== selectedItem.id));
+      setMenuItems(menuItems.filter((item) => item.id !== selectedItem.id));
       setIsDeleteDrawerOpen(false);
       setSelectedItem(null);
     }
@@ -165,9 +165,11 @@ export default function MenuBuilder() {
   const handleSave = (itemData: Partial<MenuItem>) => {
     if (selectedItem) {
       // Edit existing
-      setMenuItems(menuItems.map(item => 
-        item.id === selectedItem.id ? { ...item, ...itemData } : item
-      ));
+      setMenuItems(
+        menuItems.map((item) =>
+          item.id === selectedItem.id ? { ...item, ...itemData } : item
+        )
+      );
     } else {
       // Add new
       const newItem: MenuItem = {
@@ -181,7 +183,7 @@ export default function MenuBuilder() {
         visible: itemData.visible ?? true,
         status: itemData.status || "Active",
         target: itemData.target || "_self",
-        created: new Date().toLocaleDateString()
+        created: new Date().toLocaleDateString(),
       };
       setMenuItems([...menuItems, newItem]);
     }
@@ -191,25 +193,41 @@ export default function MenuBuilder() {
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'active': return 'bg-success text-success-foreground';
-      case 'draft': return 'bg-warning text-warning-foreground';
-      case 'inactive': return 'bg-muted text-muted-foreground';
-      default: return 'bg-muted text-muted-foreground';
+      case "active":
+        return "bg-success text-success-foreground";
+      case "draft":
+        return "bg-warning text-warning-foreground";
+      case "inactive":
+        return "bg-muted text-muted-foreground";
+      default:
+        return "bg-muted text-muted-foreground";
     }
   };
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'internal': return 'bg-primary text-primary-foreground';
-      case 'external': return 'bg-accent text-accent-foreground';
-      case 'category': return 'bg-secondary text-secondary-foreground';
-      default: return 'bg-muted text-muted-foreground';
+      case "internal":
+        return "bg-primary text-primary-foreground";
+      case "external":
+        return "bg-accent text-accent-foreground";
+      case "category":
+        return "bg-secondary text-secondary-foreground";
+      default:
+        return "bg-muted text-muted-foreground";
     }
   };
 
   const getIcon = (iconName: string) => {
     const icons: { [key: string]: any } = {
-      Home, BookOpen, BarChart3, Globe, Users, Link, Settings, Shield, Navigation
+      Home,
+      BookOpen,
+      BarChart3,
+      Globe,
+      Users,
+      Link,
+      Settings,
+      Shield,
+      Navigation,
     };
     return icons[iconName] || Home;
   };
@@ -219,12 +237,12 @@ export default function MenuBuilder() {
     const rootItems: MenuItem[] = [];
 
     // First pass: create map of all items
-    items.forEach(item => {
+    items.forEach((item) => {
       itemMap.set(item.id, { ...item, children: [] });
     });
 
     // Second pass: build hierarchy
-    items.forEach(item => {
+    items.forEach((item) => {
       const menuItem = itemMap.get(item.id)!;
       if (item.parent && itemMap.has(item.parent)) {
         const parent = itemMap.get(item.parent)!;
@@ -238,19 +256,21 @@ export default function MenuBuilder() {
     return rootItems.sort((a, b) => a.order - b.order);
   };
 
-  const filteredItems = menuItems.filter(item => {
-    const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.url.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredItems = menuItems.filter((item) => {
+    const matchesSearch =
+      item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.url.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = typeFilter === "all" || item.type === typeFilter;
-    const matchesStatus = statusFilter === "all" || item.status.toLowerCase() === statusFilter;
-    
+    const matchesStatus =
+      statusFilter === "all" || item.status.toLowerCase() === statusFilter;
+
     return matchesSearch && matchesType && matchesStatus;
   });
 
   const columns = [
     {
-      key: 'title' as keyof MenuItem,
-      header: 'Menu Item',
+      key: "title" as keyof MenuItem,
+      header: "Menu Item",
       sortable: true,
       render: (item: MenuItem) => {
         const IconComponent = getIcon(item.icon);
@@ -264,25 +284,27 @@ export default function MenuBuilder() {
             </div>
           </div>
         );
-      }
+      },
     },
     {
-      key: 'type' as keyof MenuItem,
-      header: 'Type',
+      key: "type" as keyof MenuItem,
+      header: "Type",
       sortable: true,
       render: (item: MenuItem) => (
         <Badge variant="outline" className={getTypeColor(item.type)}>
-          {(item.type || '').charAt(0).toUpperCase() + (item.type || '').slice(1)}
+          {(item.type || "").charAt(0).toUpperCase() +
+            (item.type || "").slice(1)}
         </Badge>
-      )
+      ),
     },
     {
-      key: 'parent' as keyof MenuItem,
-      header: 'Parent',
+      key: "parent" as keyof MenuItem,
+      header: "Parent",
       sortable: true,
       render: (item: MenuItem) => {
-        if (!item.parent) return <span className="text-muted-foreground">Root</span>;
-        const parentItem = menuItems.find(m => m.id === item.parent);
+        if (!item.parent)
+          return <span className="text-muted-foreground">Root</span>;
+        const parentItem = menuItems.find((m) => m.id === item.parent);
         return parentItem ? (
           <div className="flex items-center">
             <ChevronRight className="mr-1 h-3 w-3 text-muted-foreground" />
@@ -291,33 +313,40 @@ export default function MenuBuilder() {
         ) : (
           <span className="text-muted-foreground">Unknown</span>
         );
-      }
+      },
     },
     {
-      key: 'visible' as keyof MenuItem,
-      header: 'Visibility',
+      key: "visible" as keyof MenuItem,
+      header: "Visibility",
       sortable: true,
       render: (item: MenuItem) => (
-        <Badge variant="outline" className={item.visible ? 'bg-success text-success-foreground' : 'bg-muted text-muted-foreground'}>
-          {item.visible ? 'Visible' : 'Hidden'}
+        <Badge
+          variant="outline"
+          className={
+            item.visible
+              ? "bg-success text-success-foreground"
+              : "bg-muted text-muted-foreground"
+          }
+        >
+          {item.visible ? "Visible" : "Hidden"}
         </Badge>
-      )
+      ),
     },
     {
-      key: 'status' as keyof MenuItem,
-      header: 'Status',
+      key: "status" as keyof MenuItem,
+      header: "Status",
       sortable: true,
       render: (item: MenuItem) => (
         <Badge variant="outline" className={getStatusColor(item.status)}>
           {item.status}
         </Badge>
-      )
+      ),
     },
     {
-      key: 'order' as keyof MenuItem,
-      header: 'Order',
-      sortable: true
-    }
+      key: "order" as keyof MenuItem,
+      header: "Order",
+      sortable: true,
+    },
   ];
 
   const actions = [
@@ -325,64 +354,64 @@ export default function MenuBuilder() {
       label: "View Details",
       icon: <Eye className="h-4 w-4" />,
       onClick: (item: MenuItem) => handleEdit(item),
-      variant: "default" as const
+      variant: "default" as const,
     },
     {
       label: "Edit",
       icon: <Edit className="h-4 w-4" />,
       onClick: (item: MenuItem) => handleEdit(item),
-      variant: "default" as const
+      variant: "default" as const,
     },
     {
       label: "Delete",
       icon: <Trash2 className="h-4 w-4" />,
       onClick: (item: MenuItem) => handleDelete(item),
-      variant: "destructive" as const
-    }
+      variant: "destructive" as const,
+    },
   ];
 
   const filters = [
-    { 
-      key: 'search', 
-      type: 'search' as const, 
-      label: 'Search',
-      placeholder: 'Search menu items...', 
-      value: searchTerm, 
-      onChange: setSearchTerm 
+    {
+      key: "search",
+      type: "search" as const,
+      label: "Search",
+      placeholder: "Search menu items...",
+      value: searchTerm,
+      onChange: setSearchTerm,
     },
-    { 
-      key: 'type', 
-      type: 'select' as const, 
-      label: 'Type',
-      placeholder: 'All Types', 
-      value: typeFilter, 
+    {
+      key: "type",
+      type: "select" as const,
+      label: "Type",
+      placeholder: "All Types",
+      value: typeFilter,
       onChange: setTypeFilter,
       options: [
-        { label: 'All Types', value: 'all' },
-        { label: 'Internal', value: 'internal' },
-        { label: 'External', value: 'external' },
-        { label: 'Category', value: 'category' }
-      ]
+        { label: "All Types", value: "all" },
+        { label: "Internal", value: "internal" },
+        { label: "External", value: "external" },
+        { label: "Category", value: "category" },
+      ],
     },
-    { 
-      key: 'status', 
-      type: 'select' as const, 
-      label: 'Status',
-      placeholder: 'All Status', 
-      value: statusFilter, 
+    {
+      key: "status",
+      type: "select" as const,
+      label: "Status",
+      placeholder: "All Status",
+      value: statusFilter,
       onChange: setStatusFilter,
       options: [
-        { label: 'All Status', value: 'all' },
-        { label: 'Active', value: 'active' },
-        { label: 'Draft', value: 'draft' },
-        { label: 'Inactive', value: 'inactive' }
-      ]
-    }
+        { label: "All Status", value: "all" },
+        { label: "Active", value: "active" },
+        { label: "Draft", value: "draft" },
+        { label: "Inactive", value: "inactive" },
+      ],
+    },
   ];
 
   const parentOptions = menuItems
-    .filter(item => item.type === 'category' && item.id !== selectedItem?.id)
-    .map(item => ({ label: item.title, value: item.id }));
+    .filter((item) => item.type === "category" && item.id !== selectedItem?.id)
+    .map((item) => ({ label: item.title, value: item.id }));
 
   const menuHierarchy = buildMenuHierarchy(menuItems);
 
@@ -398,7 +427,10 @@ export default function MenuBuilder() {
             Build and manage website navigation menus
           </p>
         </div>
-        <Button onClick={handleAdd} className="bg-gradient-primary hover:bg-primary-hover">
+        <Button
+          onClick={handleAdd}
+          className="bg-gradient-primary hover:bg-primary-hover"
+        >
           <Plus className="mr-2 h-4 w-4" />
           ADD MENU ITEM
         </Button>
@@ -424,7 +456,7 @@ export default function MenuBuilder() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {menuItems.filter(item => item.visible).length}
+              {menuItems.filter((item) => item.visible).length}
             </div>
             <p className="text-xs text-muted-foreground">Publicly visible</p>
           </CardContent>
@@ -437,7 +469,7 @@ export default function MenuBuilder() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {menuItems.filter(item => item.type === 'category').length}
+              {menuItems.filter((item) => item.type === "category").length}
             </div>
             <p className="text-xs text-muted-foreground">Parent categories</p>
           </CardContent>
@@ -445,12 +477,14 @@ export default function MenuBuilder() {
 
         <Card className="bg-gradient-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">External Links</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              External Links
+            </CardTitle>
             <Link className="h-4 w-4 text-warning" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {menuItems.filter(item => item.type === 'external').length}
+              {menuItems.filter((item) => item.type === "external").length}
             </div>
             <p className="text-xs text-muted-foreground">External resources</p>
           </CardContent>
@@ -472,19 +506,30 @@ export default function MenuBuilder() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     {/* @ts-ignore */}
-                    {React.createElement(getIcon(item.icon), { className: "mr-2 h-4 w-4" })}
+                    {React.createElement(getIcon(item.icon), {
+                      className: "mr-2 h-4 w-4",
+                    })}
                     <span className="font-medium">{item.title}</span>
-                    <Badge variant="outline" className={`ml-2 ${getTypeColor(item.type)}`}>
+                    <Badge
+                      variant="outline"
+                      className={`ml-2 ${getTypeColor(item.type)}`}
+                    >
                       {item.type}
                     </Badge>
                   </div>
                   <div className="flex items-center space-x-2">
                     {!item.visible && (
-                      <Badge variant="outline" className="bg-muted text-muted-foreground text-xs">
+                      <Badge
+                        variant="outline"
+                        className="bg-muted text-muted-foreground text-xs"
+                      >
                         Hidden
                       </Badge>
                     )}
-                    <Badge variant="outline" className={getStatusColor(item.status)}>
+                    <Badge
+                      variant="outline"
+                      className={getStatusColor(item.status)}
+                    >
                       {item.status}
                     </Badge>
                   </div>
@@ -492,20 +537,33 @@ export default function MenuBuilder() {
                 {item.children && item.children.length > 0 && (
                   <div className="ml-6 mt-2 space-y-1">
                     {item.children.map((child) => (
-                      <div key={child.id} className="flex items-center justify-between py-1">
+                      <div
+                        key={child.id}
+                        className="flex items-center justify-between py-1"
+                      >
                         <div className="flex items-center">
                           <ChevronRight className="mr-1 h-3 w-3 text-muted-foreground" />
                           {/* @ts-ignore */}
-                          {React.createElement(getIcon(child.icon), { className: "mr-2 h-3 w-3" })}
+                          {React.createElement(getIcon(child.icon), {
+                            className: "mr-2 h-3 w-3",
+                          })}
                           <span className="text-sm">{child.title}</span>
                         </div>
                         <div className="flex items-center space-x-1">
                           {!child.visible && (
-                            <Badge variant="outline" className="bg-muted text-muted-foreground text-xs">
+                            <Badge
+                              variant="outline"
+                              className="bg-muted text-muted-foreground text-xs"
+                            >
                               Hidden
                             </Badge>
                           )}
-                          <Badge variant="outline" className={`text-xs ${getStatusColor(child.status)}`}>
+                          <Badge
+                            variant="outline"
+                            className={`text-xs ${getStatusColor(
+                              child.status
+                            )}`}
+                          >
                             {child.status}
                           </Badge>
                         </div>
@@ -520,29 +578,32 @@ export default function MenuBuilder() {
       </Card>
 
       {/* Filters */}
-      <FiltersPanel filters={filters} onClearFilters={() => {
-        setSearchTerm("");
-        setTypeFilter("all");
-        setStatusFilter("all");
-      }} />
+      <FiltersPanel
+        filters={filters}
+        onClearFilters={() => {
+          setSearchTerm("");
+          setTypeFilter("all");
+          setStatusFilter("all");
+        }}
+      />
 
       {/* Data Table */}
-      <DataTable
-        data={filteredItems}
-        columns={columns}
-        actions={actions}
-      />
+      <DataTable data={filteredItems} columns={columns} actions={actions} />
 
       {/* Side Drawer for Add/Edit */}
       <SideDrawer
         open={isDrawerOpen}
         onOpenChange={setIsDrawerOpen}
         title={selectedItem ? "Edit Menu Item" : "Add New Menu Item"}
-        description={selectedItem ? "Update menu item details" : "Create a new menu item"}
+        description={
+          selectedItem ? "Update menu item details" : "Create a new menu item"
+        }
       >
         <div className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="title">Title <span className="text-destructive">*</span></Label>
+            <Label htmlFor="title">
+              Title <span className="text-destructive">*</span>
+            </Label>
             <Input
               id="title"
               defaultValue={selectedItem?.title || ""}
@@ -551,7 +612,9 @@ export default function MenuBuilder() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="url">URL <span className="text-destructive">*</span></Label>
+            <Label htmlFor="url">
+              URL <span className="text-destructive">*</span>
+            </Label>
             <Input
               id="url"
               defaultValue={selectedItem?.url || ""}
@@ -591,13 +654,13 @@ export default function MenuBuilder() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="parent">Parent Menu</Label>
-              <Select defaultValue={selectedItem?.parent || ""}>
+              <Select defaultValue={selectedItem?.parent || "none"}>
                 <SelectTrigger id="parent">
                   <SelectValue placeholder="Select parent (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No Parent (Root)</SelectItem>
-                  {parentOptions.map(option => (
+                  <SelectItem value="none">No Parent (Root)</SelectItem>
+                  {parentOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
@@ -633,7 +696,10 @@ export default function MenuBuilder() {
                   Show this item in the navigation menu
                 </p>
               </div>
-              <Switch id="visible" defaultChecked={selectedItem?.visible ?? true} />
+              <Switch
+                id="visible"
+                defaultChecked={selectedItem?.visible ?? true}
+              />
             </div>
 
             <div className="flex items-center justify-between">
@@ -666,18 +732,38 @@ export default function MenuBuilder() {
             </Button>
             <Button
               className="flex-1 bg-gradient-primary hover:bg-primary-hover"
-              onClick={() => handleSave({
-                title: (document.getElementById('title') as HTMLInputElement)?.value,
-                url: (document.getElementById('url') as HTMLInputElement)?.value,
-                type: (document.getElementById('type') as HTMLSelectElement)?.value as 'internal' | 'external' | 'category',
-                target: (document.getElementById('target') as HTMLSelectElement)?.value,
-                parent: (document.getElementById('parent') as HTMLSelectElement)?.value || null,
-                icon: (document.getElementById('icon') as HTMLSelectElement)?.value,
-                visible: (document.getElementById('visible') as HTMLInputElement)?.checked,
-                status: document.querySelector('[data-radix-select-trigger]')?.getAttribute('data-state') === 'open' ? 'Active' : selectedItem?.status || 'Active'
-              })}
+              onClick={() =>
+                handleSave({
+                  title: (document.getElementById("title") as HTMLInputElement)
+                    ?.value,
+                  url: (document.getElementById("url") as HTMLInputElement)
+                    ?.value,
+                  type: (document.getElementById("type") as HTMLSelectElement)
+                    ?.value as "internal" | "external" | "category",
+                  target: (
+                    document.getElementById("target") as HTMLSelectElement
+                  )?.value,
+                  parent:
+                    (document.getElementById("parent") as HTMLSelectElement)
+                      ?.value === "none"
+                      ? null
+                      : (document.getElementById("parent") as HTMLSelectElement)
+                          ?.value || null,
+                  icon: (document.getElementById("icon") as HTMLSelectElement)
+                    ?.value,
+                  visible: (
+                    document.getElementById("visible") as HTMLInputElement
+                  )?.checked,
+                  status:
+                    document
+                      .querySelector("[data-radix-select-trigger]")
+                      ?.getAttribute("data-state") === "open"
+                      ? "Active"
+                      : selectedItem?.status || "Active",
+                })
+              }
             >
-              {selectedItem ? 'Update Item' : 'Create Item'}
+              {selectedItem ? "Update Item" : "Create Item"}
             </Button>
           </div>
         </div>

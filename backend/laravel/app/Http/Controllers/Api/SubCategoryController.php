@@ -37,7 +37,7 @@ class SubCategoryController extends Controller
 
         // Pagination
         $perPage = $request->get('per_page', 15);
-        $subCategories = $query->withCount(['questions', 'exams'])
+        $subCategories = $query->withCount(['exams'])
                                ->orderBy('created_at', 'desc')
                                ->paginate($perPage);
 
@@ -75,7 +75,7 @@ class SubCategoryController extends Controller
 
         $subCategory = SubCategory::create($request->all());
         $subCategory->load('category');
-        $subCategory->loadCount(['questions', 'exams']);
+        $subCategory->loadCount(['exams']);
 
         return response()->json([
             'message' => 'Sub-category created successfully',
@@ -89,7 +89,7 @@ class SubCategoryController extends Controller
     public function show(SubCategory $subCategory): JsonResponse
     {
         $subCategory->load('category');
-        $subCategory->loadCount(['questions', 'exams']);
+        $subCategory->loadCount(['exams']);
         
         return response()->json([
             'data' => $subCategory,
@@ -119,7 +119,7 @@ class SubCategoryController extends Controller
 
         $subCategory->update($request->all());
         $subCategory->load('category');
-        $subCategory->loadCount(['questions', 'exams']);
+        $subCategory->loadCount(['exams']);
 
         return response()->json([
             'message' => 'Sub-category updated successfully',
@@ -133,12 +133,6 @@ class SubCategoryController extends Controller
     public function destroy(SubCategory $subCategory): JsonResponse
     {
         // Check if sub-category has associated data
-        if ($subCategory->questions()->count() > 0) {
-            return response()->json([
-                'message' => 'Cannot delete sub-category with questions',
-            ], 422);
-        }
-
         if ($subCategory->exams()->count() > 0) {
             return response()->json([
                 'message' => 'Cannot delete sub-category with exams',

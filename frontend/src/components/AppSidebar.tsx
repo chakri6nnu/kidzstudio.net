@@ -41,11 +41,15 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 const navigationItems = [
-  { title: "Home Dashboard", url: "/", icon: Home },
-  { title: "File Manager", url: "/file-manager", icon: FolderOpen },
+  { title: "Home Dashboard", url: "/admin", icon: Home },
+  { title: "File Manager", url: "/admin/file-manager", icon: FolderOpen },
 ];
 
 const engageItems = [
@@ -117,7 +121,10 @@ const configurationItems = [
     icon: BarChart3,
     items: [
       { title: "Overview", url: "/admin/analytics/overview" },
-      { title: "Student Performance", url: "/admin/analytics/student-performance" },
+      {
+        title: "Student Performance",
+        url: "/admin/analytics/student-performance",
+      },
       { title: "Subject Analytics", url: "/admin/analytics/subject-analytics" },
       { title: "Reports", url: "/admin/reports" },
     ],
@@ -145,6 +152,8 @@ const configurationItems = [
     icon: Settings,
     items: [
       { title: "General Settings", url: "/admin/general-settings" },
+      { title: "Sections", url: "/admin/sections" },
+      { title: "Skills", url: "/admin/skills" },
       { title: "Localization Settings", url: "/admin/localization-settings" },
       { title: "Home Page Settings", url: "/admin/home-settings" },
       { title: "Email Settings", url: "/admin/email-settings" },
@@ -164,44 +173,67 @@ export function AppSidebar() {
 
   const isActive = (path: string) => currentPath === path;
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
-    isActive ? "bg-sidebar-accent text-sidebar-primary" : "hover:bg-sidebar-accent/50";
+    isActive
+      ? "bg-sidebar-accent text-sidebar-primary"
+      : "hover:bg-sidebar-accent/50";
 
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
+    {}
+  );
 
   const toggleGroup = (groupTitle: string) => {
-    setExpandedGroups(prev => {
+    setExpandedGroups((prev) => {
       const isCurrentlyOpen = prev[groupTitle];
       // Close all groups first
       const allClosed = Object.keys(prev).reduce((acc, key) => {
         acc[key] = false;
         return acc;
       }, {} as Record<string, boolean>);
-      
+
       // If the clicked group was closed, open it; if it was open, keep it closed
       return {
         ...allClosed,
-        [groupTitle]: !isCurrentlyOpen
+        [groupTitle]: !isCurrentlyOpen,
       };
     });
   };
 
-  const GroupItem = ({ item, groupTitle }: { item: any; groupTitle: string }) => {
+  const GroupItem = ({
+    item,
+    groupTitle,
+  }: {
+    item: any;
+    groupTitle: string;
+  }) => {
     const isExpanded = expandedGroups[groupTitle];
-    const hasActiveChild = item.items?.some((child: any) => isActive(child.url));
+    const hasActiveChild = item.items?.some((child: any) =>
+      isActive(child.url)
+    );
 
     return (
       <SidebarMenuItem>
-        <Collapsible open={isExpanded} onOpenChange={() => toggleGroup(groupTitle)}>
+        <Collapsible
+          open={isExpanded}
+          onOpenChange={() => toggleGroup(groupTitle)}
+        >
           <CollapsibleTrigger asChild>
-            <SidebarMenuButton 
-              className={`w-full justify-between ${hasActiveChild ? 'bg-sidebar-accent text-sidebar-primary' : 'hover:bg-sidebar-accent/50'}`}
+            <SidebarMenuButton
+              className={`w-full justify-between ${
+                hasActiveChild
+                  ? "bg-sidebar-accent text-sidebar-primary"
+                  : "hover:bg-sidebar-accent/50"
+              }`}
             >
               <div className="flex items-center">
                 <item.icon className="mr-2 h-4 w-4" />
                 {!collapsed && <span>{item.title}</span>}
               </div>
               {!collapsed && (
-                <ChevronRight className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                <ChevronRight
+                  className={`h-4 w-4 transition-transform ${
+                    isExpanded ? "rotate-90" : ""
+                  }`}
+                />
               )}
             </SidebarMenuButton>
           </CollapsibleTrigger>
@@ -234,8 +266,12 @@ export function AppSidebar() {
             </div>
             {!collapsed && (
               <div className="ml-3">
-                <h1 className="text-lg font-bold text-sidebar-primary">QwikTest</h1>
-                <p className="text-xs text-sidebar-foreground/70">Exam Management</p>
+                <h1 className="text-lg font-bold text-sidebar-primary">
+                  QwikTest
+                </h1>
+                <p className="text-xs text-sidebar-foreground/70">
+                  Exam Management
+                </p>
               </div>
             )}
           </div>
@@ -261,11 +297,19 @@ export function AppSidebar() {
 
         {/* Engage Section */}
         <SidebarGroup>
-          {!collapsed && <SidebarGroupLabel className="text-accent uppercase text-xs font-semibold">Engage</SidebarGroupLabel>}
+          {!collapsed && (
+            <SidebarGroupLabel className="text-accent uppercase text-xs font-semibold">
+              Engage
+            </SidebarGroupLabel>
+          )}
           <SidebarGroupContent>
             <SidebarMenu>
               {engageItems.map((item) => (
-                <GroupItem key={item.title} item={item} groupTitle={item.title} />
+                <GroupItem
+                  key={item.title}
+                  item={item}
+                  groupTitle={item.title}
+                />
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
@@ -273,12 +317,20 @@ export function AppSidebar() {
 
         {/* Library Section */}
         <SidebarGroup>
-          {!collapsed && <SidebarGroupLabel className="text-accent uppercase text-xs font-semibold">Library</SidebarGroupLabel>}
+          {!collapsed && (
+            <SidebarGroupLabel className="text-accent uppercase text-xs font-semibold">
+              Library
+            </SidebarGroupLabel>
+          )}
           <SidebarGroupContent>
             <SidebarMenu>
-              {libraryItems.map((item) => (
+              {libraryItems.map((item) =>
                 item.items ? (
-                  <GroupItem key={item.title} item={item} groupTitle={item.title} />
+                  <GroupItem
+                    key={item.title}
+                    item={item}
+                    groupTitle={item.title}
+                  />
                 ) : (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
@@ -289,18 +341,26 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )
-              ))}
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
         {/* Configuration Section */}
         <SidebarGroup>
-          {!collapsed && <SidebarGroupLabel className="text-accent uppercase text-xs font-semibold">Configuration</SidebarGroupLabel>}
+          {!collapsed && (
+            <SidebarGroupLabel className="text-accent uppercase text-xs font-semibold">
+              Configuration
+            </SidebarGroupLabel>
+          )}
           <SidebarGroupContent>
             <SidebarMenu>
               {configurationItems.map((item) => (
-                <GroupItem key={item.title} item={item} groupTitle={item.title} />
+                <GroupItem
+                  key={item.title}
+                  item={item}
+                  groupTitle={item.title}
+                />
               ))}
             </SidebarMenu>
           </SidebarGroupContent>

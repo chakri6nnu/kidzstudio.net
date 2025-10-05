@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -11,186 +11,220 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { Upload, Save, RotateCcw, Settings, Globe, Image } from "lucide-react";
-import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import {
-  getSettingsApi,
-  createSettingApi,
-  updateSettingApi,
-  deleteSettingApi,
-  type Setting as ApiSetting,
-} from "@/lib/utils";
-
-type Setting = ApiSetting;
-
-interface ApiResponse {
-  data: Setting[];
-  meta: {
-    current_page: number;
-    last_page: number;
-    per_page: number;
-    total: number;
-  };
-}
+  Settings,
+  Globe,
+  Users,
+  Save,
+  CheckCircle,
+  AlertTriangle,
+  Loader2,
+  Building,
+  MapPin,
+  Clock,
+  Languages,
+  Upload,
+  Image,
+  X,
+} from "lucide-react";
+import { toast } from "sonner";
+import { generalSettingsApi } from "@/lib/api";
 
 export default function GeneralSettings() {
-  const [settings, setSettings] = useState<Setting[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    app_name: "KidzStudio",
-    tag_line: "Next Generation Online Exam Platform",
-    seo_description:
-      "KidzStudio is a comprehensive online examination platform for educational institutions and corporate training programs.",
-    can_register: true,
+  const [saved, setSaved] = useState(false);
+
+  // Site settings state
+  const [siteSettings, setSiteSettings] = useState({
+    app_name: "",
+    tag_line: "",
+    seo_description: "",
+    can_register: false,
     logo_path: "",
     white_logo_path: "",
     favicon_path: "",
   });
 
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  // Localization settings state
+  const [localizationSettings, setLocalizationSettings] = useState({
+    default_locale: "",
+    default_direction: "ltr",
+    default_timezone: "",
+  });
 
-  // Load settings from API
+  // File upload states
+  const [uploading, setUploading] = useState<string | null>(null);
+  const logoRef = useRef<HTMLInputElement>(null);
+  const whiteLogoRef = useRef<HTMLInputElement>(null);
+  const faviconRef = useRef<HTMLInputElement>(null);
+
+  // Options
+  const [timezones, setTimezones] = useState<string[]>([]);
+  const [languages, setLanguages] = useState<
+    Array<{ code: string; name: string }>
+  >([]);
+
+  const directionOptions = [
+    { value: "ltr", label: "Left to Right (LTR)" },
+    { value: "rtl", label: "Right to Left (RTL)" },
+  ];
+
   useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await getSettingsApi({
-          category: "general",
-          per_page: 100,
-        });
-        const settingsData = (response as ApiResponse).data;
-        setSettings(settingsData);
-
-        // Map settings to form data
-        const mappedData = {
-          app_name:
-            settingsData.find((s) => s.key === "app_name")?.value ||
-            "KidzStudio",
-          tag_line:
-            settingsData.find((s) => s.key === "tag_line")?.value ||
-            "Next Generation Online Exam Platform",
-          seo_description:
-            settingsData.find((s) => s.key === "seo_description")?.value || "",
-          can_register:
-            settingsData.find((s) => s.key === "can_register")?.value ===
-            "true",
-          logo_path:
-            settingsData.find((s) => s.key === "logo_path")?.value || "",
-          white_logo_path:
-            settingsData.find((s) => s.key === "white_logo_path")?.value || "",
-          favicon_path:
-            settingsData.find((s) => s.key === "favicon_path")?.value || "",
-        };
-        setFormData(mappedData);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to load settings"
-        );
-        toast.error("Failed to load settings");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadSettings();
   }, []);
 
-  const handleSave = async () => {
-    setSaving(true);
+  const loadSettings = async () => {
     try {
-      // Update or create each setting
-      const settingsToUpdate = [
-        {
-          key: "app_name",
-          value: formData.app_name,
-          type: "string",
-          category: "general",
-        },
-        {
-          key: "tag_line",
-          value: formData.tag_line,
-          type: "string",
-          category: "general",
-        },
-        {
-          key: "seo_description",
-          value: formData.seo_description,
-          type: "text",
-          category: "general",
-        },
-        {
-          key: "can_register",
-          value: formData.can_register.toString(),
-          type: "boolean",
-          category: "general",
-        },
-        {
-          key: "logo_path",
-          value: formData.logo_path,
-          type: "string",
-          category: "general",
-        },
-        {
-          key: "white_logo_path",
-          value: formData.white_logo_path,
-          type: "string",
-          category: "general",
-        },
-        {
-          key: "favicon_path",
-          value: formData.favicon_path,
-          type: "string",
-          category: "general",
-        },
-      ];
+      setLoading(true);
+      const response = await generalSettingsApi.getSettings();
 
-      for (const setting of settingsToUpdate) {
-        const existingSetting = settings.find((s) => s.key === setting.key);
-        if (existingSetting) {
-          await updateSettingApi(existingSetting.id, setting);
-        } else {
-          await createSettingApi(setting);
-        }
-      }
-
-      setSaving(false);
-      setSaved(true);
-      toast.success("Settings saved successfully");
-      setTimeout(() => setSaved(false), 3000);
-
-      // Reload settings
-      const response = await getSettingsApi({
-        category: "general",
-        per_page: 100,
+      setSiteSettings({
+        app_name: response.site.app_name || "",
+        tag_line: response.site.tag_line || "",
+        seo_description: response.site.seo_description || "",
+        can_register: response.site.can_register || false,
+        logo_path: response.site.logo_path || "",
+        white_logo_path: response.site.white_logo_path || "",
+        favicon_path: response.site.favicon_path || "",
       });
-      const settingsData = (response as ApiResponse).data;
-      setSettings(settingsData);
+
+      setLocalizationSettings({
+        default_locale: response.localization.default_locale || "",
+        default_direction: response.localization.default_direction || "ltr",
+        default_timezone: response.localization.default_timezone || "",
+      });
+
+      setTimezones(response.timezones || []);
+      setLanguages(response.languages || []);
     } catch (err) {
-      setSaving(false);
-      toast.error("Failed to save settings");
+      console.error("Failed to load settings:", err);
+      setError("Failed to load settings. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleReset = () => {
-    setFormData({
-      app_name: "KidzStudio",
-      tag_line: "Next Generation Online Exam Platform",
-      seo_description:
-        "KidzStudio is a comprehensive online examination platform for educational institutions and corporate training programs.",
-      can_register: true,
-      logo_path: "",
-      white_logo_path: "",
-      favicon_path: "",
-    });
+  const handleSiteSave = async () => {
+    try {
+      setSaving(true);
+      setError(null);
+      setSaved(false);
+
+      const response = await generalSettingsApi.updateSite(siteSettings);
+
+      if (response.success) {
+        setSaved(true);
+        toast.success("Site settings updated successfully!");
+        setTimeout(() => setSaved(false), 3000);
+      } else {
+        setError(response.message || "Failed to update site settings");
+      }
+    } catch (err) {
+      console.error("Failed to update site settings:", err);
+      setError("Failed to update site settings. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
+  const handleLocalizationSave = async () => {
+    try {
+      setSaving(true);
+      setError(null);
+      setSaved(false);
+
+      const response = await generalSettingsApi.updateLocalization(
+        localizationSettings
+      );
+
+      if (response.success) {
+        setSaved(true);
+        toast.success("Localization settings updated successfully!");
+        setTimeout(() => setSaved(false), 3000);
+      } else {
+        setError(response.message || "Failed to update localization settings");
+      }
+    } catch (err) {
+      console.error("Failed to update localization settings:", err);
+      setError("Failed to update localization settings. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleFileUpload = async (
+    file: File,
+    type: "logo" | "white_logo" | "favicon"
+  ) => {
+    try {
+      setUploading(type);
+      setError(null);
+
+      let response;
+      if (type === "logo") {
+        response = await generalSettingsApi.updateLogo(file);
+      } else if (type === "white_logo") {
+        response = await generalSettingsApi.updateWhiteLogo(file);
+      } else {
+        response = await generalSettingsApi.updateFavicon(file);
+      }
+
+      if (response.success) {
+        setSiteSettings((prev) => ({
+          ...prev,
+          [`${type}_path`]: response.data[`${type}_path`],
+        }));
+        toast.success(
+          `${
+            type.charAt(0).toUpperCase() + type.slice(1)
+          } updated successfully!`
+        );
+      } else {
+        setError(response.message || `Failed to update ${type}`);
+      }
+    } catch (err) {
+      console.error(`Failed to update ${type}:`, err);
+      setError(`Failed to update ${type}. Please try again.`);
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  const handleFileChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    type: "logo" | "white_logo" | "favicon"
+  ) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      handleFileUpload(file, type);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Loading settings...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6 space-y-6 max-w-4xl">
+    <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -199,57 +233,45 @@ export default function GeneralSettings() {
             General Settings
           </h1>
           <p className="text-muted-foreground mt-2">
-            Configure your application's basic information and branding
+            Manage your application's general settings and localization
           </p>
         </div>
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" onClick={handleReset}>
-            <RotateCcw className="mr-2 h-4 w-4" />
-            Reset
-          </Button>
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-            className="bg-gradient-primary"
-          >
-            <Save className="mr-2 h-4 w-4" />
-            {saving ? "Saving..." : "Save Settings"}
-          </Button>
-        </div>
+        <Badge variant="outline" className="text-sm">
+          <Settings className="mr-2 h-4 w-4" />
+          Settings
+        </Badge>
       </div>
 
-      {loading && (
-        <Alert>
-          <AlertDescription>Loading settings...</AlertDescription>
-        </Alert>
-      )}
-
+      {/* Error Alert */}
       {error && (
         <Alert className="border-destructive bg-destructive/10">
+          <AlertTriangle className="h-4 w-4" />
           <AlertDescription className="text-destructive">
             {error}
           </AlertDescription>
         </Alert>
       )}
 
+      {/* Success Alert */}
       {saved && (
         <Alert className="border-success bg-success/10">
+          <CheckCircle className="h-4 w-4 text-success" />
           <AlertDescription className="text-success">
             Settings saved successfully!
           </AlertDescription>
         </Alert>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Application Information */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+        {/* Site Settings */}
         <Card className="bg-gradient-card">
           <CardHeader>
             <CardTitle className="flex items-center">
-              <Globe className="mr-2 h-5 w-5" />
-              Application Information
+              <Building className="mr-2 h-5 w-5" />
+              Site Settings
             </CardTitle>
             <CardDescription>
-              Basic information about your application
+              Configure your application's basic information and branding
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -257,181 +279,404 @@ export default function GeneralSettings() {
               <Label htmlFor="app_name">Application Name *</Label>
               <Input
                 id="app_name"
-                value={formData.app_name}
+                value={siteSettings.app_name}
                 onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, app_name: e.target.value }))
+                  setSiteSettings((prev) => ({
+                    ...prev,
+                    app_name: e.target.value,
+                  }))
                 }
-                placeholder="Enter application name"
-                maxLength={160}
+                placeholder="Your Application Name"
+                maxLength={255}
                 required
               />
-              <p className="text-xs text-muted-foreground">
-                {formData.app_name.length}/160 characters
-              </p>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="tag_line">Tag Line *</Label>
               <Input
                 id="tag_line"
-                value={formData.tag_line}
+                value={siteSettings.tag_line}
                 onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, tag_line: e.target.value }))
+                  setSiteSettings((prev) => ({
+                    ...prev,
+                    tag_line: e.target.value,
+                  }))
                 }
-                placeholder="Enter application tag line"
-                maxLength={160}
+                placeholder="Your application tagline"
+                maxLength={255}
                 required
               />
-              <p className="text-xs text-muted-foreground">
-                {formData.tag_line.length}/160 characters
-              </p>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="seo_description">SEO Description *</Label>
               <Textarea
                 id="seo_description"
-                value={formData.seo_description}
+                value={siteSettings.seo_description}
                 onChange={(e) =>
-                  setFormData((prev) => ({
+                  setSiteSettings((prev) => ({
                     ...prev,
                     seo_description: e.target.value,
                   }))
                 }
-                placeholder="Enter SEO meta description"
-                className="min-h-[80px]"
+                placeholder="Description for search engines"
                 maxLength={255}
+                rows={3}
                 required
               />
-              <p className="text-xs text-muted-foreground">
-                {formData.seo_description.length}/255 characters
-              </p>
             </div>
 
-            <Separator />
-
             <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <Label htmlFor="can_register">User Registration</Label>
+              <div className="space-y-0.5">
+                <Label htmlFor="can_register">Allow User Registration</Label>
                 <p className="text-sm text-muted-foreground">
-                  Allow new users to register on the platform
+                  Enable or disable new user registration
                 </p>
               </div>
               <Switch
                 id="can_register"
-                checked={formData.can_register}
+                checked={siteSettings.can_register}
                 onCheckedChange={(checked) =>
-                  setFormData((prev) => ({ ...prev, can_register: checked }))
+                  setSiteSettings((prev) => ({
+                    ...prev,
+                    can_register: checked,
+                  }))
                 }
               />
             </div>
+
+            <Separator />
+
+            <Button
+              onClick={handleSiteSave}
+              disabled={
+                saving ||
+                !siteSettings.app_name ||
+                !siteSettings.tag_line ||
+                !siteSettings.seo_description
+              }
+              className="w-full inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 text-primary-foreground h-10 px-4 py-2 bg-gradient-primary hover:bg-primary-hover shadow-primary min-w-0"
+            >
+              <Save className="mr-2 h-4 w-4 flex-shrink-0" />
+              <span className="truncate">
+                {saving ? "Saving..." : "Save Site Settings"}
+              </span>
+            </Button>
           </CardContent>
         </Card>
 
-        {/* Branding & Assets */}
+        {/* Branding Settings */}
         <Card className="bg-gradient-card">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Image className="mr-2 h-5 w-5" />
-              Branding & Assets
+              Branding Settings
             </CardTitle>
             <CardDescription>
-              Upload your brand assets and visual identity
+              Upload your application's logo and favicon
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Site Logo */}
-            <div className="space-y-3">
-              <Label>Site Logo</Label>
-              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4">
-                <div className="text-center space-y-2">
-                  <Upload className="mx-auto h-8 w-8 text-muted-foreground/50" />
-                  <div>
-                    <p className="text-sm font-medium">Upload Site Logo</p>
-                    <p className="text-xs text-muted-foreground">
-                      JPG, PNG • Max 512KB • Recommended: 200x50px
+            {/* Logo Upload */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Application Logo</Label>
+                <div className="flex items-center space-x-4">
+                  {siteSettings.logo_path && (
+                    <div className="relative">
+                      <img
+                        src={`/storage/${siteSettings.logo_path}`}
+                        alt="Current logo"
+                        className="h-16 w-auto object-contain border rounded"
+                      />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <input
+                      ref={logoRef}
+                      type="file"
+                      accept="image/jpeg,image/png"
+                      onChange={(e) => handleFileChange(e, "logo")}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => logoRef.current?.click()}
+                      disabled={uploading === "logo"}
+                    >
+                      {uploading === "logo" ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Upload className="mr-2 h-4 w-4" />
+                      )}
+                      {siteSettings.logo_path ? "Change Logo" : "Upload Logo"}
+                    </Button>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      JPG or PNG, max 512KB
                     </p>
                   </div>
-                  <Button variant="outline" size="sm">
-                    Choose File
-                  </Button>
+                </div>
+              </div>
+
+              {/* White Logo Upload */}
+              <div className="space-y-2">
+                <Label>White Logo (for dark backgrounds)</Label>
+                <div className="flex items-center space-x-4">
+                  {siteSettings.white_logo_path && (
+                    <div className="relative">
+                      <img
+                        src={`/storage/${siteSettings.white_logo_path}`}
+                        alt="Current white logo"
+                        className="h-16 w-auto object-contain border rounded bg-gray-100"
+                      />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <input
+                      ref={whiteLogoRef}
+                      type="file"
+                      accept="image/jpeg,image/png"
+                      onChange={(e) => handleFileChange(e, "white_logo")}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => whiteLogoRef.current?.click()}
+                      disabled={uploading === "white_logo"}
+                    >
+                      {uploading === "white_logo" ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Upload className="mr-2 h-4 w-4" />
+                      )}
+                      {siteSettings.white_logo_path
+                        ? "Change White Logo"
+                        : "Upload White Logo"}
+                    </Button>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      JPG or PNG, max 512KB
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Favicon Upload */}
+              <div className="space-y-2">
+                <Label>Favicon</Label>
+                <div className="flex items-center space-x-4">
+                  {siteSettings.favicon_path && (
+                    <div className="relative">
+                      <img
+                        src={`/storage/${siteSettings.favicon_path}`}
+                        alt="Current favicon"
+                        className="h-8 w-8 object-contain border rounded"
+                      />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <input
+                      ref={faviconRef}
+                      type="file"
+                      accept="image/png"
+                      onChange={(e) => handleFileChange(e, "favicon")}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => faviconRef.current?.click()}
+                      disabled={uploading === "favicon"}
+                    >
+                      {uploading === "favicon" ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Upload className="mr-2 h-4 w-4" />
+                      )}
+                      {siteSettings.favicon_path
+                        ? "Change Favicon"
+                        : "Upload Favicon"}
+                    </Button>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      PNG only, max 512KB, 32x32px recommended
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
 
-            {/* White Logo */}
-            <div className="space-y-3">
-              <Label>White Logo (Dark Backgrounds)</Label>
-              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4">
-                <div className="text-center space-y-2">
-                  <Upload className="mx-auto h-8 w-8 text-muted-foreground/50" />
-                  <div>
-                    <p className="text-sm font-medium">Upload White Logo</p>
-                    <p className="text-xs text-muted-foreground">
-                      JPG, PNG • Max 512KB • Recommended: 200x50px
-                    </p>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Choose File
-                  </Button>
-                </div>
-              </div>
+        {/* Localization Settings */}
+        <Card className="bg-gradient-card">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Globe className="mr-2 h-5 w-5" />
+              Localization Settings
+            </CardTitle>
+            <CardDescription>
+              Configure language, direction, and timezone settings
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="default_locale">Default Language *</Label>
+              <Select
+                value={localizationSettings.default_locale}
+                onValueChange={(value) =>
+                  setLocalizationSettings((prev) => ({
+                    ...prev,
+                    default_locale: value,
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select language" />
+                </SelectTrigger>
+                <SelectContent>
+                  {languages.map((lang, index) => (
+                    <SelectItem
+                      key={`lang-${lang.code}-${index}`}
+                      value={lang.code}
+                    >
+                      {lang.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            {/* Favicon */}
-            <div className="space-y-3">
-              <Label>Favicon</Label>
-              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4">
-                <div className="text-center space-y-2">
-                  <Upload className="mx-auto h-8 w-8 text-muted-foreground/50" />
-                  <div>
-                    <p className="text-sm font-medium">Upload Favicon</p>
-                    <p className="text-xs text-muted-foreground">
-                      PNG • Max 512KB • Recommended: 32x32px
-                    </p>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Choose File
-                  </Button>
-                </div>
+            <div className="space-y-2">
+              <Label htmlFor="default_direction">Text Direction *</Label>
+              <Select
+                value={localizationSettings.default_direction}
+                onValueChange={(value) =>
+                  setLocalizationSettings((prev) => ({
+                    ...prev,
+                    default_direction: value,
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select direction" />
+                </SelectTrigger>
+                <SelectContent>
+                  {directionOptions.map((option, index) => (
+                    <SelectItem
+                      key={`direction-${option.value}-${index}`}
+                      value={option.value}
+                    >
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="default_timezone">Default Timezone *</Label>
+              <Select
+                value={localizationSettings.default_timezone}
+                onValueChange={(value) =>
+                  setLocalizationSettings((prev) => ({
+                    ...prev,
+                    default_timezone: value,
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select timezone" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[200px]">
+                  {timezones.map((tz, index) => (
+                    <SelectItem key={`timezone-${tz}-${index}`} value={tz}>
+                      {tz}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Separator />
+
+            <Button
+              onClick={handleLocalizationSave}
+              disabled={
+                saving ||
+                !localizationSettings.default_locale ||
+                !localizationSettings.default_timezone
+              }
+              className="w-full inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 text-primary-foreground h-10 px-4 py-2 bg-gradient-primary hover:bg-primary-hover shadow-primary min-w-0"
+            >
+              <Save className="mr-2 h-4 w-4 flex-shrink-0" />
+              <span className="truncate">
+                {saving ? "Saving..." : "Save Localization"}
+              </span>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Additional Info Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+        <Card className="bg-gradient-card">
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Users className="h-5 w-5 text-blue-500" />
+              <div>
+                <p className="text-sm font-medium">User Registration</p>
+                <p className="text-xs text-muted-foreground">
+                  {siteSettings.can_register ? "Enabled" : "Disabled"}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-card">
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Languages className="h-5 w-5 text-green-500" />
+              <div>
+                <p className="text-sm font-medium">Language</p>
+                <p className="text-xs text-muted-foreground">
+                  {localizationSettings.default_locale || "Not set"}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-card">
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Clock className="h-5 w-5 text-purple-500" />
+              <div>
+                <p className="text-sm font-medium">Timezone</p>
+                <p className="text-xs text-muted-foreground">
+                  {localizationSettings.default_timezone || "Not set"}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-card">
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Image className="h-5 w-5 text-orange-500" />
+              <div>
+                <p className="text-sm font-medium">Branding</p>
+                <p className="text-xs text-muted-foreground">
+                  {siteSettings.logo_path ? "Configured" : "Not set"}
+                </p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
-
-      {/* Current Settings Preview */}
-      <Card className="bg-gradient-card">
-        <CardHeader>
-          <CardTitle>Settings Preview</CardTitle>
-          <CardDescription>
-            Preview how your settings will appear to users
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="bg-muted/50 p-6 rounded-lg">
-            <div className="space-y-2">
-              <h3 className="text-xl font-bold">{formData.app_name}</h3>
-              <p className="text-muted-foreground">{formData.tag_line}</p>
-              <p className="text-sm text-muted-foreground mt-4">
-                SEO Description: "{formData.seo_description}"
-              </p>
-              <div className="flex items-center space-x-2 mt-4">
-                <span className="text-sm">Registration:</span>
-                <span
-                  className={`text-sm px-2 py-1 rounded ${
-                    formData.can_register
-                      ? "bg-success/20 text-success"
-                      : "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  {formData.can_register ? "Enabled" : "Disabled"}
-                </span>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

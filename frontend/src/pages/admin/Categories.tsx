@@ -33,13 +33,7 @@ import {
   Hash,
   Archive,
 } from "lucide-react";
-import {
-  getCategoriesApi,
-  createCategoryApi,
-  updateCategoryApi,
-  deleteCategoryApi,
-  type Category as ApiCategory,
-} from "@/lib/utils";
+import { api } from "@/lib/api";
 import { toast } from "sonner";
 
 interface Category {
@@ -75,36 +69,23 @@ export default function Categories() {
     try {
       setLoading(true);
       setError("");
-      const filters: {
-        search?: string;
-        status?: string;
-        type?: string;
-        per_page?: number;
-      } = {
-        search: searchTerm || undefined,
-        status: statusFilter !== "all" ? statusFilter : undefined,
-        type: typeFilter !== "all" ? typeFilter : undefined,
-      };
-      const response = await getCategoriesApi(filters);
+      const response = await api.categories.getAll();
 
       // Map API response to UI format
-      const mappedCategories: Category[] = response.data.map(
-        (c: ApiCategory) => ({
-          id: c.id,
-          name: c.name,
-          description: c.description || "",
-          subcategories: c.sub_categories_count || 0,
-          questions: c.questions_count || 0,
-          exams: c.exams_count || 0,
-          color: c.color || "#3B82F6",
-          status: c.is_active ? "Active" : "Inactive",
-          created: new Date(c.created_at).toLocaleDateString(),
-          parent: null, // Categories don't have parents in this structure
-        })
-      );
+      const mappedCategories: Category[] = response.map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        description: c.description || "",
+        subcategories: c.sub_categories_count || 0,
+        questions: c.questions_count || 0,
+        exams: c.exams_count || 0,
+        color: c.color || "#3B82F6",
+        status: c.is_active ? "Active" : "Inactive",
+        created: new Date(c.created_at).toLocaleDateString(),
+        parent: null, // Categories don't have parents in this structure
+      }));
 
       setCategories(mappedCategories);
-      setMeta(response.meta);
     } catch (err: any) {
       setError(err?.message || "Failed to load categories");
       toast.error("Failed to load categories");
@@ -135,7 +116,7 @@ export default function Categories() {
   const handleConfirmDelete = async () => {
     if (selectedCategory) {
       try {
-        await deleteCategoryApi(selectedCategory.id);
+        await api.categories.delete(selectedCategory.id.toString());
         setCategories((prev) =>
           prev.filter((c) => c.id !== selectedCategory.id)
         );
@@ -158,10 +139,13 @@ export default function Categories() {
       };
 
       if (selectedCategory) {
-        await updateCategoryApi(selectedCategory.id, categoryData);
+        await api.categories.update(
+          selectedCategory.id.toString(),
+          categoryData
+        );
         toast.success("Category updated successfully!");
       } else {
-        await createCategoryApi(categoryData);
+        await api.categories.create(categoryData);
         toast.success("Category created successfully!");
       }
 

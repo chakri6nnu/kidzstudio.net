@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use App\Models\User;
+use Illuminate\Support\Arr;
 
 class AuthController extends Controller
 {
@@ -37,6 +38,10 @@ class AuthController extends Controller
         $tokenName = $request->input('device_name', 'react-client');
         $token = $user->createToken($tokenName)->plainTextToken;
 
+        // Load roles and permissions via Spatie Permissions
+        $roles = $user->getRoleNames();
+        $permissions = $user->getAllPermissions()->pluck('name');
+
         return response()->json([
             'token' => $token,
             'user' => [
@@ -44,13 +49,24 @@ class AuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'user_name' => $user->user_name,
+                'roles' => $roles,
+                'permissions' => $permissions,
             ],
         ]);
     }
 
     public function me(Request $request)
     {
-        return response()->json($request->user());
+        $user = $request->user();
+        $user->load('roles');
+        return response()->json([
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'user_name' => $user->user_name,
+            'roles' => $user->getRoleNames(),
+            'permissions' => $user->getAllPermissions()->pluck('name'),
+        ]);
     }
 
     public function logout(Request $request)

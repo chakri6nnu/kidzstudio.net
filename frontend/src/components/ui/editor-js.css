@@ -1,0 +1,152 @@
+/* Editor.js Theme Support */
+.editor-js-container .codex-editor {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  padding: 12px;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.editor-js-container .codex-editor__redactor {
+  padding-bottom: 0;
+}
+
+.editor-js-container .ce-block__content {
+  max-width: none;
+}
+
+.editor-js-container .ce-toolbar__content {
+  max-width: none;
+}
+
+/* Toolbar */
+.editor-js-container .ce-toolbar {
+  background: hsl(var(--muted));
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px 6px 0 0;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.editor-js-container .ce-toolbar__button {
+  color: hsl(var(--muted-foreground));
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.editor-js-container .ce-toolbar__button:hover {
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+
+.editor-js-container .ce-toolbar__button--active {
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+
+/* Popover */
+.editor-js-container .ce-popover {
+  background: hsl(var(--popover));
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--popover-foreground));
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.editor-js-container .ce-popover__item {
+  color: hsl(var(--popover-foreground));
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.editor-js-container .ce-popover__item:hover {
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+
+/* Inline Toolbar */
+.editor-js-container .ce-inline-toolbar {
+  background: hsl(var(--popover));
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--popover-foreground));
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.editor-js-container .ce-inline-toolbar__button {
+  color: hsl(var(--popover-foreground));
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.editor-js-container .ce-inline-toolbar__button:hover {
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+
+.editor-js-container .ce-inline-toolbar__button--active {
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+
+/* Conversion Toolbar */
+.editor-js-container .ce-conversion-toolbar {
+  background: hsl(var(--popover));
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--popover-foreground));
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.editor-js-container .ce-conversion-toolbar__button {
+  color: hsl(var(--popover-foreground));
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.editor-js-container .ce-conversion-toolbar__button:hover {
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+
+/* Block Content */
+.editor-js-container .ce-block {
+  color: hsl(var(--foreground));
+  transition: color 0.2s;
+}
+
+.editor-js-container .ce-block__content {
+  color: hsl(var(--foreground));
+  transition: color 0.2s;
+}
+
+/* Placeholder */
+.editor-js-container .ce-block[data-placeholder]:empty::before {
+  color: hsl(var(--muted-foreground));
+  transition: color 0.2s;
+}
+
+/* Selection */
+.editor-js-container .ce-block--selected {
+  background: hsl(var(--accent) / 0.1);
+}
+
+/* Focus */
+.editor-js-container .ce-block--focused {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Dark theme specific adjustments */
+@media (prefers-color-scheme: dark) {
+  .editor-js-container .ce-popover,
+  .editor-js-container .ce-inline-toolbar,
+  .editor-js-container .ce-conversion-toolbar {
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+  }
+}
+
+/* Light theme specific adjustments */
+@media (prefers-color-scheme: light) {
+  .editor-js-container .ce-popover,
+  .editor-js-container .ce-inline-toolbar,
+  .editor-js-container .ce-conversion-toolbar {
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  }
+}

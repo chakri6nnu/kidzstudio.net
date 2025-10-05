@@ -112,14 +112,12 @@ export default function QuizTypes() {
     return matchesSearch && matchesStatus;
   });
 
-  // Filter options
+  // Filter options (legacy FiltersPanel shape)
   const filters = [
     {
-      key: "status",
-      type: "select" as const,
+      id: "status",
       label: "Status",
       value: selectedStatus,
-      onChange: (value: string) => setSelectedStatus(value),
       options: [
         { value: "all", label: "All Status" },
         { value: "active", label: "Active" },
@@ -130,10 +128,7 @@ export default function QuizTypes() {
 
   // CRUD operations
   const handleFilterChange = (filterId: string, value: string) => {
-    const filter = filters.find((f) => f.key === filterId);
-    if (filter) {
-      filter.onChange(value);
-    }
+    if (filterId === "status") setSelectedStatus(value);
   };
 
   const handleClearFilters = () => {
@@ -277,15 +272,15 @@ export default function QuizTypes() {
       key: "name" as keyof QuizType,
       header: "Quiz Type",
       sortable: true,
-      render: (quizType: QuizType) => (
+      render: (_value: any, item: QuizType) => (
         <div className="flex items-center space-x-3">
           <div
             className="w-4 h-4 rounded border"
-            style={{ backgroundColor: quizType.color }}
+            style={{ backgroundColor: item.color }}
           />
           <div>
-            <div className="font-semibold">{quizType.name}</div>
-            <div className="text-sm text-muted-foreground">{quizType.code}</div>
+            <div className="font-semibold">{item.name}</div>
+            <div className="text-sm text-muted-foreground">{item.code}</div>
           </div>
         </div>
       ),
@@ -293,9 +288,9 @@ export default function QuizTypes() {
     {
       key: "description" as keyof QuizType,
       header: "Description",
-      render: (quizType: QuizType) => (
+      render: (value: string | null) => (
         <div className="max-w-xs truncate text-sm text-muted-foreground">
-          {quizType.description}
+          {value ?? "-"}
         </div>
       ),
     },
@@ -303,15 +298,15 @@ export default function QuizTypes() {
       key: "quizCount" as keyof QuizType,
       header: "Usage",
       sortable: true,
-      render: (quizType: QuizType) => (
+      render: (_value: number, item: QuizType) => (
         <div className="space-y-1 text-sm">
           <div className="flex items-center">
             <Target className="mr-1 h-3 w-3" />
-            {quizType.quizCount} quizzes
+            {item.quizCount} quizzes
           </div>
           <div className="flex items-center text-muted-foreground">
             <Users className="mr-1 h-3 w-3" />
-            {(quizType.participants || 0).toLocaleString()} participants
+            {(item.participants || 0).toLocaleString()} participants
           </div>
         </div>
       ),
@@ -319,26 +314,26 @@ export default function QuizTypes() {
     {
       key: "avgDuration" as keyof QuizType,
       header: "Avg Duration",
-      render: (quizType: QuizType) => (
+      render: (value: number) => (
         <div className="flex items-center">
           <Clock className="mr-1 h-3 w-3" />
-          {quizType.avgDuration} min
+          {value} min
         </div>
       ),
     },
     {
       key: "isActive" as keyof QuizType,
       header: "Status",
-      render: (quizType: QuizType) => (
+      render: (value: boolean) => (
         <Badge
           variant="secondary"
           className={
-            quizType.isActive
+            value
               ? "bg-success text-success-foreground"
               : "bg-muted text-muted-foreground"
           }
         >
-          {quizType.isActive ? "Active" : "Inactive"}
+          {value ? "Active" : "Inactive"}
         </Badge>
       ),
     },
@@ -346,7 +341,7 @@ export default function QuizTypes() {
       key: "createdAt" as keyof QuizType,
       header: "Created",
       sortable: true,
-      render: (quizType: QuizType) => quizType.createdAt,
+      render: (value: string) => value,
     },
   ];
 

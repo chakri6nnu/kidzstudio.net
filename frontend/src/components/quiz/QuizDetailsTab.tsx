@@ -6,35 +6,69 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { EditorJs } from "@/components/ui/editor-js";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-const quizDetailsSchema = z.object({
-  title: z.string().min(1, "Title is required").max(200),
-  sub_category_id: z.string().min(1, "Sub Category is required"),
-  quiz_type: z.string().min(1, "Quiz Type is required"),
-  is_paid: z.boolean().default(false),
-  price: z.number().min(0).optional(),
-  can_redeem: z.boolean().default(false),
-  points_required: z.number().min(0).optional(),
-  description: z.string().optional(),
-  is_private: z.boolean().default(false),
-  is_active: z.boolean().default(true),
-});
+const quizDetailsSchema = z
+  .object({
+    title: z.string().min(1, "Title is required").max(200),
+    sub_category_id: z.string().min(1, "Sub Category is required"),
+    quiz_type: z.string().min(1, "Quiz Type is required"),
+    is_paid: z.boolean().default(false),
+    can_redeem: z.boolean().default(false),
+    points_required: z.number().min(0).optional(),
+    description: z.string().optional(),
+    is_private: z.boolean().default(false),
+    is_active: z.boolean().default(true),
+  })
+  .refine(
+    (d) => !(d.can_redeem && (!d.points_required || d.points_required <= 0)),
+    {
+      path: ["points_required"],
+      message:
+        "Points Required to Redeem is required when Can access with Points is enabled",
+    }
+  );
 
 type QuizDetailsData = z.infer<typeof quizDetailsSchema>;
 
 interface QuizDetailsTabProps {
   quizData?: any;
   onSave: (data: QuizDetailsData) => void;
-  categories: Array<{ id: string; name: string; }>;
-  quizTypes: Array<{ id: string; name: string; }>;
+  categories: Array<{ id: string; name: string }>;
+  quizTypes: Array<{ id: string; name: string }>;
 }
 
-export default function QuizDetailsTab({ quizData, onSave, categories, quizTypes }: QuizDetailsTabProps) {
+export default function QuizDetailsTab({
+  quizData,
+  onSave,
+  categories,
+  quizTypes,
+}: QuizDetailsTabProps) {
   const [saving, setSaving] = useState(false);
 
   const form = useForm<QuizDetailsData>({
@@ -44,13 +78,12 @@ export default function QuizDetailsTab({ quizData, onSave, categories, quizTypes
       sub_category_id: quizData?.sub_category_id || "",
       quiz_type: quizData?.quiz_type || "",
       is_paid: quizData?.is_paid || false,
-      price: quizData?.price || 0,
       can_redeem: quizData?.can_redeem || false,
       points_required: quizData?.points_required || 0,
       description: quizData?.description || "",
       is_private: quizData?.is_private || false,
       is_active: quizData?.is_active || true,
-    }
+    },
   });
 
   const isPaid = form.watch("is_paid");
@@ -75,7 +108,10 @@ export default function QuizDetailsTab({ quizData, onSave, categories, quizTypes
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-6"
+          >
             {/* Title */}
             <FormField
               control={form.control}
@@ -84,10 +120,7 @@ export default function QuizDetailsTab({ quizData, onSave, categories, quizTypes
                 <FormItem>
                   <FormLabel>Title *</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="Basic Math Quiz" 
-                      {...field} 
-                    />
+                    <Input placeholder="Basic Math Quiz" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -102,7 +135,10 @@ export default function QuizDetailsTab({ quizData, onSave, categories, quizTypes
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Sub Category *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select category" />
@@ -127,7 +163,10 @@ export default function QuizDetailsTab({ quizData, onSave, categories, quizTypes
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Quiz Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select type" />
@@ -155,15 +194,19 @@ export default function QuizDetailsTab({ quizData, onSave, categories, quizTypes
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                     <div className="space-y-0.5">
-                      <FormLabel className="text-base font-medium">Free</FormLabel>
+                      <FormLabel className="text-base font-medium">
+                        {isPaid ? "Paid" : "Free"}
+                      </FormLabel>
                       <FormDescription>
-                        Paid (Accessible to only paid users). Free (Anyone can access).
+                        {isPaid
+                          ? "Paid (Accessible to only paid users)."
+                          : "Free (Anyone can access)."}
                       </FormDescription>
                     </div>
                     <FormControl>
                       <Switch
-                        checked={!field.value}
-                        onCheckedChange={(checked) => field.onChange(!checked)}
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
                       />
                     </FormControl>
                   </FormItem>
@@ -171,30 +214,69 @@ export default function QuizDetailsTab({ quizData, onSave, categories, quizTypes
               />
 
               {isPaid && (
-                <FormField
-                  control={form.control}
-                  name="price"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Price</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          placeholder="0.00"
-                          {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
+                <>
+                  <FormField
+                    control={form.control}
+                    name="can_redeem"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-base font-medium">
+                            Can access with Points (No)
+                          </FormLabel>
+                          <FormDescription>
+                            Yes (User should redeem with points to access exam).
+                            No (Anyone can access).
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  {canRedeem && (
+                    <FormField
+                      control={form.control}
+                      name="points_required"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            Points Required to Redeem{" "}
+                            <span className="text-red-500">*</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="1"
+                              placeholder="e.g. 100"
+                              {...field}
+                              onChange={(e) =>
+                                field.onChange(
+                                  parseInt(e.target.value || "0", 10)
+                                )
+                              }
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Yes (User should redeem with points to access exam).
+                            No (Anyone can access).
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   )}
-                />
+                </>
               )}
             </div>
 
-            {/* Description */}
+            {/* Description (use same rich editor as exam) */}
             <FormField
               control={form.control}
               name="description"
@@ -202,10 +284,28 @@ export default function QuizDetailsTab({ quizData, onSave, categories, quizTypes
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea
+                    <EditorJs
+                      data={
+                        field.value
+                          ? (() => {
+                              try {
+                                return JSON.parse(field.value);
+                              } catch {
+                                return {
+                                  blocks: [
+                                    {
+                                      type: "paragraph",
+                                      data: { text: field.value },
+                                    },
+                                  ],
+                                };
+                              }
+                            })()
+                          : {}
+                      }
+                      onChange={(data) => field.onChange(JSON.stringify(data))}
                       placeholder="Enter quiz description..."
                       className="min-h-[120px]"
-                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
@@ -213,7 +313,7 @@ export default function QuizDetailsTab({ quizData, onSave, categories, quizTypes
               )}
             />
 
-            {/* Visibility Settings */}
+            {/* Visibility Settings (same phrasing as exam) */}
             <div className="space-y-4">
               <FormField
                 control={form.control}
@@ -221,15 +321,19 @@ export default function QuizDetailsTab({ quizData, onSave, categories, quizTypes
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                     <div className="space-y-0.5">
-                      <FormLabel className="text-base font-medium">Visibility - Public</FormLabel>
+                      <FormLabel className="text-base font-medium">
+                        Visibility - {field.value ? "Private" : "Public"}
+                      </FormLabel>
                       <FormDescription>
-                        Private (Only scheduled user groups can access). Public (Anyone can access).
+                        {field.value
+                          ? "Private (Only scheduled user groups can access). Public (Anyone can access)."
+                          : "Public (Anyone can access). Private (Only scheduled user groups can access)."}
                       </FormDescription>
                     </div>
                     <FormControl>
                       <Switch
-                        checked={!field.value}
-                        onCheckedChange={(checked) => field.onChange(!checked)}
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
                       />
                     </FormControl>
                   </FormItem>
@@ -239,8 +343,8 @@ export default function QuizDetailsTab({ quizData, onSave, categories, quizTypes
 
             {/* Submit Button */}
             <div className="flex justify-end pt-6">
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={saving}
                 className="bg-success hover:bg-success/90 text-white px-8"
               >

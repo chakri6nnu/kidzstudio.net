@@ -52,17 +52,12 @@ import {
   XCircle,
   Upload,
   Download,
+  Loader2,
 } from "lucide-react";
+import { api } from "@/lib/api";
 import UserForm from "@/components/forms/UserForm";
 import DeleteConfirmDialog from "@/components/dialogs/DeleteConfirmDialog";
 import ImportDialog from "@/components/dialogs/ImportDialog";
-import {
-  getUsersApi,
-  createUserApi,
-  updateUserApi,
-  deleteUserApi,
-  type User as ApiUser,
-} from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function Users() {
@@ -73,45 +68,47 @@ export default function Users() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [meta, setMeta] = useState<any>({});
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   // Load users from API
   const loadUsers = async () => {
     try {
       setLoading(true);
       setError("");
-      const filters: {
-        search?: string;
-        role?: string;
-        status?: string;
-        per_page?: number;
-      } = {
+      const response = await api.users.getAll({
         search: searchTerm || undefined,
         role: selectedRole !== "all" ? selectedRole : undefined,
-        status: selectedStatus !== "all" ? selectedStatus : undefined,
-      };
-      const response = await getUsersApi(filters);
+        page: 1,
+        limit: 50,
+      });
 
       // Map API response to UI format
-      const mappedUsers = response.data.map((u: ApiUser) => ({
+      const mappedUsers = response.data.map((u: any) => ({
         id: u.id,
-        name: u.name,
+        name: u.name || u.email || "Unknown User",
         email: u.email,
-        avatar: "/placeholder.svg", // Default avatar
-        role: u.role,
+        avatar: u.avatar || "/placeholder.svg",
+        role: u.roles?.[0]?.name || u.role || "Student",
         status: u.is_active ? "Active" : "Inactive",
         joinDate: new Date(u.created_at).toISOString().split("T")[0],
         lastActive: new Date(u.updated_at).toISOString().split("T")[0],
-        examsCompleted: 0, // Placeholder - needs to come from API
-        totalScore: 0, // Placeholder - needs to come from API
-        subscriptionPlan: "Basic", // Placeholder - needs to come from API
+        examsCompleted: u.exams_completed || 0,
+        totalScore: u.total_score || 0,
+        subscriptionPlan: u.subscription_plan || "Basic",
         phone: u.phone || "",
-        group: "Default Group", // Placeholder - needs to come from API
+        group: u.group || "Default Group",
       }));
 
       setUsers(mappedUsers);
-      setMeta(response.meta);
+      setMeta({
+        total: response.total,
+        current_page: response.current_page,
+        last_page: response.last_page,
+      });
     } catch (err: any) {
       setError(err?.message || "Failed to load users");
+      toast.error("Failed to load users");
     } finally {
       setLoading(false);
     }
@@ -204,6 +201,71 @@ export default function Users() {
         return "bg-muted/50 text-muted-foreground";
       default:
         return "bg-secondary text-secondary-foreground";
+    }
+  };
+
+  const handleSaveUser = async (data: any) => {
+    try {
+      if (editingUser) {
+        // Update existing user
+        await api.users.update(editingUser.id, data);
+        toast.success("User updated successfully!");
+        setEditingUser(null);
+        setIsEditDialogOpen(false);
+      } else {
+        // Create new user
+        await api.users.create(data);
+        toast.success("User created successfully!");
+      }
+      await loadUsers();
+    } catch (err: any) {
+      toast.error(
+        err?.message || `Failed to ${editingUser ? "update" : "create"} user`
+      );
+    }
+  };
+
+  const handleEditUser = async (user: any) => {
+    try {
+      // Fetch full user details
+      const response = await api.users.getById(user.id);
+      setEditingUser(response.data);
+      setIsEditDialogOpen(true);
+    } catch (err: any) {
+      toast.error("Failed to load user details");
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingUser(null);
+    setIsEditDialogOpen(false);
+  };
+
+  const handleToggleStatus = async (user: any) => {
+    try {
+      await api.users.update(user.id, { is_active: user.status !== "Active" });
+      toast.success(
+        `User ${
+          user.status === "Active" ? "deactivated" : "activated"
+        } successfully!`
+      );
+      await loadUsers();
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update user status");
+    }
+  };
+
+  const handleDeleteUser = async (user: any) => {
+    if (
+      confirm(`Are you sure you want to delete ${user.name || "this user"}?`)
+    ) {
+      try {
+        await api.users.delete(user.id);
+        toast.success("User deleted successfully!");
+        await loadUsers();
+      } catch (err: any) {
+        toast.error(err?.message || "Failed to delete user");
+      }
     }
   };
 
@@ -342,16 +404,21 @@ export default function Users() {
                       <TableCell className="font-medium">
                         <div className="flex items-center space-x-3">
                           <Avatar className="h-8 w-8">
-                            <AvatarImage src={user.avatar} alt={user.name} />
+                            <AvatarImage
+                              src={user.avatar}
+                              alt={user.name || "User"}
+                            />
                             <AvatarFallback>
                               {user.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")}
+                                ?.split(" ")
+                                ?.map((n) => n[0])
+                                ?.join("") || "U"}
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <div className="font-semibold">{user.name}</div>
+                            <div className="font-semibold">
+                              {user.name || "Unknown User"}
+                            </div>
                             <div className="text-sm text-muted-foreground">
                               {user.email}
                             </div>
@@ -435,7 +502,9 @@ export default function Users() {
                               <Eye className="mr-2 h-4 w-4" />
                               View Profile
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleEditUser(user)}
+                            >
                               <Edit className="mr-2 h-4 w-4" />
                               Edit User
                             </DropdownMenuItem>
@@ -476,43 +545,16 @@ export default function Users() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit User Dialog */}
+      {isEditDialogOpen && editingUser && (
+        <UserForm
+          user={editingUser}
+          onSave={handleSaveUser}
+          onCancel={handleCancelEdit}
+          trigger={<div />}
+        />
+      )}
     </div>
   );
-
-  // Handler functions
-  const handleToggleStatus = async (user: any) => {
-    try {
-      await updateUserApi(user.id, { is_active: user.status !== "Active" });
-      toast.success(
-        `User ${
-          user.status === "Active" ? "deactivated" : "activated"
-        } successfully!`
-      );
-      await loadUsers();
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to update user status");
-    }
-  };
-
-  const handleDeleteUser = async (user: any) => {
-    if (confirm(`Are you sure you want to delete ${user.name}?`)) {
-      try {
-        await deleteUserApi(user.id);
-        toast.success("User deleted successfully!");
-        await loadUsers();
-      } catch (err: any) {
-        toast.error(err?.message || "Failed to delete user");
-      }
-    }
-  };
-
-  const handleSaveUser = async (data: any) => {
-    try {
-      await createUserApi(data);
-      toast.success("User created successfully!");
-      await loadUsers();
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to create user");
-    }
-  };
 }

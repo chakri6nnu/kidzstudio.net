@@ -89,10 +89,10 @@ export default function UserGroups() {
         (g: ApiUserGroup) => ({
           id: g.id.toString(),
           code: `UG${g.id.toString().padStart(4, "0")}`,
-          name: g.name,
+          name: g.name || "Unnamed Group",
           description: g.description || "",
           visibility: g.type === "academic" ? "Private" : "Public",
-          status: g.is_active ? "Active" : "Inactive",
+          status: g.is_active === true ? "Active" : "Inactive",
           members: g.users_count || 0,
           created: new Date(g.created_at).toLocaleDateString(),
           lastActivity: new Date(g.updated_at).toLocaleDateString(),
@@ -166,7 +166,9 @@ export default function UserGroups() {
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string | undefined) => {
+    if (!status) return "bg-muted text-muted-foreground";
+
     switch (status.toLowerCase()) {
       case "active":
         return "bg-success text-success-foreground";
@@ -177,7 +179,9 @@ export default function UserGroups() {
     }
   };
 
-  const getVisibilityColor = (visibility: string) => {
+  const getVisibilityColor = (visibility: string | undefined) => {
+    if (!visibility) return "bg-muted text-muted-foreground";
+
     return visibility === "Private"
       ? "bg-destructive text-destructive-foreground"
       : "bg-primary text-primary-foreground";
@@ -193,7 +197,7 @@ export default function UserGroups() {
       sortable: true,
       render: (group: UserGroup) => (
         <Badge variant="outline" className="bg-primary text-primary-foreground">
-          {group.code}
+          {group?.code || "N/A"}
         </Badge>
       ),
     },
@@ -203,9 +207,9 @@ export default function UserGroups() {
       sortable: true,
       render: (group: UserGroup) => (
         <div>
-          <div className="font-medium">{group.name}</div>
+          <div className="font-medium">{group?.name || "Unnamed Group"}</div>
           <div className="text-sm text-muted-foreground">
-            {group.description}
+            {group?.description || "No description"}
           </div>
         </div>
       ),
@@ -217,9 +221,9 @@ export default function UserGroups() {
       render: (group: UserGroup) => (
         <Badge
           variant="outline"
-          className={getVisibilityColor(group.visibility)}
+          className={getVisibilityColor(group?.visibility)}
         >
-          {group.visibility}
+          {group?.visibility || "Unknown"}
         </Badge>
       ),
     },
@@ -230,7 +234,7 @@ export default function UserGroups() {
       render: (group: UserGroup) => (
         <div className="flex items-center">
           <Users className="mr-1 h-4 w-4 text-muted-foreground" />
-          {group.members}
+          {group?.members || 0}
         </div>
       ),
     },
@@ -239,8 +243,8 @@ export default function UserGroups() {
       header: "Status",
       sortable: true,
       render: (group: UserGroup) => (
-        <Badge variant="outline" className={getStatusColor(group.status)}>
-          {group.status}
+        <Badge variant="outline" className={getStatusColor(group?.status)}>
+          {group?.status || "Unknown"}
         </Badge>
       ),
     },
@@ -251,7 +255,7 @@ export default function UserGroups() {
       render: (group: UserGroup) => (
         <div className="flex items-center text-sm text-muted-foreground">
           <Activity className="mr-1 h-4 w-4" />
-          {group.lastActivity}
+          {group?.lastActivity || "Never"}
         </div>
       ),
     },

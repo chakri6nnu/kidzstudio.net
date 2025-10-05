@@ -37,24 +37,13 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
-import {
-  getTopicsApi,
-  createTopicApi,
-  updateTopicApi,
-  deleteTopicApi,
-  getCategoriesApi,
-  getSkillsApi,
-  type Topic as ApiTopic,
-  type Category as ApiCategory,
-  type Skill as ApiSkill,
-} from "@/lib/utils";
+import { topicsApi, categoriesApi, skillsApi } from "@/lib/api";
 
 interface Topic {
   id: string;
   name: string;
   description: string;
   category: string;
-  parentTopic: string | null;
   isActive: boolean;
   questions: number;
   subTopics: number;
@@ -65,8 +54,10 @@ interface Topic {
 
 export default function Topics() {
   const [topics, setTopics] = useState<Topic[]>([]);
-  const [categories, setCategories] = useState<ApiCategory[]>([]);
-  const [skills, setSkills] = useState<ApiSkill[]>([]);
+  const [categories, setCategories] = useState<
+    Array<{ id: number; name: string }>
+  >([]);
+  const [skills, setSkills] = useState<Array<{ id: number; name: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [meta, setMeta] = useState<any>(null);
@@ -93,15 +84,14 @@ export default function Topics() {
         category_id: selectedCategory !== "all" ? selectedCategory : undefined,
         skill_id: selectedSkill !== "all" ? selectedSkill : undefined,
       };
-      const response = await getTopicsApi(filters);
+      const response = await topicsApi.getAll(filters);
 
       // Map API response to UI format
-      const mappedTopics: Topic[] = response.data.map((t: ApiTopic) => ({
+      const mappedTopics: Topic[] = response.data.map((t) => ({
         id: t.id.toString(),
         name: t.name,
         description: t.description || "",
         category: t.category.name,
-        parentTopic: null, // Topics don't have parent topics in this structure
         isActive: t.is_active,
         questions: t.questions_count || 0,
         subTopics: 0, // Not available in API
@@ -122,19 +112,28 @@ export default function Topics() {
 
   const loadCategories = async () => {
     try {
-      const response = await getCategoriesApi({});
-      setCategories(response.data);
+      const response = await categoriesApi.getAll();
+      const list = Array.isArray(response)
+        ? response
+        : Array.isArray(response?.data)
+        ? response.data
+        : [];
+      setCategories(list);
     } catch (err: any) {
       console.error("Failed to load categories:", err);
+      toast.error("Failed to load categories. Some features may be limited.");
+      setError("Failed to load categories");
     }
   };
 
   const loadSkills = async () => {
     try {
-      const response = await getSkillsApi({});
+      const response = await skillsApi.getSkills();
       setSkills(response.data);
     } catch (err: any) {
       console.error("Failed to load skills:", err);
+      toast.error("Failed to load skills. Some features may be limited.");
+      setError("Failed to load skills");
     }
   };
 
@@ -155,7 +154,6 @@ export default function Topics() {
     name: "",
     description: "",
     category: "",
-    parentTopic: "",
     isActive: true,
   });
 
@@ -164,39 +162,33 @@ export default function Topics() {
   // Filter options
   const filters = [
     {
-      key: "category",
-      type: "select" as const,
+      id: "category",
       label: "Category",
       value: selectedCategory,
-      onChange: (value: string) => setSelectedCategory(value),
       options: [
         { value: "all", label: "All Categories" },
-        ...categories.map((cat) => ({
+        ...(Array.isArray(categories) ? categories : []).map((cat) => ({
           value: cat.id.toString(),
           label: cat.name,
         })),
       ],
     },
     {
-      key: "skill",
-      type: "select" as const,
+      id: "skill",
       label: "Skill",
       value: selectedSkill,
-      onChange: (value: string) => setSelectedSkill(value),
       options: [
         { value: "all", label: "All Skills" },
-        ...skills.map((skill) => ({
+        ...(Array.isArray(skills) ? skills : []).map((skill) => ({
           value: skill.id.toString(),
           label: skill.name,
         })),
       ],
     },
     {
-      key: "status",
-      type: "select" as const,
+      id: "status",
       label: "Status",
       value: selectedStatus,
-      onChange: (value: string) => setSelectedStatus(value),
       options: [
         { value: "all", label: "All Status" },
         { value: "active", label: "Active" },
@@ -206,15 +198,6 @@ export default function Topics() {
   ];
 
   // Helper functions
-  const getTopicType = (topic: Topic) => {
-    return topic.parentTopic ? "Sub Topic" : "Main Topic";
-  };
-
-  const getTypeColor = (topic: Topic) => {
-    return topic.parentTopic
-      ? "bg-primary/10 text-primary"
-      : "bg-accent/10 text-accent";
-  };
 
   const getCategoryColor = (category: string) => {
     switch (category) {
@@ -235,9 +218,20 @@ export default function Topics() {
 
   // CRUD operations
   const handleFilterChange = (filterId: string, value: string) => {
-    const filter = filters.find((f) => f.key === filterId);
+    const filter = filters.find((f) => f.id === filterId);
     if (filter) {
-      filter.onChange(value);
+      // Handle the filter change based on the filter ID
+      switch (filterId) {
+        case "category":
+          setSelectedCategory(value);
+          break;
+        case "skill":
+          setSelectedSkill(value);
+          break;
+        case "status":
+          setSelectedStatus(value);
+          break;
+      }
     }
   };
 
@@ -253,7 +247,6 @@ export default function Topics() {
       name: "",
       description: "",
       category: "",
-      parentTopic: "",
       isActive: true,
     });
   };
@@ -270,7 +263,6 @@ export default function Topics() {
       name: topic.name,
       description: topic.description,
       category: topic.category,
-      parentTopic: topic.parentTopic || "",
       isActive: topic.isActive,
     });
     setIsEditDrawerOpen(true);
@@ -293,13 +285,10 @@ export default function Topics() {
         name: formData.name,
         description: formData.description,
         category_id: parseInt(formData.category),
-        skill_id: formData.parentTopic
-          ? parseInt(formData.parentTopic)
-          : undefined,
         is_active: formData.isActive,
       };
 
-      await createTopicApi(topicData);
+      await topicsApi.create(topicData);
       setIsAddDrawerOpen(false);
       resetForm();
       toast.success("Topic created successfully!");
@@ -323,13 +312,10 @@ export default function Topics() {
         name: formData.name,
         description: formData.description,
         category_id: parseInt(formData.category),
-        skill_id: formData.parentTopic
-          ? parseInt(formData.parentTopic)
-          : undefined,
         is_active: formData.isActive,
       };
 
-      await updateTopicApi(parseInt(selectedTopic.id), topicData);
+      await topicsApi.update(selectedTopic.id, topicData);
       setIsEditDrawerOpen(false);
       setSelectedTopic(null);
       resetForm();
@@ -346,7 +332,7 @@ export default function Topics() {
     if (!selectedTopic) return;
 
     try {
-      await deleteTopicApi(parseInt(selectedTopic.id));
+      await topicsApi.delete(selectedTopic.id);
       setIsDeleteDrawerOpen(false);
       setSelectedTopic(null);
       toast.success("Topic deleted successfully!");
@@ -364,19 +350,8 @@ export default function Topics() {
       sortable: true,
       render: (topic: Topic) => (
         <div className="flex items-center space-x-2">
-          {topic.parentTopic && (
-            <>
-              <span className="text-muted-foreground text-sm">
-                {topic.parentTopic}
-              </span>
-              <ChevronRight className="h-3 w-3 text-muted-foreground" />
-            </>
-          )}
           <div>
             <div className="font-semibold">{topic.name}</div>
-            <Badge variant="outline" className={getTypeColor(topic)}>
-              {getTopicType(topic)}
-            </Badge>
           </div>
         </div>
       ),
@@ -475,8 +450,7 @@ export default function Topics() {
   ];
 
   // Statistics
-  const mainTopics = topics.filter((t) => !t.parentTopic);
-  const subTopics = topics.filter((t) => t.parentTopic);
+  const totalTopics = topics.length;
 
   return (
     <div className="p-6 space-y-6">
@@ -514,23 +488,29 @@ export default function Topics() {
 
         <Card className="bg-gradient-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Main Topics</CardTitle>
+            <CardTitle className="text-sm font-medium">Active Topics</CardTitle>
             <Layers className="h-4 w-4 text-accent" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mainTopics.length}</div>
-            <p className="text-xs text-success">Primary categories</p>
+            <div className="text-2xl font-bold">
+              {topics.filter((t) => t.isActive).length}
+            </div>
+            <p className="text-xs text-success">Currently active</p>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sub Topics</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Inactive Topics
+            </CardTitle>
             <Target className="h-4 w-4 text-warning" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{subTopics.length}</div>
-            <p className="text-xs text-success">Nested topics</p>
+            <div className="text-2xl font-bold">
+              {topics.filter((t) => !t.isActive).length}
+            </div>
+            <p className="text-xs text-success">Currently inactive</p>
           </CardContent>
         </Card>
 
@@ -644,30 +624,6 @@ export default function Topics() {
                   </SelectContent>
                 </Select>
               </div>
-
-              <div>
-                <Label htmlFor="parentTopic" className="text-sm font-medium">
-                  Parent Topic (Optional)
-                </Label>
-                <Select
-                  value={formData.parentTopic}
-                  onValueChange={(value) =>
-                    setFormData((prev) => ({ ...prev, parentTopic: value }))
-                  }
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select parent topic" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">None (Main Topic)</SelectItem>
-                    {parentTopics.map((topic) => (
-                      <SelectItem key={topic.id} value={topic.name}>
-                        {topic.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
 
             <div className="flex items-center justify-between rounded-lg border p-3">
@@ -768,35 +724,6 @@ export default function Topics() {
                         {category}
                       </SelectItem>
                     ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label
-                  htmlFor="edit-parentTopic"
-                  className="text-sm font-medium"
-                >
-                  Parent Topic (Optional)
-                </Label>
-                <Select
-                  value={formData.parentTopic}
-                  onValueChange={(value) =>
-                    setFormData((prev) => ({ ...prev, parentTopic: value }))
-                  }
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select parent topic" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">None (Main Topic)</SelectItem>
-                    {parentTopics
-                      .filter((topic) => topic.id !== selectedTopic?.id) // Don't allow self as parent
-                      .map((topic) => (
-                        <SelectItem key={topic.id} value={topic.name}>
-                          {topic.name}
-                        </SelectItem>
-                      ))}
                   </SelectContent>
                 </Select>
               </div>

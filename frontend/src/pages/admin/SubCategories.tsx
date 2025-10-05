@@ -93,10 +93,10 @@ export default function SubCategories() {
         (sc: ApiSubCategory) => ({
           id: sc.id.toString(),
           code: `SUB${sc.id.toString().padStart(4, "0")}`,
-          name: sc.name,
-          category: sc.category.name,
-          type: sc.category.type,
-          status: sc.is_active ? "Active" : "Inactive",
+          name: sc.name || "Unnamed Sub-Category",
+          category: sc.category?.name || "Unknown Category",
+          type: sc.category?.type || "Unknown",
+          status: sc.is_active === true ? "Active" : "Inactive",
           description: sc.description || "",
           created: new Date(sc.created_at).toLocaleDateString(),
           questions: sc.questions_count || 0,
@@ -120,6 +120,8 @@ export default function SubCategories() {
       setCategories(response.data);
     } catch (err: any) {
       console.error("Failed to load categories:", err);
+      toast.error("Failed to load categories. Some features may be limited.");
+      setError("Failed to load categories");
     }
   };
 
@@ -186,7 +188,9 @@ export default function SubCategories() {
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string | undefined) => {
+    if (!status) return "bg-muted text-muted-foreground";
+
     switch (status) {
       case "Active":
         return "bg-success text-success-foreground";
@@ -214,7 +218,7 @@ export default function SubCategories() {
           variant="secondary"
           className="bg-primary text-primary-foreground"
         >
-          {subCategory.code}
+          {subCategory?.code || "N/A"}
         </Badge>
       ),
     },
@@ -224,8 +228,8 @@ export default function SubCategories() {
       sortable: true,
       render: (subCategory: SubCategory) => (
         <div>
-          <div className="font-medium">{subCategory.name}</div>
-          {subCategory.description && (
+          <div className="font-medium">{subCategory?.name || "Unnamed"}</div>
+          {subCategory?.description && (
             <div className="text-xs text-muted-foreground line-clamp-1">
               {subCategory.description}
             </div>
@@ -238,7 +242,9 @@ export default function SubCategories() {
       header: "Category",
       render: (subCategory: SubCategory) => (
         <div className="max-w-xs">
-          <div className="truncate text-sm">{subCategory.category}</div>
+          <div className="truncate text-sm">
+            {subCategory?.category || "Unknown"}
+          </div>
         </div>
       ),
     },
@@ -247,7 +253,7 @@ export default function SubCategories() {
       header: "Type",
       sortable: true,
       render: (subCategory: SubCategory) => (
-        <Badge variant="outline">{subCategory.type}</Badge>
+        <Badge variant="outline">{subCategory?.type || "Unknown"}</Badge>
       ),
     },
     {
@@ -258,11 +264,11 @@ export default function SubCategories() {
         <div className="space-y-1 text-sm">
           <div className="flex items-center justify-between">
             <span>Questions:</span>
-            <span className="font-medium">{subCategory.questions}</span>
+            <span className="font-medium">{subCategory?.questions || 0}</span>
           </div>
           <div className="flex items-center justify-between">
             <span>Exams:</span>
-            <span className="font-medium">{subCategory.exams}</span>
+            <span className="font-medium">{subCategory?.exams || 0}</span>
           </div>
         </div>
       ),
@@ -274,9 +280,9 @@ export default function SubCategories() {
       render: (subCategory: SubCategory) => (
         <Badge
           variant="secondary"
-          className={getStatusColor(subCategory.status)}
+          className={getStatusColor(subCategory?.status)}
         >
-          {subCategory.status}
+          {subCategory?.status || "Unknown"}
         </Badge>
       ),
     },

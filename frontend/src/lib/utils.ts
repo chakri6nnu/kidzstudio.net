@@ -15,7 +15,11 @@ export const API_BASE_URL =
 export type ApiError = { message: string; errors?: Record<string, string[]> };
 
 export function getAuthToken(): string | null {
-  return localStorage.getItem("auth_token");
+  try {
+    return localStorage.getItem("auth_token");
+  } catch (_) {
+    return null;
+  }
 }
 
 export function setAuthToken(token: string | null): void {
@@ -56,7 +60,14 @@ export async function apiFetch<T>(
 
 export type LoginResponse = {
   token: string;
-  user: { id: number; name: string; email: string; user_name?: string };
+  user: {
+    id: number;
+    name: string;
+    email: string;
+    user_name?: string;
+    roles?: string[];
+    permissions?: string[];
+  };
 };
 
 export async function loginApi(
@@ -69,16 +80,32 @@ export async function loginApi(
     body: JSON.stringify({ email, password, device_name: deviceName }),
   });
   setAuthToken(data.token);
+  try {
+    localStorage.setItem("auth_user", JSON.stringify(data.user));
+  } catch (_) {}
   return data;
 }
 
 export async function logoutApi(): Promise<void> {
   await apiFetch("/auth/logout", { method: "POST" });
   setAuthToken(null);
+  try {
+    localStorage.removeItem("auth_user");
+  } catch (_) {}
 }
 
 export async function meApi() {
   return apiFetch("/auth/me");
+}
+
+export function getAuthUser<T = any>(): T | null {
+  try {
+    const raw = localStorage.getItem("auth_user");
+    if (!raw) return null;
+    return JSON.parse(raw) as T;
+  } catch (_) {
+    return null;
+  }
 }
 
 // Exam API functions
@@ -161,11 +188,167 @@ export async function deleteExamApi(id: number): Promise<{ message: string }> {
   });
 }
 
+// Exam Schedules API
+export type ExamScheduleDto = {
+  id: number;
+  code: string;
+  exam_id: number;
+  schedule_type: "fixed" | "flexible";
+  start_date: string; // Y-m-d
+  start_time: string; // H:i:s
+  end_date?: string | null; // Y-m-d
+  end_time?: string | null; // H:i:s
+  grace_period: number;
+  status: "active" | "inactive" | "expired" | "cancelled";
+};
+
+export async function getExamSchedulesApi(
+  examId: number,
+  filters: {
+    status?: string;
+    schedule_type?: string;
+    date_from?: string;
+    date_to?: string;
+    per_page?: number;
+  } = {}
+): Promise<{ data: ExamScheduleDto[]; meta: any }> {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== "") params.append(k, String(v));
+  });
+  const qs = params.toString();
+  return apiFetch(`/exams/${examId}/schedules${qs ? `?${qs}` : ""}`);
+}
+
+export async function createExamScheduleApi(
+  examId: number,
+  payload: {
+    schedule_type: "fixed" | "flexible";
+    start_date: string;
+    start_time: string;
+    end_date?: string;
+    end_time?: string;
+    grace_period?: number;
+    status: "active" | "inactive" | "expired" | "cancelled";
+    user_groups?: number[];
+  }
+): Promise<{ message: string; data: ExamScheduleDto }> {
+  return apiFetch(`/exams/${examId}/schedules`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateExamScheduleApi(
+  examId: number,
+  scheduleId: number,
+  payload: {
+    schedule_type: "fixed" | "flexible";
+    start_date: string;
+    start_time: string;
+    end_date?: string;
+    end_time?: string;
+    grace_period?: number;
+    status: "active" | "inactive" | "expired" | "cancelled";
+    user_groups?: number[];
+  }
+): Promise<{ message: string; data: ExamScheduleDto }> {
+  return apiFetch(`/exams/${examId}/schedules/${scheduleId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getExamScheduleApi(
+  examId: number,
+  scheduleId: number
+): Promise<{ data: ExamScheduleDto }> {
+  return apiFetch(`/exams/${examId}/schedules/${scheduleId}`);
+}
+
+export async function deleteExamScheduleApi(
+  examId: number,
+  scheduleId: number
+): Promise<{ message: string }> {
+  return apiFetch(`/exams/${examId}/schedules/${scheduleId}`, {
+    method: "DELETE",
+  });
+}
+
+// Exam Analytics API
+export async function getExamOverallAnalyticsApi(
+  examId: number,
+  params: { schedule?: string }
+): Promise<{ data: any }> {
+  const usp = new URLSearchParams();
+  if (params?.schedule) usp.append("schedule", params.schedule);
+  const qs = usp.toString();
+  return apiFetch(`/exams/${examId}/analytics/overall${qs ? `?${qs}` : ""}`);
+}
+
+export async function getExamDetailedAnalyticsApi(
+  examId: number,
+  params: { schedule?: string; per_page?: number; page?: number }
+): Promise<{ data: any[]; meta: any }> {
+  const usp = new URLSearchParams();
+  if (params?.schedule) usp.append("schedule", params.schedule);
+  if (params?.per_page) usp.append("per_page", String(params.per_page));
+  if (params?.page) usp.append("page", String(params.page));
+  const qs = usp.toString();
+  return apiFetch(`/exams/${examId}/analytics/detailed${qs ? `?${qs}` : ""}`);
+}
 // Lookups
 export async function getExamTypesApi(): Promise<{
   data: { id: number; name: string }[];
 }> {
   return apiFetch("/exam-types");
+}
+
+// Exam Types CRUD
+export type ExamType = {
+  id: number;
+  code: string;
+  name: string;
+  description?: string;
+  color?: string;
+  image_url?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export async function getExamTypesFullApi(params?: {
+  search?: string;
+  status?: string;
+  per_page?: number;
+}): Promise<ApiResponse<ExamType[]>> {
+  const queryParams = new URLSearchParams();
+  if (params?.search) queryParams.append('search', params.search);
+  if (params?.status) queryParams.append('status', params.status);
+  if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
+  
+  const url = `/exam-types${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  return apiFetch(url);
+}
+
+export async function createExamTypeApi(data: Partial<ExamType>): Promise<{ message: string; data: ExamType }> {
+  return apiFetch("/exam-types", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateExamTypeApi(id: number, data: Partial<ExamType>): Promise<{ message: string; data: ExamType }> {
+  return apiFetch(`/exam-types/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteExamTypeApi(id: number): Promise<{ message: string }> {
+  return apiFetch(`/exam-types/${id}`, {
+    method: "DELETE",
+  });
 }
 
 export async function getQuestionTypesApi(): Promise<{
@@ -217,6 +400,21 @@ export async function attachSectionQuestions(
   });
 }
 
+export async function getSectionQuestions(
+  examId: number,
+  sectionId: number,
+  params?: Record<string, string | number>
+): Promise<{ data: Question[]; meta?: any }> {
+  const usp = new URLSearchParams();
+  if (params) {
+    Object.entries(params).forEach(([k, v]) => usp.append(k, String(v)));
+  }
+  const qs = usp.toString();
+  return apiFetch(
+    `/exams/${examId}/sections/${sectionId}/questions${qs ? `?${qs}` : ``}`
+  );
+}
+
 // Quizzes API
 export type Quiz = {
   id: number;
@@ -240,7 +438,13 @@ export type Quiz = {
 };
 
 export async function getQuizzesApi(
-  filters: { search?: string; per_page?: number } = {}
+  filters: {
+    search?: string;
+    per_page?: number;
+    page?: number;
+    status?: string;
+    category?: string;
+  } = {}
 ): Promise<{ data: Quiz[]; meta: any }> {
   const params = new URLSearchParams();
   Object.entries(filters).forEach(([k, v]) => {
@@ -275,6 +479,37 @@ export async function updateQuizApi(
 
 export async function deleteQuizApi(id: number): Promise<{ message: string }> {
   return apiFetch(`/quizzes/${id}`, { method: "DELETE" });
+}
+
+// Quiz questions attach/remove/list
+export async function getQuizQuestionsApi(
+  quizId: number,
+  params?: { per_page?: number; page?: number }
+): Promise<{ data: any[]; meta?: any }> {
+  const usp = new URLSearchParams();
+  if (params?.per_page) usp.append("per_page", String(params.per_page));
+  if (params?.page) usp.append("page", String(params.page));
+  const qs = usp.toString();
+  return apiFetch(`/quizzes/${quizId}/questions${qs ? `?${qs}` : ""}`);
+}
+
+export async function addQuizQuestionsApi(
+  quizId: number,
+  questionIds: number[]
+): Promise<{ message: string }> {
+  return apiFetch(`/quizzes/${quizId}/questions`, {
+    method: "POST",
+    body: JSON.stringify({ question_ids: questionIds }),
+  });
+}
+
+export async function removeQuizQuestionApi(
+  quizId: number,
+  questionId: number
+): Promise<{ message: string }> {
+  return apiFetch(`/quizzes/${quizId}/questions/${questionId}`, {
+    method: "DELETE",
+  });
 }
 
 // Quiz Types API
@@ -822,6 +1057,8 @@ export const getTagsApi = async (filters?: {
   search?: string;
   status?: string;
   color?: string;
+  topic_id?: string | number;
+  skill_id?: string | number;
   per_page?: number;
 }) => {
   const queryParams = new URLSearchParams();
@@ -830,6 +1067,10 @@ export const getTagsApi = async (filters?: {
     queryParams.append("status", filters.status);
   if (filters?.color && filters.color !== "all")
     queryParams.append("color", filters.color);
+  if (filters?.topic_id)
+    queryParams.append("topic_id", String(filters.topic_id));
+  if (filters?.skill_id)
+    queryParams.append("skill_id", String(filters.skill_id));
   if (filters?.per_page)
     queryParams.append("per_page", filters.per_page.toString());
 
@@ -1074,6 +1315,12 @@ export interface Plan {
   sort_order?: number;
   trial_days?: number;
   subscriptions_count: number;
+  sub_category_id?: number;
+  duration?: number;
+  has_discount?: boolean;
+  discount_percentage?: number;
+  feature_restrictions?: boolean;
+  is_popular?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -1082,6 +1329,7 @@ export const getPlansApi = async (filters?: {
   search?: string;
   status?: string;
   type?: string;
+  sub_category_id?: number;
   price_min?: number;
   price_max?: number;
   per_page?: number;
@@ -1092,6 +1340,8 @@ export const getPlansApi = async (filters?: {
     queryParams.append("status", filters.status);
   if (filters?.type && filters.type !== "all")
     queryParams.append("type", filters.type);
+  if (filters?.sub_category_id)
+    queryParams.append("sub_category_id", filters.sub_category_id.toString());
   if (filters?.price_min)
     queryParams.append("price_min", filters.price_min.toString());
   if (filters?.price_max)

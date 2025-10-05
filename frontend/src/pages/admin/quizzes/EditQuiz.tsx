@@ -19,7 +19,12 @@ import QuizSchedulesTab from "@/components/quiz/QuizSchedulesTab";
 import { toast } from "sonner";
 import { ArrowLeft, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getQuizApi, updateQuizApi, getSubCategoriesApi } from "@/lib/utils";
+import {
+  getQuizApi,
+  updateQuizApi,
+  getSubCategoriesApi,
+  getQuizTypesApi,
+} from "@/lib/utils";
 
 export default function EditQuiz() {
   const navigate = useNavigate();
@@ -41,7 +46,7 @@ export default function EditQuiz() {
         setCategories(
           cats.data.map((c) => ({ id: String(c.id), name: c.name }))
         );
-        const types = await (await import("@/lib/utils")).getExamTypesApi();
+        const types = await getQuizTypesApi();
         setQuizTypes(
           types.data.map((t) => ({ id: String(t.id), name: t.name }))
         );
@@ -107,8 +112,14 @@ export default function EditQuiz() {
   };
 
   const handleSettingsSubmit = async (data: any) => {
-    setQuizData((prev: any) => ({ ...prev, settings: data }));
-    toast.success("Quiz settings updated successfully!");
+    if (!id) return;
+    try {
+      const res = await updateQuizApi(Number(id), { settings: data });
+      setQuizData((prev: any) => ({ ...prev, settings: data }));
+      toast.success(res.message || "Quiz settings updated successfully!");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to update quiz settings");
+    }
   };
 
   const handleQuestionsSubmit = async (data: any) => {
@@ -185,9 +196,7 @@ export default function EditQuiz() {
       id: "questions",
       label: "Questions",
       number: "3",
-      component: (
-        <QuizQuestionsTab quizData={quizData} onSave={handleQuestionsSubmit} />
-      ),
+      component: <QuizQuestionsTab quizId={Number(id)} />,
     },
     {
       id: "schedules",

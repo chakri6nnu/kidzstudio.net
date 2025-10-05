@@ -7,6 +7,7 @@ use App\Models\Tag;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
 class TagController extends Controller
 {
@@ -37,7 +38,13 @@ class TagController extends Controller
 
         // Pagination
         $perPage = $request->get('per_page', 15);
-        $tags = $query->withCount(['questions', 'exams'])
+        $tags = $query->withCount([
+                        'questions',
+                        'questions as exams_count' => function ($q) {
+                            $q->join('exam_questions', 'exam_questions.question_id', '=', 'questions.id')
+                              ->select(DB::raw('count(distinct exam_questions.exam_id)'));
+                        }
+                    ])
                       ->orderBy('created_at', 'desc')
                       ->paginate($perPage);
 
@@ -72,7 +79,13 @@ class TagController extends Controller
         }
 
         $tag = Tag::create($request->all());
-        $tag->loadCount(['questions', 'exams']);
+        $tag->loadCount([
+            'questions',
+            'questions as exams_count' => function ($q) {
+                $q->join('exam_questions', 'exam_questions.question_id', '=', 'questions.id')
+                  ->select(DB::raw('count(distinct exam_questions.exam_id)'));
+            }
+        ]);
 
         return response()->json([
             'message' => 'Tag created successfully',
@@ -85,7 +98,13 @@ class TagController extends Controller
      */
     public function show(Tag $tag): JsonResponse
     {
-        $tag->loadCount(['questions', 'exams']);
+        $tag->loadCount([
+            'questions',
+            'questions as exams_count' => function ($q) {
+                $q->join('exam_questions', 'exam_questions.question_id', '=', 'questions.id')
+                  ->select(DB::raw('count(distinct exam_questions.exam_id)'));
+            }
+        ]);
         
         return response()->json([
             'data' => $tag,
@@ -112,7 +131,13 @@ class TagController extends Controller
         }
 
         $tag->update($request->all());
-        $tag->loadCount(['questions', 'exams']);
+        $tag->loadCount([
+            'questions',
+            'questions as exams_count' => function ($q) {
+                $q->join('exam_questions', 'exam_questions.question_id', '=', 'questions.id')
+                  ->select(DB::raw('count(distinct exam_questions.exam_id)'));
+            }
+        ]);
 
         return response()->json([
             'message' => 'Tag updated successfully',
@@ -132,7 +157,13 @@ class TagController extends Controller
             ], 422);
         }
 
-        if ($tag->exams()->count() > 0) {
+        $hasExams = \App\Models\Exam::whereHas('questions', function ($q) use ($tag) {
+            $q->whereHas('tags', function ($t) use ($tag) {
+                $t->where('tags.id', $tag->id);
+            });
+        })->exists();
+
+        if ($hasExams) {
             return response()->json([
                 'message' => 'Cannot delete tag with exams',
             ], 422);

@@ -37,7 +37,7 @@ class CategoryController extends Controller
 
         // Pagination
         $perPage = $request->get('per_page', 15);
-        $categories = $query->withCount(['subCategories', 'questions', 'exams'])
+        $categories = $query->withCount(['subCategories'])
                            ->orderBy('created_at', 'desc')
                            ->paginate($perPage);
 
@@ -77,7 +77,7 @@ class CategoryController extends Controller
 
         return response()->json([
             'message' => 'Category created successfully',
-            'data' => $category->loadCount(['subCategories', 'questions', 'exams']),
+            'data' => $category->loadCount(['subCategories']),
         ], 201);
     }
 
@@ -86,7 +86,7 @@ class CategoryController extends Controller
      */
     public function show(Category $category): JsonResponse
     {
-        $category->loadCount(['subCategories', 'questions', 'exams']);
+        $category->loadCount(['subCategories']);
         
         return response()->json([
             'data' => $category,
@@ -115,7 +115,7 @@ class CategoryController extends Controller
         }
 
         $category->update($request->all());
-        $category->loadCount(['subCategories', 'questions', 'exams']);
+        $category->loadCount(['subCategories']);
 
         return response()->json([
             'message' => 'Category updated successfully',
@@ -132,18 +132,6 @@ class CategoryController extends Controller
         if ($category->subCategories()->count() > 0) {
             return response()->json([
                 'message' => 'Cannot delete category with sub-categories',
-            ], 422);
-        }
-
-        if ($category->questions()->count() > 0) {
-            return response()->json([
-                'message' => 'Cannot delete category with questions',
-            ], 422);
-        }
-
-        if ($category->exams()->count() > 0) {
-            return response()->json([
-                'message' => 'Cannot delete category with exams',
             ], 422);
         }
 

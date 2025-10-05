@@ -21,7 +21,7 @@ class SectionController extends Controller
         if ($request->has('search') && $request->search) {
             $query->where(function ($q) use ($request) {
                 $q->where('name', 'like', '%' . $request->search . '%')
-                  ->orWhere('description', 'like', '%' . $request->search . '%');
+                  ->orWhere('short_description', 'like', '%' . $request->search . '%');
             });
         }
 
@@ -30,10 +30,6 @@ class SectionController extends Controller
             $query->where('is_active', $request->status === 'active');
         }
 
-        // Type filter
-        if ($request->has('type') && $request->type !== 'all') {
-            $query->where('type', $request->type);
-        }
 
         // Pagination
         $perPage = $request->get('per_page', 15);
@@ -59,10 +55,8 @@ class SectionController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|unique:sections,name',
-            'description' => 'nullable|string|max:1000',
-            'type' => 'required|string|in:multiple_choice,essay,fill_blank,true_false',
+            'short_description' => 'nullable|string|max:255',
             'is_active' => 'boolean',
-            'sort_order' => 'nullable|integer|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -100,10 +94,8 @@ class SectionController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|unique:sections,name,' . $section->id,
-            'description' => 'nullable|string|max:1000',
-            'type' => 'required|string|in:multiple_choice,essay,fill_blank,true_false',
+            'short_description' => 'nullable|string|max:255',
             'is_active' => 'boolean',
-            'sort_order' => 'nullable|integer|min:0',
         ]);
 
         if ($validator->fails()) {

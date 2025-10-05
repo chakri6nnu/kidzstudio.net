@@ -245,7 +245,7 @@ export default function ImportDialog({
                             <SelectValue placeholder="Select group (optional)" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">No Group</SelectItem>
+                            <SelectItem value="none">No Group</SelectItem>
                             <SelectItem value="1">Default Group</SelectItem>
                           </SelectContent>
                         </Select>

@@ -47,8 +47,16 @@ export default function Login() {
       const res = await loginApi(formData.email, formData.password);
       setIsLoading(false);
       setSuccess("Logged in successfully");
-      const redirectTo = location.state?.from?.pathname || "/admin";
-      navigate(redirectTo, { replace: true });
+      const roles = (res.user.roles || []).map((r) => r.toLowerCase());
+      if (roles.includes("admin")) {
+        navigate("/admin", { replace: true });
+        return;
+      }
+      if (roles.includes("student")) {
+        navigate("/student/dashboard", { replace: true });
+        return;
+      }
+      setError("Your account does not have access. Please contact support.");
     } catch (err: unknown) {
       setIsLoading(false);
       let message = "Login failed";

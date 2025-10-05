@@ -15,7 +15,7 @@ class ExamController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Exam::with(['subCategory:id,name', 'examType:id,name'])
-            ->withCount(['examSections']);
+            ->withCount(['examSections', 'sessions', 'examSchedules']);
 
         // Apply filters
         if ($request->has('search') && $request->search) {
@@ -23,16 +23,36 @@ class ExamController extends Controller
         }
 
         if ($request->has('status') && $request->status !== 'all') {
-            $query->where('status', $request->status);
+            $status = strtolower($request->status);
+            // map known status flags to actual columns
+            if (in_array($status, ['active', 'inactive'])) {
+                $query->where('is_active', $status === 'active');
+            } elseif ($status === 'paid') {
+                $query->where('is_paid', true);
+            } elseif ($status === 'private') {
+                $query->where('is_private', true);
+            } else {
+                // fallback: try a strict match on a status column only if it exists
+                // but avoid SQL error when no such column; ignore unknown values
+            }
         }
 
-        if ($request->has('category') && $request->category !== 'all') {
+        if ($request->has('category') && $request->category !== 'all' && $request->category !== '') {
             $query->whereHas('subCategory', function($q) use ($request) {
                 $q->where('name', $request->category);
             });
         }
 
-        $exams = $query->orderBy('id', 'desc')->paginate($request->get('per_page', 10));
+        // support both limit and per_page query params
+        $perPage = $request->get('limit', $request->get('per_page', 10));
+        $exams = $query->orderBy('id', 'desc')->paginate($perPage);
+
+        // Global counters for dashboard cards
+        $counters = [
+            'total_all' => \App\Models\Exam::count(),
+            'total_active' => \App\Models\Exam::where('is_active', true)->count(),
+            'total_paid' => \App\Models\Exam::where('is_paid', true)->count(),
+        ];
 
         return response()->json([
             'data' => $exams->items(),
@@ -41,7 +61,33 @@ class ExamController extends Controller
                 'last_page' => $exams->lastPage(),
                 'per_page' => $exams->perPage(),
                 'total' => $exams->total(),
+                'counters' => $counters,
             ]
+        ]);
+    }
+
+    public function sections(Exam $exam): JsonResponse
+    {
+        $sections = $exam->examSections()
+            ->with(['section:id,name'])
+            ->orderBy('section_order')
+            ->get();
+
+        return response()->json([
+            'data' => $sections->map(function ($section) {
+                return [
+                    'id' => $section->id,
+                    'display_name' => $section->name,
+                    'section' => $section->section->name ?? '',
+                    'section_id' => $section->section_id,
+                    'section_order' => $section->section_order,
+                    'duration' => $section->total_duration / 60, // Convert to minutes
+                    'marks_for_correct_answer' => $section->correct_marks,
+                    'total_questions' => $section->total_questions,
+                    'total_duration' => $section->total_duration / 60, // Convert to minutes
+                    'total_marks' => $section->total_marks,
+                ];
+            })
         ]);
     }
 

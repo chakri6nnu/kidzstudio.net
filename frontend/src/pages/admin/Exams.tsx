@@ -1,11 +1,7 @@
 import { useState, useEffect } from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
-import {
-  getExamsApi,
-  deleteExamApi,
-  type Exam,
-  type ExamFilters,
-} from "@/lib/utils";
+import { api } from "@/lib/api";
+import { toast } from "sonner";
 import {
   Card,
   CardContent,
@@ -36,24 +32,21 @@ import {
   Search,
   Filter,
   MoreHorizontal,
-  Edit,
-  Trash2,
-  Eye,
-  Clock,
-  Users,
   FileText,
   Calendar,
-  Play,
-  Pause,
   Copy,
   Shield,
   Award,
+  Check,
   BarChart3,
-  Download,
+  Edit,
+  Trash2,
 } from "lucide-react";
 import DeleteConfirmDialog from "@/components/dialogs/DeleteConfirmDialog";
 import CreateExam from "./exams/CreateExam";
 import EditExam from "./exams/EditExam";
+import ExamAnalyticsOverall from "./exams/ExamAnalyticsOverall";
+import ExamAnalyticsDetailed from "./exams/ExamAnalyticsDetailed";
 
 export default function Exams() {
   const navigate = useNavigate();
@@ -61,30 +54,61 @@ export default function Exams() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [exams, setExams] = useState<Exam[]>([]);
+  const [exams, setExams] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [meta, setMeta] = useState<any>({});
+  const [copiedCodes, setCopiedCodes] = useState<Set<string>>(new Set());
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(() => {
+    const stored =
+      typeof window !== "undefined"
+        ? localStorage.getItem("admin_exams_per_page")
+        : null;
+    return stored ? parseInt(stored) : 25;
+  });
+  const [activeCount, setActiveCount] = useState<number>(0);
+  const [paidCount, setPaidCount] = useState<number>(0);
 
   // Load exams from API
   useEffect(() => {
     loadExams();
-  }, [searchTerm, selectedStatus, selectedCategory]);
+  }, [searchTerm, selectedStatus, selectedCategory, page, perPage]);
+
+  // counters now come from the main list meta (no extra requests)
 
   const loadExams = async () => {
     try {
       setLoading(true);
       setError("");
-      const filters: ExamFilters = {
+      const response = await api.exams.getAll({
         search: searchTerm || undefined,
-        status: selectedStatus !== "all" ? selectedStatus : undefined,
+        status:
+          selectedStatus !== "all"
+            ? selectedStatus === "published"
+              ? "active"
+              : selectedStatus
+            : undefined,
         category: selectedCategory !== "all" ? selectedCategory : undefined,
-      };
-      const response = await getExamsApi(filters);
-      setExams(response.data);
-      setMeta(response.meta);
+        page,
+        limit: perPage,
+      });
+      const metaResp = (response as any).meta || {};
+      setExams((response as any).data || []);
+      setMeta({
+        total: metaResp.total ?? (response as any).total,
+        current_page: metaResp.current_page ?? (response as any).current_page,
+        last_page: metaResp.last_page ?? (response as any).last_page,
+        per_page: parseInt(metaResp.per_page ?? perPage, 10),
+      });
+      const counters = metaResp.counters;
+      if (counters) {
+        setActiveCount(counters.total_active || 0);
+        setPaidCount(counters.total_paid || 0);
+      }
     } catch (err: any) {
       setError(err?.message || "Failed to load exams");
+      toast.error("Failed to load exams");
     } finally {
       setLoading(false);
     }
@@ -92,10 +116,12 @@ export default function Exams() {
 
   const handleDeleteExam = async (examId: number) => {
     try {
-      await deleteExamApi(examId);
+      await api.exams.delete(examId.toString());
+      toast.success("Exam deleted successfully");
       await loadExams(); // Reload the list
     } catch (err: any) {
       setError(err?.message || "Failed to delete exam");
+      toast.error("Failed to delete exam");
     }
   };
 
@@ -116,6 +142,25 @@ export default function Exams() {
     setSelectedCategory("all");
   };
 
+  const handleCopyCode = async (code: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedCodes((prev) => new Set(prev).add(code));
+      toast.success("Code copied to clipboard");
+
+      // Reset the copied state after 2 seconds
+      setTimeout(() => {
+        setCopiedCodes((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(code);
+          return newSet;
+        });
+      }, 2000);
+    } catch (err) {
+      toast.error("Failed to copy code");
+    }
+  };
+
   const filters = [
     {
       id: "status",
@@ -123,7 +168,7 @@ export default function Exams() {
       value: selectedStatus,
       options: [
         { value: "all", label: "All Status" },
-        { value: "active", label: "Active" },
+        { value: "published", label: "Published" },
         { value: "draft", label: "Draft" },
         { value: "paid", label: "Paid" },
         { value: "private", label: "Private" },
@@ -148,7 +193,7 @@ export default function Exams() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Active":
+      case "Published":
         return "bg-success text-success-foreground";
       case "Scheduled":
         return "bg-primary text-primary-foreground";
@@ -182,6 +227,14 @@ export default function Exams() {
       <Routes>
         <Route path="create" element={<CreateExam />} />
         <Route path=":id/edit" element={<EditExam />} />
+        <Route
+          path=":id/analytics/overall"
+          element={<ExamAnalyticsOverall />}
+        />
+        <Route
+          path=":id/analytics/detailed"
+          element={<ExamAnalyticsDetailed />}
+        />
       </Routes>
     );
   }
@@ -226,9 +279,7 @@ export default function Exams() {
             <Calendar className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {exams.filter((e) => e.is_active).length}
-            </div>
+            <div className="text-2xl font-bold">{activeCount}</div>
             <p className="text-xs text-success">Currently active</p>
           </CardContent>
         </Card>
@@ -236,13 +287,16 @@ export default function Exams() {
         <Card className="bg-gradient-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Total Questions
+              Total Sections
             </CardTitle>
-            <Users className="h-4 w-4 text-accent" />
+            <FileText className="h-4 w-4 text-accent" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {exams.reduce((sum, exam) => sum + exam.total_questions, 0)}
+              {exams.reduce(
+                (sum, exam) => sum + (exam.exam_sections_count || 0),
+                0
+              )}
             </div>
             <p className="text-xs text-success">Across all exams</p>
           </CardContent>
@@ -254,9 +308,7 @@ export default function Exams() {
             <Award className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {exams.filter((e) => e.is_paid).length}
-            </div>
+            <div className="text-2xl font-bold">{paidCount}</div>
             <p className="text-xs text-success">Premium content</p>
           </CardContent>
         </Card>
@@ -281,13 +333,12 @@ export default function Exams() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Exam Title</TableHead>
+                  <TableHead>Code</TableHead>
+                  <TableHead>Title</TableHead>
                   <TableHead>Category</TableHead>
-                  <TableHead>Questions</TableHead>
-                  <TableHead>Duration</TableHead>
-                  <TableHead>Candidates</TableHead>
-                  <TableHead>Scheduled</TableHead>
-                  <TableHead>Security</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Sections</TableHead>
+                  <TableHead>Visibility</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -295,7 +346,7 @@ export default function Exams() {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8">
+                    <TableCell colSpan={8} className="text-center py-8">
                       <div className="flex items-center justify-center">
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
                         <span className="ml-2">Loading exams...</span>
@@ -305,7 +356,7 @@ export default function Exams() {
                 ) : error ? (
                   <TableRow>
                     <TableCell
-                      colSpan={9}
+                      colSpan={8}
                       className="text-center py-8 text-destructive"
                     >
                       {error}
@@ -314,7 +365,7 @@ export default function Exams() {
                 ) : exams.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={9}
+                      colSpan={8}
                       className="text-center py-8 text-muted-foreground"
                     >
                       No exams found
@@ -324,12 +375,29 @@ export default function Exams() {
                   <>
                     {exams.map((exam) => (
                       <TableRow key={exam.id} className="hover:bg-muted/50">
+                        <TableCell className="font-mono text-sm">
+                          <div className="flex items-center space-x-2">
+                            <span className="select-all">{exam.code}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 hover:bg-muted"
+                              onClick={() => handleCopyCode(exam.code)}
+                            >
+                              {copiedCodes.has(exam.code) ? (
+                                <Check className="h-3 w-3 text-success" />
+                              ) : (
+                                <Copy className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </div>
+                        </TableCell>
                         <TableCell className="font-medium">
                           <div>
                             <div className="font-semibold">{exam.title}</div>
                             <div className="text-sm text-muted-foreground">
-                              {exam.exam_type?.name} • {exam.exam_mode} •{" "}
-                              {exam.total_marks || 0} marks
+                              {exam.total_marks || 0} marks •{" "}
+                              {exam.total_duration} mins
                             </div>
                           </div>
                         </TableCell>
@@ -340,30 +408,15 @@ export default function Exams() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center">
+                            <Badge variant="secondary">
+                              {exam.exam_type?.name || "N/A"}
+                            </Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center">
                             <FileText className="mr-1 h-3 w-3" />
-                            {exam.total_questions}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center">
-                            <Clock className="mr-1 h-3 w-3" />
-                            {exam.total_duration} mins
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center">
-                            <Users className="mr-1 h-3 w-3" />
                             {exam.exam_sections_count || 0}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            <div>
-                              {new Date(exam.created_at).toLocaleDateString()}
-                            </div>
-                            <div className="text-muted-foreground">
-                              {new Date(exam.created_at).toLocaleTimeString()}
-                            </div>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -377,12 +430,19 @@ export default function Exams() {
                                 Paid
                               </Badge>
                             )}
-                            {exam.is_private && (
+                            {exam.is_private ? (
                               <Badge
                                 variant="outline"
                                 className="bg-warning/10 text-warning"
                               >
                                 Private
+                              </Badge>
+                            ) : (
+                              <Badge
+                                variant="outline"
+                                className="bg-success/10 text-success"
+                              >
+                                Public
                               </Badge>
                             )}
                           </div>
@@ -391,10 +451,10 @@ export default function Exams() {
                           <Badge
                             variant="secondary"
                             className={getStatusColor(
-                              exam.is_active ? "Active" : "Draft"
+                              exam.is_active ? "Published" : "Draft"
                             )}
                           >
-                            {exam.is_active ? "Active" : "Draft"}
+                            {exam.is_active ? "Published" : "Draft"}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
@@ -406,8 +466,18 @@ export default function Exams() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem>
-                                <Eye className="mr-2 h-4 w-4" />
-                                View Details
+                                <BarChart3 className="mr-2 h-4 w-4" />
+                                Analytics
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  navigate(
+                                    `/admin/exams/${exam.id}/edit?tab=schedules`
+                                  )
+                                }
+                              >
+                                <Calendar className="mr-2 h-4 w-4" />
+                                Schedules
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() =>
@@ -415,30 +485,7 @@ export default function Exams() {
                                 }
                               >
                                 <Edit className="mr-2 h-4 w-4" />
-                                Edit Exam
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <BarChart3 className="mr-2 h-4 w-4" />
-                                View Results
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Copy className="mr-2 h-4 w-4" />
-                                Duplicate
-                              </DropdownMenuItem>
-                              {exam.status === "Active" ? (
-                                <DropdownMenuItem>
-                                  <Pause className="mr-2 h-4 w-4" />
-                                  Pause Exam
-                                </DropdownMenuItem>
-                              ) : exam.status === "Draft" ? (
-                                <DropdownMenuItem>
-                                  <Play className="mr-2 h-4 w-4" />
-                                  Publish Exam
-                                </DropdownMenuItem>
-                              ) : null}
-                              <DropdownMenuItem>
-                                <Download className="mr-2 h-4 w-4" />
-                                Export Results
+                                Edit
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="text-destructive"
@@ -459,6 +506,68 @@ export default function Exams() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Pagination Controls */}
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-muted-foreground">
+          Showing page {meta.current_page || page} of {meta.last_page || 1} •
+          Total {meta.total || 0}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+          >
+            Prev
+          </Button>
+          <Badge variant="outline">{page}</Badge>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= (meta.last_page || 1)}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            Next
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page === 1}
+            onClick={() => setPage(1)}
+          >
+            First
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= (meta.last_page || 1)}
+            onClick={() => setPage(meta.last_page || 1)}
+          >
+            Last
+          </Button>
+          <div className="ml-4 flex items-center gap-2 text-sm text-muted-foreground">
+            Rows:
+            <select
+              className="h-8 rounded-md border bg-background px-2"
+              value={perPage}
+              onChange={(e) => {
+                const v = parseInt(e.target.value);
+                setPerPage(v);
+                try {
+                  localStorage.setItem("admin_exams_per_page", String(v));
+                } catch (_) {}
+                setPage(1);
+              }}
+            >
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+            </select>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

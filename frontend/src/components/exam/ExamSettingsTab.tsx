@@ -5,27 +5,65 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Info } from "lucide-react";
 
-const examSettingsSchema = z.object({
-  auto_duration: z.boolean().default(true),
-  auto_grading: z.boolean().default(true),
-  negative_marking: z.boolean().default(false),
-  overall_pass_percentage: z.number().min(0).max(100).default(60),
-  enable_section_cutoff: z.boolean().default(false),
-  shuffle_questions: z.boolean().default(true),
-  restrict_attempts: z.boolean().default(true),
-  disable_section_navigation: z.boolean().default(true),
-  disable_finish_button: z.boolean().default(true),
-  enable_question_list_view: z.boolean().default(true),
-  hide_solutions: z.boolean().default(true),
-  show_leaderboard: z.boolean().default(true),
-});
+const examSettingsSchema = z
+  .object({
+    auto_duration: z.boolean().default(true),
+    auto_grading: z.boolean().default(true),
+    negative_marking: z.boolean().default(false),
+    overall_pass_percentage: z.number().min(0).max(100).default(60),
+    enable_section_cutoff: z.boolean().default(false),
+    shuffle_questions: z.boolean().default(true),
+    restrict_attempts: z.boolean().default(true),
+    no_of_attempts: z.number().min(1).optional(),
+    disable_section_navigation: z.boolean().default(true),
+    disable_finish_button: z.boolean().default(true),
+    enable_question_list_view: z.boolean().default(true),
+    hide_solutions: z.boolean().default(true),
+    show_leaderboard: z.boolean().default(true),
+  })
+  .refine(
+    (data) => {
+      // If restrict_attempts is true, no_of_attempts must be provided and greater than 0
+      if (
+        data.restrict_attempts &&
+        (!data.no_of_attempts || data.no_of_attempts <= 0)
+      ) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message:
+        "Number of attempts is required when Restrict Attempts is enabled",
+      path: ["no_of_attempts"],
+    }
+  );
 
 type ExamSettingsData = z.infer<typeof examSettingsSchema>;
 
@@ -34,7 +72,10 @@ interface ExamSettingsTabProps {
   onSave: (data: ExamSettingsData) => void;
 }
 
-export default function ExamSettingsTab({ examData, onSave }: ExamSettingsTabProps) {
+export default function ExamSettingsTab({
+  examData,
+  onSave,
+}: ExamSettingsTabProps) {
   const [saving, setSaving] = useState(false);
 
   const form = useForm<ExamSettingsData>({
@@ -47,13 +88,16 @@ export default function ExamSettingsTab({ examData, onSave }: ExamSettingsTabPro
       enable_section_cutoff: examData?.enable_section_cutoff ?? false,
       shuffle_questions: examData?.shuffle_questions ?? true,
       restrict_attempts: examData?.restrict_attempts ?? true,
+      no_of_attempts: examData?.no_of_attempts || 1,
       disable_section_navigation: examData?.disable_section_navigation ?? true,
       disable_finish_button: examData?.disable_finish_button ?? true,
       enable_question_list_view: examData?.enable_question_list_view ?? true,
       hide_solutions: examData?.hide_solutions ?? true,
       show_leaderboard: examData?.show_leaderboard ?? true,
-    }
+    },
   });
+
+  const restrictAttempts = form.watch("restrict_attempts");
 
   const handleSubmit = async (data: ExamSettingsData) => {
     setSaving(true);
@@ -64,19 +108,19 @@ export default function ExamSettingsTab({ examData, onSave }: ExamSettingsTabPro
     }
   };
 
-  const SettingItem = ({ 
-    label, 
-    description, 
+  const SettingItem = ({
+    label,
+    description,
     tooltipContent,
-    value, 
-    onChange, 
-    hasInfo = true 
-  }: { 
-    label: string; 
+    value,
+    onChange,
+    hasInfo = true,
+  }: {
+    label: string;
     description?: string;
     tooltipContent?: string;
-    value: boolean; 
-    onChange: (value: boolean) => void; 
+    value: boolean;
+    onChange: (value: boolean) => void;
     hasInfo?: boolean;
   }) => (
     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
@@ -94,15 +138,10 @@ export default function ExamSettingsTab({ examData, onSave }: ExamSettingsTabPro
             </Tooltip>
           )}
         </div>
-        {description && (
-          <FormDescription>{description}</FormDescription>
-        )}
+        {description && <FormDescription>{description}</FormDescription>}
       </div>
       <FormControl>
-        <Switch
-          checked={value}
-          onCheckedChange={onChange}
-        />
+        <Switch checked={value} onCheckedChange={onChange} />
       </FormControl>
     </FormItem>
   );
@@ -118,7 +157,10 @@ export default function ExamSettingsTab({ examData, onSave }: ExamSettingsTabPro
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+            <form
+              onSubmit={form.handleSubmit(handleSubmit)}
+              className="space-y-8"
+            >
               {/* Left Column Settings */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div className="space-y-4">
@@ -172,13 +214,19 @@ export default function ExamSettingsTab({ examData, onSave }: ExamSettingsTabPro
                       <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                         <div className="space-y-0.5">
                           <div className="flex items-center gap-2">
-                            <FormLabel className="text-base font-medium">Overall Pass Percentage</FormLabel>
+                            <FormLabel className="text-base font-medium">
+                              Overall Pass Percentage
+                            </FormLabel>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Info className="h-4 w-4 text-muted-foreground hover:text-foreground cursor-help" />
                               </TooltipTrigger>
                               <TooltipContent side="top" className="max-w-xs">
-                                <p>Set the minimum percentage score required for a student to pass the exam. Students scoring below this threshold will be marked as failed.</p>
+                                <p>
+                                  Set the minimum percentage score required for
+                                  a student to pass the exam. Students scoring
+                                  below this threshold will be marked as failed.
+                                </p>
                               </TooltipContent>
                             </Tooltip>
                           </div>
@@ -193,7 +241,9 @@ export default function ExamSettingsTab({ examData, onSave }: ExamSettingsTabPro
                               min="0"
                               max="100"
                               {...field}
-                              onChange={(e) => field.onChange(parseInt(e.target.value))}
+                              onChange={(e) =>
+                                field.onChange(parseInt(e.target.value))
+                              }
                               className="text-center"
                             />
                           </FormControl>
@@ -247,6 +297,37 @@ export default function ExamSettingsTab({ examData, onSave }: ExamSettingsTabPro
                       />
                     )}
                   />
+
+                  {restrictAttempts && (
+                    <FormField
+                      control={form.control}
+                      name="no_of_attempts"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            Number of Attempts{" "}
+                            <span className="text-red-500">*</span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min="1"
+                              placeholder="1"
+                              {...field}
+                              onChange={(e) =>
+                                field.onChange(parseInt(e.target.value))
+                              }
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Maximum number of times a student can attempt this
+                            exam
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
 
                   <FormField
                     control={form.control}
@@ -322,8 +403,8 @@ export default function ExamSettingsTab({ examData, onSave }: ExamSettingsTabPro
 
               {/* Submit Button */}
               <div className="flex justify-end pt-6">
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={saving}
                   className="bg-success hover:bg-success/90 text-white px-8"
                 >

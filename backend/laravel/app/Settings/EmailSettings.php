@@ -13,7 +13,7 @@ use Spatie\LaravelSettings\Settings;
 class EmailSettings extends Settings
 {
     public string $host;
-    public string $port;
+    public int $port;
     public string $username;
     public string $password;
     public string $encryption;

@@ -52,18 +52,43 @@ export default function Quizzes() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [meta, setMeta] = useState<any>({});
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(() => {
+    const stored =
+      typeof window !== "undefined"
+        ? localStorage.getItem("admin_quizzes_per_page")
+        : null;
+    return stored ? parseInt(stored) : 25;
+  });
+  const [activeCount, setActiveCount] = useState(0);
+  const [paidCount, setPaidCount] = useState(0);
 
   useEffect(() => {
     loadQuizzes();
-  }, [searchTerm]);
+  }, [searchTerm, selectedStatus, selectedCategory, page, perPage]);
 
   const loadQuizzes = async () => {
     try {
       setLoading(true);
       setError("");
-      const resp = await getQuizzesApi({ search: searchTerm || undefined });
+      const resp = await getQuizzesApi({
+        search: searchTerm || undefined,
+        status:
+          selectedStatus !== "all"
+            ? selectedStatus === "Active"
+              ? "active"
+              : "inactive"
+            : undefined,
+        category: selectedCategory !== "all" ? selectedCategory : undefined,
+        page,
+        per_page: perPage,
+      });
       setQuizzes(resp.data);
       setMeta(resp.meta);
+      if (resp.meta?.counters) {
+        setActiveCount(resp.meta.counters.total_active || 0);
+        setPaidCount(resp.meta.counters.total_paid || 0);
+      }
     } catch (e: any) {
       setError(e?.message || "Failed to load quizzes");
     } finally {
@@ -71,15 +96,7 @@ export default function Quizzes() {
     }
   };
 
-  const filteredQuizzes = quizzes.filter((quiz) => {
-    const matchesCategory =
-      selectedCategory === "all" ||
-      quiz.sub_category?.name === selectedCategory;
-    const matchesStatus =
-      selectedStatus === "all" ||
-      (quiz.is_active ? "Active" : "Draft") === selectedStatus;
-    return matchesCategory && matchesStatus;
-  });
+  const filteredQuizzes = quizzes; // server-side filtered
 
   const handleFilterChange = (filterId: string, value: string) => {
     switch (filterId) {
@@ -180,7 +197,7 @@ export default function Quizzes() {
             <Target className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">127</div>
+            <div className="text-2xl font-bold">{meta?.total || 0}</div>
             <p className="text-xs text-success">+12% from last month</p>
           </CardContent>
         </Card>
@@ -193,7 +210,7 @@ export default function Quizzes() {
             <Play className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">42</div>
+            <div className="text-2xl font-bold">{activeCount}</div>
             <p className="text-xs text-success">+5% from last week</p>
           </CardContent>
         </Card>
@@ -206,7 +223,7 @@ export default function Quizzes() {
             <Users className="h-4 w-4 text-accent" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,436</div>
+            <div className="text-2xl font-bold">{paidCount}</div>
             <p className="text-xs text-success">+18% from last month</p>
           </CardContent>
         </Card>
@@ -250,6 +267,7 @@ export default function Quizzes() {
                   <TableHead>Participants</TableHead>
                   <TableHead>Difficulty</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="text-right">End Status</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -330,6 +348,11 @@ export default function Quizzes() {
                           {quiz.is_active ? "Active" : "Draft"}
                         </Badge>
                       </TableCell>
+                      <TableCell className="text-right">
+                        <Badge variant="outline">
+                          {quiz.is_active ? "Active" : "Draft"}
+                        </Badge>
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center text-sm text-muted-foreground">
                           <Calendar className="mr-1 h-3 w-3" />
@@ -393,6 +416,68 @@ export default function Quizzes() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Pagination Controls */}
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-muted-foreground">
+          Showing page {meta?.current_page || page} of {meta?.last_page || 1} •
+          Total {meta?.total || 0}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+          >
+            Prev
+          </Button>
+          <Badge variant="outline">{page}</Badge>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= (meta?.last_page || 1)}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            Next
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page === 1}
+            onClick={() => setPage(1)}
+          >
+            First
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= (meta?.last_page || 1)}
+            onClick={() => setPage(meta?.last_page || 1)}
+          >
+            Last
+          </Button>
+          <div className="ml-4 flex items-center gap-2 text-sm text-muted-foreground">
+            Rows:
+            <select
+              className="h-8 rounded-md border bg-background px-2"
+              value={perPage}
+              onChange={(e) => {
+                const v = parseInt(e.target.value);
+                setPerPage(v);
+                try {
+                  localStorage.setItem("admin_quizzes_per_page", String(v));
+                } catch (_) {}
+                setPage(1);
+              }}
+            >
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+            </select>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
